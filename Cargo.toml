@@ -1,0 +1,6 @@
+[package]
+name = "libzfs"
+version = "0.1.0"
+authors = ["Andrey Cherkashin <with.out@me.com>"]
+
+[dependencies]
