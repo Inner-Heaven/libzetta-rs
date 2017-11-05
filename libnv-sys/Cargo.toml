@@ -6,6 +6,7 @@ links = "libnv"
 build = "build.rs"
 categories = ["external-ffi-bindings"]
 license = "BSD 2-clause"
+description = "FFI bindings to libnv."
 [lib]
 name = "libnv_sys"
 
