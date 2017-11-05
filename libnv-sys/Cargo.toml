@@ -5,7 +5,7 @@ authors = ["Andrey Cherkashin <with.out@me.com>"]
 links = "libnv"
 build = "build.rs"
 categories = ["external-ffi-bindings"]
-
+license = "BSD 2-clause"
 [lib]
 name = "libnv_sys"
 
