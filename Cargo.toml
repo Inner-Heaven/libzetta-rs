@@ -2,3 +2,10 @@
 name = "libzfs"
 version = "0.1.0"
 authors = ["Andrey Cherkashin <with.out@me.com>"]
+
+
+
+[dependencies]
+libc = "0.2"
+libzfs_core-sys="0.1"
+libnv-sys = "0.1"
