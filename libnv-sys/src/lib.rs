@@ -64,11 +64,11 @@ extern "C" {
     pub fn nvlist_get_string_array(list: *const nvlist,
                                name: *const i8,
                                len: *const usize)
-                               -> *const *const i8;
+                               -> *mut *mut char;
     pub fn nvlist_get_nvlist_array(list: *const nvlist,
                                name: *const i8,
                                len: *const usize)
-                               -> *const *const nvlist;
+                               -> *mut *mut nvlist;
     pub fn nvlist_free(list: *mut nvlist, name: *const i8) -> ();
     pub fn nvlist_free_type(list: *mut nvlist, name: *const i8, ty: i32) -> ();
     pub fn strlen(target: *const i8) -> usize;
