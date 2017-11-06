@@ -1,8 +1,8 @@
 [package]
 name = "libnv-sys"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Andrey Cherkashin <with.out@me.com>"]
-links = "libnv"
+links = "libnvpair"
 build = "build.rs"
 categories = ["external-ffi-bindings"]
 license = "BSD-2-Clause"
