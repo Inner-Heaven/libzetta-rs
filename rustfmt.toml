@@ -1,0 +1,16 @@
+format_strings = true
+reorder_imports = true
+reorder_imported_names = true
+where_style = "Rfc"
+control_style = "Rfc"
+write_mode = "Overwrite"
+wrap_comments = true
+
+chain_indent = "Visual"
+chain_split_single_child = true
+fn_args_layout = "Visual"
+fn_single_line = true
+force_explicit_abi = true
+generics_indent = "Visual"
+struct_field_align_threshold = 10
+use_try_shorthand = true
