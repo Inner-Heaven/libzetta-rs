@@ -1,6 +1,6 @@
 [package]
 name = "libnv-sys"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Andrey Cherkashin <with.out@me.com>"]
 links = "libnv"
 build = "build.rs"

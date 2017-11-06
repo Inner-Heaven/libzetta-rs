@@ -64,7 +64,7 @@ extern "C" {
     pub fn nvlist_get_string_array(list: *const nvlist,
                                name: *const i8,
                                len: *const usize)
-                               -> *mut *mut char;
+                               -> *mut *mut i8;
     pub fn nvlist_get_nvlist_array(list: *const nvlist,
                                name: *const i8,
                                len: *const usize)
