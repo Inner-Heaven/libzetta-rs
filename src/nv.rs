@@ -1,8 +1,10 @@
 #![deny(missing_docs)]
-//! Rust bindings to Name/Value pairs library ([libnv])(https://www.freebsd.org/cgi/man.cgi?query=nv) .
-//! It kinda acts like `Map<&str, T>` where T is any type Name/Value list can hold. I honestly
-//! don't know if this is used anywhere outside of zfs and that one side-project by someone in google.
-//! I only making this in order to work with ZFS, so if you need something that isn't here - PRs
+//! Rust bindings to Name/Value pairs library ([libnv](man_page)).
+//! It kinda acts like `Map<&str, T>` where T is any type Name/Value list can
+//! hold. I honestly
+//! don't know if this is used anywhere outside of zfs.
+//! I only making this in order to work with ZFS, so if you need something that
+//! isn't here - PRs
 //! welcome.
 //! It's missing a few features:
 //!     - Sending to socket
@@ -10,16 +12,18 @@
 //!     - Insert/Remove file descriptors
 //!     - Insert/Remove binary
 //!     - Take operations
+//! [man_page]: https://www.freebsd.org/cgi/man.cgi?query=nv
 
-use std::convert::{From, Into};
-use std::ffi::{CString, CStr, NulError};
-use std::slice;
-use std::os::unix::io::AsRawFd;
 
 use libc::ENOMEM;
 
-// Importing all because it's cold, I dont want to turn on heater and it's hard to type.
+// Importing all because it's cold, I dont want to turn on heater and it's hard
+// to type.
 use libnv_sys::*;
+use std::convert::{From, Into};
+use std::ffi::{CStr, CString, NulError};
+use std::os::unix::io::AsRawFd;
+use std::slice;
 
 
 quick_error! {
@@ -83,20 +87,20 @@ pub enum NvFlag {
     /// Names in the nvlist do not have to be unique.
     NoUnique = 2,
     /// Allow duplicate case-insensitive keys.
-    Both = 3
+    Both = 3,
 }
 
 impl From<i32> for NvFlag {
-    /// This should be TryFrom. This function WILL panic if you pass incorrect value to it.
-    /// However, this should be impossible.
+    /// This should be TryFrom. This function WILL panic if you pass incorrect
+    /// value to it. This should be impossible.
     fn from(source: i32) -> Self {
-     match source {
+        match source {
             0 => NvFlag::None,
             1 => NvFlag::IgnoreCase,
             2 => NvFlag::NoUnique,
             3 => NvFlag::Both,
-            _ => panic!("Incorrect value passed to NvFlag")
-     }
+            _ => panic!("Incorrect value passed to NvFlag"),
+        }
     }
 }
 
@@ -119,8 +123,8 @@ macro_rules! impl_list_op {
     };
 }
 
-/// Marker-ish trait to allow usage of insert method. Implement this for your own types if you don't
-/// want to convert to primitive types everytime.
+/// Marker-ish trait to allow usage of insert method. Implement this for your
+/// own types if you don't want to convert to primitive types everytime.
 pub trait NvTypeOp {
     /// Add self to given list.
     fn add_to_list(&self, list: &mut NvList, name: &str) -> NvResult<()>;
@@ -138,7 +142,9 @@ impl_list_op!{NvList, insert_nvlist, true}
 
 /// If `Some` insert content to the list. If `None` insert null.
 impl<T> NvTypeOp for Option<T>
-    where T: NvTypeOp {
+where
+    T: NvTypeOp,
+{
     fn add_to_list(&self, list: &mut NvList, name: &str) -> NvResult<()> {
         match self {
             &Some(ref val) => val.add_to_list(list, name),
@@ -157,15 +163,11 @@ pub struct NvList {
 #[doc(hidden)]
 /// Return new list with no flags.
 impl Default for NvList {
-    fn default() -> NvList {
-        NvList::new(NvFlag::None).expect("Failed to create new list")
-    }
+    fn default() -> NvList { NvList::new(NvFlag::None).expect("Failed to create new list") }
 }
 impl NvList {
     /// Make a copy of a pointer. Danger zone.
-    fn as_ptr(&self) -> *mut nvlist {
-        self.ptr.clone()
-    }
+    fn as_ptr(&self) -> *mut nvlist { self.ptr.clone() }
     fn check_if_error(&self) -> NvResult<()> {
         match self.error() {
             errno if errno == 0 => Ok(()),
@@ -173,8 +175,8 @@ impl NvList {
         }
     }
 
-    /// Create a new name/value pair list (`nvlist`). Call this can only fail when system is out of
-    /// memory.
+    /// Create a new name/value pair list (`nvlist`). Call this can only fail
+    /// when system is out of memory.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -190,18 +192,16 @@ impl NvList {
         }
     }
 
-    /// Determines if the `nvlist` is empty
+    /// Determines if the `nvlist` is empty.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
     /// let nvlist = NvList::new(NvFlag::IgnoreCase).unwrap();
     /// assert!(nvlist.is_empty());
     /// ```
-    pub fn is_empty(&self) -> bool {
-        unsafe { nvlist_empty(self.ptr) }
-    }
+    pub fn is_empty(&self) -> bool { unsafe { nvlist_empty(self.ptr) } }
 
-    /// The flags the `nvlist` was created with
+    /// The flags the `nvlist` was created with.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -209,11 +209,9 @@ impl NvList {
     ///
     /// assert_eq!(nvlist.flags(), NvFlag::NoUnique);
     /// ```
-    pub fn flags(&self) -> NvFlag {
-        NvFlag::from(unsafe { nvlist_flags(self.ptr) })
-    }
+    pub fn flags(&self) -> NvFlag { NvFlag::from(unsafe { nvlist_flags(self.ptr) }) }
 
-    /// Gets error value that the list may have accumulated
+    /// Gets error value that the list may have accumulated.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -221,10 +219,9 @@ impl NvList {
     ///
     /// assert_eq!(0, list.error());
     /// ```
-    pub fn error(&self) -> i32 {
-        unsafe { nvlist_error(self.ptr) }
-    }
-    /// Sets the `NvList` to be in an error state
+    pub fn error(&self) -> i32 { unsafe { nvlist_error(self.ptr) } }
+
+    /// Sets the `NvList` to be in an error state.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -245,7 +242,7 @@ impl NvList {
         }
     }
 
-    /// Genericially add a single value to the NvList
+    /// Genericially add a single value to the NvList.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag, NvTypeOp};
@@ -266,7 +263,7 @@ impl NvList {
         value.add_to_list(self, name)
     }
 
-    /// Add a null value to the `NvList`
+    /// Add a null value to the `NvList`.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag, NvTypeOp};
@@ -280,7 +277,7 @@ impl NvList {
         }
         self.check_if_error()
     }
-    /// Add a number to the `NvList`. Number will be converted into u64. 
+    /// Add a number to the `NvList`. Number will be converted into u64.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -296,7 +293,7 @@ impl NvList {
         }
         self.check_if_error()
     }
-    /// Add a `bool` to the list
+    /// Add a `bool` to the list.
     pub fn insert_bool(&mut self, name: &str, value: bool) -> NvResult<()> {
         let c_name = CString::new(name)?;
         unsafe {
@@ -305,7 +302,7 @@ impl NvList {
         self.check_if_error()
     }
 
-     /// Add string to the list
+    /// Add string to the list.
     pub fn insert_string(&mut self, name: &str, value: &str) -> NvResult<()> {
         let c_name = CString::new(name)?;
         let c_value = CString::new(value)?;
@@ -315,7 +312,7 @@ impl NvList {
         self.check_if_error()
     }
 
-    /// Add `NvList` to the list
+    /// Add `NvList` to the list.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -344,7 +341,7 @@ impl NvList {
         self.check_if_error()
     }
 
-    /// Add an array of `bool` values
+    /// Add an array of `bool` values.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -400,14 +397,14 @@ impl NvList {
     /// ```
     pub fn insert_strings(&mut self, name: &str, value: &[&str]) -> NvResult<()> {
         let c_name = CString::new(name)?;
-        let strings: Vec<CString> = value.iter()
-            .map(|e| CString::new(*e))
-            .map(|e| e.expect("Failed to convert str to Cstring"))
-            .collect();
+        let strings: Vec<CString> =
+            value.iter()
+                 .map(|e| CString::new(*e))
+                 .map(|e| e.expect("Failed to convert str to Cstring"))
+                 .collect();
         unsafe {
-            let pointers: Vec<*const i8> = strings.iter()
-                .map(|e| e.as_ptr())
-                .collect();
+            let pointers: Vec<*const i8> =
+                strings.iter().map(|e| e.as_ptr()).collect();
 
             nvlist_add_string_array(self.ptr,
                                     c_name.as_ptr(),
@@ -424,7 +421,8 @@ impl NvList {
     ///
     /// let mut list = NvList::new(NvFlag::Both).unwrap();
     ///
-    /// let slice = [NvList::new(NvFlag::Both).unwrap(), NvList::new(NvFlag::Both).unwrap(),
+    /// let slice = [NvList::new(NvFlag::Both).unwrap(),
+    /// NvList::new(NvFlag::Both).unwrap(),
     ///              NvList::new(NvFlag::None).unwrap()];
     ///
     /// list.insert_nvlists("nvlists", &slice);
@@ -437,15 +435,20 @@ impl NvList {
         let c_name = CString::new(name)?;
         let vec = value.to_vec();
         unsafe {
-            let lists: Vec<*const nvlist> = vec.iter()
-                .map(|item| item.as_ptr() as *const nvlist)
-                .collect();
-            nvlist_add_nvlist_array(self.ptr, c_name.as_ptr(), lists.as_slice().as_ptr(), lists.len());
+            let lists: Vec<*const nvlist> =
+                vec.iter()
+                   .map(|item| item.as_ptr() as *const nvlist)
+                   .collect();
+            nvlist_add_nvlist_array(self.ptr,
+                                    c_name.as_ptr(),
+                                    lists.as_slice().as_ptr(),
+                                    lists.len());
         }
         self.check_if_error()
     }
 
-    /// Returns `true` if a name/value pair exists in the `NvList` and `false` otherwise.
+    /// Returns `true` if a name/value pair exists in the `NvList` and `false`
+    /// otherwise.
     ///
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
@@ -462,7 +465,8 @@ impl NvList {
         unsafe { Ok(nvlist_exists(self.ptr, c_name.as_ptr())) }
     }
 
-    /// Returns `true` if a name/value pair of the specified type exists in the `NvList` and `false` otherwise
+    /// Returns `true` if a name/value pair of the specified type exists and
+    /// `false` otherwise.
     /// ```
     /// use libzfs::nv::{NvList, NvFlag};
     ///
@@ -480,7 +484,7 @@ impl NvList {
 
 
     /// Get the first matching `bool` value paired with
-    /// the given name
+    /// the given name.
     ///
     /// ```
     /// use libzfs::nv::NvList;
@@ -489,7 +493,8 @@ impl NvList {
     ///
     /// list.insert_bool("Did history start on 1776?", true).unwrap();
     ///
-    /// assert!(list.get_bool("Did history start on 1776?").unwrap().unwrap(), true);
+    /// assert!(list.get_bool("Did history start on 1776?").unwrap().unwrap(),
+    /// true);
     /// ```
     pub fn get_bool(&self, name: &str) -> NvResult<Option<bool>> {
         let c_name = CString::new(name)?;
@@ -503,7 +508,7 @@ impl NvList {
     }
 
     /// Get the first matching `u64` value paired with
-    /// the given name
+    /// the given name.
     pub fn get_number(&self, name: &str) -> NvResult<Option<u64>> {
         let c_name = CString::new(name)?;
         unsafe {
@@ -565,7 +570,8 @@ impl NvList {
     /// // NvList not the boolean value
     /// let other_nvlist = list.get_nvlist("other list").unwrap().unwrap();
     ///
-    /// assert_eq!(other_nvlist.get_number("Important year").unwrap().unwrap(), 42);
+    /// assert_eq!(other_nvlist.get_number("Important year").unwrap().unwrap(),
+    /// 42);
     /// ```
     pub fn get_nvlist(&self, name: &str) -> NvResult<Option<NvList>> {
         let c_name = CString::new(name)?;
@@ -590,7 +596,8 @@ impl NvList {
     ///
     /// list.insert_bools("true/false", &[true, false, true]).unwrap();
     ///
-    /// assert_eq!(list.get_bools("true/false").unwrap().unwrap(), &[true, false, true]);
+    /// assert_eq!(list.get_bools("true/false").unwrap().unwrap(), &[true,
+    /// false, true]);
     /// ```
     pub fn get_bools<'a>(&'a self, name: &str) -> NvResult<Option<&'a [bool]>> {
         let c_name = CString::new(name)?;
@@ -615,7 +622,8 @@ impl NvList {
     ///
     /// list.insert_numbers("The Year", &[1, 7, 7, 6]).unwrap();
     ///
-    /// assert_eq!(list.get_numbers("The Year").unwrap().unwrap(), &[1, 7, 7, 6]);
+    /// assert_eq!(list.get_numbers("The Year").unwrap().unwrap(), &[1, 7, 7,
+    /// 6]);
     /// ```
     pub fn get_numbers<'a>(&'a self, name: &str) -> NvResult<Option<&'a [u64]>> {
         let c_name = CString::new(name)?;
@@ -639,14 +647,15 @@ impl NvList {
         unsafe {
             if nvlist_exists_string_array(self.ptr, c_name.as_ptr()) {
                 let mut len: usize = 0;
-                let arr = nvlist_get_string_array(self.ptr, c_name.as_ptr(), &mut len as *mut usize);
+                let arr =
+                    nvlist_get_string_array(self.ptr, c_name.as_ptr(), &mut len as *mut usize);
                 let slice = slice::from_raw_parts(arr as *const *const i8, len);
                 let strings = slice.iter()
-                    .map(|ptr| *ptr)
-                    .map(|ptr| CStr::from_ptr(ptr))
-                    .map(|cstr| cstr.to_string_lossy())
-                    .map(|string| String::from(string))
-                    .collect();
+                                   .map(|ptr| *ptr)
+                                   .map(|ptr| CStr::from_ptr(ptr))
+                                   .map(|cstr| cstr.to_string_lossy())
+                                   .map(|string| String::from(string))
+                                   .collect();
                 Ok(Some(strings))
             } else {
                 Ok(None)
@@ -678,8 +687,8 @@ impl NvList {
                     nvlist_get_nvlist_array(self.ptr, c_name.as_ptr(), &mut len as *mut usize);
                 let slice = slice::from_raw_parts(arr as *const *const nvlist, len);
                 Ok(Some(slice.iter()
-                     .map(|item| NvList { ptr: nvlist_clone(*item) })
-                     .collect()))
+                             .map(|item| NvList { ptr: nvlist_clone(*item) })
+                             .collect()))
             } else {
                 Ok(None)
             }
@@ -704,9 +713,7 @@ impl NvList {
     }
 
     /// The size of the current list
-    pub fn len(&self) -> i32 {
-        unsafe { nvlist_size(self.ptr) }
-    }
+    pub fn len(&self) -> i32 { unsafe { nvlist_size(self.ptr) } }
 
     /// Removes a key from the `NvList`.
     pub fn remove(&mut self, name: &str) -> NvResult<()> {
@@ -730,15 +737,15 @@ impl NvList {
 
 impl Clone for NvList {
     /// Clone list using libnv method. This will perform deep copy.
-    fn clone(&self) -> NvList {
-        NvList { ptr: unsafe { nvlist_clone(self.ptr) } }
-    }
+    fn clone(&self) -> NvList { NvList { ptr: unsafe { nvlist_clone(self.ptr) } } }
 }
 
 
 impl Drop for NvList {
     /// Using libnv method.
     fn drop(&mut self) {
-        unsafe { nvlist_destroy(self.ptr); }
+        unsafe {
+            nvlist_destroy(self.ptr);
+        }
     }
 }
