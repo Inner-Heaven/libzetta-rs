@@ -10,3 +10,7 @@ libc = "0.2"
 libzfs_core-sys="0.1"
 libnv-sys = "0.1"
 quick-error = "1.2"
+
+[dev-dependencies]
+tempdir = "0.3"
+cavity = "1.1"
