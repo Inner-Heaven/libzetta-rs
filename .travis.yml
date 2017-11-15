@@ -14,21 +14,30 @@ cache:
 branches:
   only:
     - master
-
-env:
-  - rel=0.7.3
+addons:
+  apt:
+    packages:
+      - libblkid-dev
+      - libattr1-dev
+      - ubuntu-zfs
+    sources:
+      - sourceline: ppa:zfs-native/stable
 
 script:
   - |
     cargo build &&
     cargo test
-before_install:
-  - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
-  - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
-  - cd /tmp
-  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
-  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
-  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
-  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
-  - sudo modprobe zfs
-  - cd $TRAVIS_BUILD_DIR
+after_success: |
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz &&
+  cd kcov-master &&
+  mkdir build &&
+  cd build &&
+  cmake .. &&
+  make &&
+  make install DESTDIR=../../kcov-build &&
+  cd ../.. &&
+  rm -rf kcov-master &&
+  for file in target/debug/libzfs-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+  bash <(curl -s https://codecov.io/bash) &&
+  echo "Uploaded code coverage"
