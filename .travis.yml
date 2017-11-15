@@ -20,8 +20,19 @@ addons:
       - libblkid-dev
       - libattr1-dev
       - ubuntu-zfs
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
+      - zlib1g-dev
     sources:
       - sourceline: ppa:zfs-native/stable
+env:
+  global:
+    - RUSTFLAGS="-C link-dead-code"
 
 script:
   - |

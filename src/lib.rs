@@ -3,9 +3,11 @@ extern crate libc;
 extern crate quick_error;
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+extern crate tempdir;
+#[cfg(test)]
+extern crate cavity;
+
+#[macro_use]
+extern crate derive_builder;
+
+pub mod zpool;
