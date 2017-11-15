@@ -6,6 +6,9 @@
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
 
+pub mod topology;
+pub use self::topology::{Topology, TopologyBuilder};
+
 quick_error! {
     /// Error kinds. This type will be used across zpool module.
     #[derive(Debug)]

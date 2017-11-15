@@ -7,4 +7,7 @@ extern crate tempdir;
 #[cfg(test)]
 extern crate cavity;
 
+#[macro_use]
+extern crate derive_builder;
+
 pub mod zpool;
