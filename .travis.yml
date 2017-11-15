@@ -18,7 +18,7 @@ addons:
   apt:
     packages:
       - libblkid-dev
-      - libattr-dev
+      - libattr1-dev
 env:
   - rel=0.7.3
 
