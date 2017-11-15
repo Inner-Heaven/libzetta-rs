@@ -7,11 +7,13 @@ authors = ["Andrey Cherkashin <with.out@me.com>"]
 
 [dependencies]
 libc = "0.2"
-libzfs_core-sys="0.1"
-libnv-sys = "0.1"
 quick-error = "1.2"
 derive_builder = "0.5"
 
 [dev-dependencies]
 tempdir = "0.3"
 cavity = "1.1"
+
+[target.'cfg(freebsd)'.dependencies]
+libzfs_core-sys="0.1"
+libnv-sys = "0.1"
