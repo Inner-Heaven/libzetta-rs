@@ -30,6 +30,9 @@ addons:
       - zlib1g-dev
     sources:
       - sourceline: ppa:zfs-native/stable
+env:
+  global:
+    - RUSTFLAGS="-C link-dead-code"
 
 script:
   - |
