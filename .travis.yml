@@ -19,7 +19,7 @@ addons:
     packages:
       - libblkid-dev
       - libattr1-dev
-      - zfsutils-linux
+      - ubuntu-zfs
     sources:
       - sourceline: ppa:zfs-native/stable
 
