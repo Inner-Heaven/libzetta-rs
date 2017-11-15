@@ -30,7 +30,7 @@ script:
 after_success: |
   wget https://github.com/SimonKagstrom/kcov/archive/v34.tar.gz &&
   tar xzf v34.tar.gz &&
-  cd kcov-v34 &&
+  cd kcov-34 &&
   mkdir build &&
   cd build &&
   cmake .. &&
