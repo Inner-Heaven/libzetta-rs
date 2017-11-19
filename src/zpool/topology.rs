@@ -52,6 +52,34 @@ pub struct Topology {
 
 }
 
+impl Topology {
+    /// Verify that given topology can be used to create new zpool.
+    ///
+    /// That means it as at least one valid vdev and all optional devices are valid if present.
+    pub fn suitable_for_create(&self) -> bool {
+        if self.vdevs.len() < 1 {
+            return false;
+        }
+
+        let valid_vdevs = self.vdevs.iter().all(Vdev::is_valid);
+        if !valid_vdevs {
+            return false;
+        }
+
+        if !self.caches.is_empty() {
+            let valid_caches = self.caches.iter().all(Disk::is_valid);
+            if !valid_caches {
+                return false;
+            }
+        }
+
+        match self.zil {
+            Some(ref vdev) => return vdev.is_valid(),
+            None => return true
+        }
+    }
+}
+
 impl TopologyBuilder {
     pub fn vdev(&mut self, vdev: Vdev) -> &mut TopologyBuilder {
         match self.vdevs {
@@ -73,5 +101,85 @@ impl TopologyBuilder {
             }
         }
         self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::fs::File;
+    use std::path::PathBuf;
+    use tempdir::TempDir;
+
+    fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
+        (0..num).map(|_| Disk::File(path.clone())).collect()
+    }
+
+    #[test]
+    fn test_create() {
+        let tmp_dir = TempDir::new("zpool-tests").unwrap();
+        let file_path = tmp_dir.path().join("block-device");
+        let _valid_file = File::create(file_path.clone()).unwrap();
+
+        // Zpool with one valid mirror
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+            .build()
+            .unwrap();
+
+        assert!(topo.suitable_for_create());
+
+        // Zpool with invalid mirror
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(1, &file_path))])
+            .build()
+            .unwrap();
+
+        assert!(!topo.suitable_for_create());
+
+        // Zpool with valid cache and valid vdev
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+            .caches(get_disks(2, &file_path))
+            .build()
+            .unwrap();
+
+        assert!(topo.suitable_for_create());
+
+        // Zpool with valid mirror, but invalid cache
+        let invalid_path = tmp_dir.path().join("fake");
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+            .caches(get_disks(2, &file_path))
+            .cache(Disk::File(invalid_path.clone()))
+            .build()
+            .unwrap();
+
+        assert!(!topo.suitable_for_create());
+
+        // Zpool with invalid zil
+        let invalid_path = tmp_dir.path().join("fake");
+        let caches = get_disks(1, &file_path);
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+            .caches(get_disks(2, &file_path))
+            .zil(Vdev::Naked(Disk::File(file_path.clone())))
+            .build()
+            .unwrap();
+
+        assert!(topo.suitable_for_create());
+
+        // Zpool with invalid zil
+        let invalid_path = tmp_dir.path().join("fake");
+        let caches = get_disks(1, &file_path);
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+            .caches(get_disks(2, &file_path))
+            .zil(Vdev::Naked(Disk::File(invalid_path.clone())))
+            .build()
+            .unwrap();
+
+        assert!(!topo.suitable_for_create());
     }
 }
