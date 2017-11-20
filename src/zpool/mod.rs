@@ -9,6 +9,8 @@ pub use self::vdev::{Disk, Vdev};
 pub mod topology;
 pub use self::topology::{Topology, TopologyBuilder};
 
+pub mod open3;
+
 quick_error! {
     /// Error kinds. This type will be used across zpool module.
     #[derive(Debug)]
@@ -49,6 +51,6 @@ pub trait ZpoolEngine {
     /// Check if pool with given name exists. This will return error only if
     /// call to `zpool` fail.
     fn exists(&self, name: &str) -> ZpoolResult<bool>;
-    fn create(&self, name: &str, vdev: Vec<Vdev>) -> ZpoolResult<Zpool>;
+    fn create(&self, name: &str, topology: Topology) -> ZpoolResult<Zpool>;
     fn get(&self, name: &str) -> ZpoolResult<Zpool>;
 }

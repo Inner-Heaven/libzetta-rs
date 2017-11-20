@@ -1,6 +1,7 @@
 /// Topology is a structure that describes zpool vdev structure.
 /// Use to create and updated zpool
 
+use std::ffi::OsString;
 use zpool::vdev::{Vdev, Disk};
 
 /// Structure representing what zpool consist of.
@@ -40,6 +41,7 @@ use zpool::vdev::{Vdev, Disk};
 ///             .unwrap();
 /// ```
 
+#[allow(unused_mut)]
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
 pub struct Topology {
@@ -53,7 +55,6 @@ pub struct Topology {
 }
 
 impl Topology {
-
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(Vdev::is_valid);
@@ -81,6 +82,28 @@ impl Topology {
             return false;
         }
         self.is_suitable_for_update()
+    }
+
+    /// Make Topology usable as arg for Command
+    pub fn into_args(self) -> Vec<OsString> {
+        let mut ret: Vec<OsString> = Vec::with_capacity(13);
+
+        let vdevs = self.vdevs.into_iter().flat_map(Vdev::into_args);
+        let zil = self.zil.map(Vdev::into_args);
+        ret.extend(vdevs);
+
+        if !self.caches.is_empty() {
+            let caches = self.caches.into_iter().map(Disk::into_arg);
+            ret.push("cache".into());
+            ret.extend(caches);
+        }
+
+        if let Some(z) = zil {
+            ret.push("log".into());
+            ret.extend(z);
+        }
+
+        ret
     }
 }
 
@@ -118,6 +141,10 @@ mod test {
 
     fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
         (0..num).map(|_| Disk::File(path.clone())).collect()
+    }
+
+    fn args_from_slice(args: &[&str]) -> Vec<OsString> {
+        args.to_vec().into_iter().map(OsString::from).collect()
     }
 
     #[test]
@@ -164,19 +191,17 @@ mod test {
 
         // Zpool with invalid zil
         let invalid_path = tmp_dir.path().join("fake");
-        let caches = get_disks(1, &file_path);
         let topo = TopologyBuilder::default()
             .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
             .caches(get_disks(2, &file_path))
-            .zil(Vdev::Naked(Disk::File(file_path.clone())))
+            .zil(Vdev::Naked(Disk::File(invalid_path)))
             .build()
             .unwrap();
 
-        assert!(topo.suitable_for_create());
+        assert!(!topo.suitable_for_create());
 
         // Zpool with invalid zil
         let invalid_path = tmp_dir.path().join("fake");
-        let caches = get_disks(1, &file_path);
         let topo = TopologyBuilder::default()
             .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
             .caches(get_disks(2, &file_path))
@@ -205,5 +230,69 @@ mod test {
             .unwrap();
 
         assert!(!topo.is_suitable_for_update());
+    }
+
+    #[test]
+    fn test_args() {
+        let tmp_dir = TempDir::new("zpool-tests").unwrap();
+        let file_path = tmp_dir.path().join("block-device");
+        let path = file_path.to_str().unwrap();
+        let _valid_file = File::create(file_path.clone()).unwrap();
+        let naked_vdev = Vdev::Naked(Disk::File(file_path.clone()));
+
+        // Just add L2ARC to zpool
+        let topo = TopologyBuilder::default()
+            .cache(Disk::File(file_path.clone()))
+            .build()
+            .unwrap();
+
+        let result: Vec<OsString> = topo.into_args();
+        let expected = args_from_slice(&["cache", path]);
+
+        assert_eq!(expected, result);
+
+
+        // Zpool with mirror as ZIL and two vdevs
+        let topo = TopologyBuilder::default()
+            .vdev(naked_vdev.clone())
+            .vdev(naked_vdev.clone())
+            .zil(Vdev::Mirror(get_disks(2, &file_path)))
+            .build()
+            .unwrap();
+
+        let result = topo.into_args();
+        let expected = args_from_slice(&[path, path, "log", "mirror", path, path]);
+        assert_eq!(expected, result);
+
+
+        // Zraid
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::RaidZ(get_disks(3, &file_path)))
+            .build()
+            .unwrap();
+
+        let result = topo.into_args();
+        let expected = args_from_slice(&["raidz", path, path, path]);
+        assert_eq!(expected, result);
+
+        // Zraid 2
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::RaidZ2(get_disks(5, &file_path)))
+            .build()
+            .unwrap();
+
+        let result = topo.into_args();
+        let expected = args_from_slice(&["raidz2", path, path, path, path, path]);
+        assert_eq!(expected, result);
+
+        // Zraid 3
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::RaidZ3(get_disks(8, &file_path)))
+            .build()
+            .unwrap();
+
+        let result = topo.into_args();
+        let expected = args_from_slice(&["raidz3", path, path, path, path, path, path, path, path]);
+        assert_eq!(expected, result);
     }
 }
