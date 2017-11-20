@@ -53,14 +53,9 @@ pub struct Topology {
 }
 
 impl Topology {
-    /// Verify that given topology can be used to create new zpool.
-    ///
-    /// That means it as at least one valid vdev and all optional devices are valid if present.
-    pub fn suitable_for_create(&self) -> bool {
-        if self.vdevs.len() < 1 {
-            return false;
-        }
 
+    /// Verify that given topology can be used to update existing pool.
+    pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(Vdev::is_valid);
         if !valid_vdevs {
             return false;
@@ -77,6 +72,15 @@ impl Topology {
             Some(ref vdev) => return vdev.is_valid(),
             None => return true
         }
+    }
+    /// Verify that given topology can be used to create new zpool.
+    ///
+    /// That means it as at least one valid vdev and all optional devices are valid if present.
+    pub fn suitable_for_create(&self) -> bool {
+        if self.vdevs.len() < 1 {
+            return false;
+        }
+        self.is_suitable_for_update()
     }
 }
 
@@ -117,7 +121,7 @@ mod test {
     }
 
     #[test]
-    fn test_create() {
+    fn test_validators() {
         let tmp_dir = TempDir::new("zpool-tests").unwrap();
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
@@ -181,5 +185,25 @@ mod test {
             .unwrap();
 
         assert!(!topo.suitable_for_create());
+
+
+        // Just add L2ARC to zpool
+        let topo = TopologyBuilder::default()
+            .cache(Disk::File(file_path.clone()))
+            .build()
+            .unwrap();
+
+        assert!(topo.is_suitable_for_update());
+
+        // Add L2ARC and invalid vdev
+        let invalid_path = tmp_dir.path().join("fake");
+        let topo = TopologyBuilder::default()
+            .cache(Disk::File(file_path.clone()))
+            .vdev(Vdev::Naked(Disk::File(invalid_path)))
+            .vdev(Vdev::Naked(Disk::File(file_path.clone())))
+            .build()
+            .unwrap();
+
+        assert!(!topo.is_suitable_for_update());
     }
 }
