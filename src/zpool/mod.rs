@@ -46,6 +46,9 @@ pub trait ZpoolEngine {
     /// Check if pool with given name exists. This will return error only if
     /// call to `zpool` fail.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology, properties: ZpoolProperties) -> ZpoolResult<()>;
+    /// Create new zpool.
+    fn create<N: AsRef<str>>(&self, name: N, topology: Topology, properties: Option<ZpoolProperties>) -> ZpoolResult<()>;
+    /// Destroy zpool
+    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     //fn get_properties<N: AsRef<str>>(&self, name: N)
 }

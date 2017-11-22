@@ -70,7 +70,31 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology, properties: ZpoolProperties) -> ZpoolResult<()> {
-        unimplemented!()
+    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>{
+        let mut z = self.zpool_mute();
+        z.arg("destroy");
+        if force {
+            z.arg("-f");
+        }
+        z.arg(name.as_ref());
+        z.status().map(|_| Ok(()))?
+    }
+
+    fn create<N: AsRef<str>>(&self, name: N, topology: Topology, properties: Option<ZpoolProperties>) -> ZpoolResult<()> {
+        if let Some(_) = properties {
+            unimplemented!()
+        }
+
+        let mut z = self.zpool();
+        z.arg("create");
+        z.arg(name.as_ref());
+        z.args(topology.into_args());
+        let status = z.status()?;
+        if status.success() {
+            Ok(())
+        } else {
+            println!("{:?}", status);
+            panic!();
+        }
     }
 }
