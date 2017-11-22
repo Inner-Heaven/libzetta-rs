@@ -35,10 +35,12 @@ env:
   global:
     - RUSTFLAGS="-C link-dead-code"
 
+before_script:
+  - sudo /sbin/modprobe zfs
 script:
   - |
     cargo build &&
-    cargo test
+    sudo cargo test
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
