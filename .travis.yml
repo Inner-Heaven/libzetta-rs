@@ -50,6 +50,6 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
     # Uncomment the following two lines create and upload a report for codecov.io
-    cargo tarpaulin --out Xml
+    sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
   fi
