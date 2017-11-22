@@ -45,8 +45,7 @@ before_script:
   - cd $TRAVIS_BUILD_DIR
 script:
   - cargo build
-  - echo `which cargo`
-  - sudo cargo test
+  - sudo $(which cargo) test
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
