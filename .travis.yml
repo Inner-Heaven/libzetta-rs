@@ -44,9 +44,8 @@ before_script:
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
 script:
-  - |
-    cargo build &&
-    sudo cargo test
+  - cargo build
+  - cargo test
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
