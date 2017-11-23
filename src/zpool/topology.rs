@@ -42,7 +42,6 @@ use zpool::vdev::{Disk, Vdev};
 ///             .build()
 ///             .unwrap();
 /// ```
-#[allow(unused_mut)]
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
 pub struct Topology {
@@ -73,8 +72,8 @@ impl Topology {
         }
 
         match self.zil {
-            Some(ref vdev) => return vdev.is_valid(),
-            None => return true,
+            Some(ref vdev) => vdev.is_valid(),
+            None => true,
         }
     }
     /// Verify that given topology can be used to create new zpool.

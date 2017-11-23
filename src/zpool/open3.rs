@@ -1,4 +1,4 @@
-//! Open3 implementation of ZpoolEngine.
+//! Open3 implementation of [`ZpoolEngine`](trait.ZpoolEngine.html).
 //!
 //! Easy way - [`ZpoolOpen3::default()`](struct.ZpoolOpen3.html#impl-Default). It will look for `ZPOOL_CMD` in current
 //! environment and fall back to `zpool` in `PATH`.

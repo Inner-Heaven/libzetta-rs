@@ -12,8 +12,7 @@ use tempdir::TempDir;
 
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    let logger = Logger::root(slog_term::FullFormat::new(plain).build().fuse(), o!());
-    logger
+    Logger::root(slog_term::FullFormat::new(plain).build().fuse(), o!())
 }
 
 #[test]
