@@ -1,15 +1,24 @@
 extern crate libzfs;
 extern crate cavity;
 extern crate tempdir;
+extern crate slog_term;
 
-use libzfs::zpool::{ZpoolEngine, ZpoolOpen3, Vdev, TopologyBuilder, Disk};
+
 use cavity::*;
-use tempdir::TempDir;
+use libzfs::slog::*;
+use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
 use std::fs::File;
+use tempdir::TempDir;
+
+fn get_logger() -> Logger {
+    let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
+    let logger = Logger::root(slog_term::FullFormat::new(plain).build().fuse(), o!());
+    logger
+}
 
 #[test]
 fn create_check_delete() {
-    let zpool = ZpoolOpen3::default();
+    let zpool = ZpoolOpen3::with_logger(get_logger());
     let tmp = TempDir::new("zpool-tests").unwrap();
     let file_path = tmp.path().join("device0");
     let mut file = File::create(file_path.clone()).unwrap();
@@ -22,7 +31,7 @@ fn create_check_delete() {
         .build()
         .unwrap();
 
-    zpool.create(&name, topo, None).unwrap();
+    zpool.create(&name, topo).unwrap();
 
     assert!(zpool.exists(&name).unwrap());
 

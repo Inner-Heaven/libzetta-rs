@@ -1,58 +1,73 @@
-/// Open3 implementation of ZpoolEngine.
-///
-/// Easy way - `ZpooOpen3::default()`. It will look for `ZPOOL_CMD' in current environment and fall
-/// back to `zpool` in `PATH`.
-///
-/// Another way to specify is to use `ZpoolOpen3::new("/path/to/my/zpool")`.
-///
-/// ### Usage
-/// ```rust,no_run
-/// use libzfs::zpool::{ZpoolEngine, ZpoolOpen3};
-/// let engine = ZpoolOpen3::default();
-///
-/// // Check that pool with name z exists.
-/// assert!(engine.exists("z").unwrap());
-///
-/// // Manage remote zpool
-/// // where zpool.sh is a script that passes everything to `ssh user1@server1 zpool`
-/// let remote = ZpoolOpen3::with_cmd("zpool.sh");
-///
-/// assert!(engine.exists("z").unwrap());
-/// ```
-///
-/// It's called open 3 because it opens stdin, stdout, stder.
-use std::process::{Command, Stdio};
+//! Open3 implementation of ZpoolEngine.
+//!
+//! Easy way - [`ZpoolOpen3::default()`](struct.ZpoolOpen3.html#impl-Default). It will look for `ZPOOL_CMD` in current
+//! environment and fall back to `zpool` in `PATH`.
+//!
+//! Another way to specify is to use `ZpoolOpen3::new("/path/to/my/zpool")`.
+//!
+//! ### Usage
+//! ```rust,no_run
+//! use libzfs::zpool::{ZpoolEngine, ZpoolOpen3};
+//! let engine = ZpoolOpen3::default();
+//!
+//! // Check that pool with name z exists.
+//! assert!(engine.exists("z").unwrap());
+//!
+//! let remote = ZpoolOpen3::with_cmd("zpool.sh");
+//!
+//! assert!(engine.exists("z").unwrap());
+//! ```
+//!
+//! It's called open 3 because it opens stdin, stdout, stder.
+use slog::{Drain, Logger};
+use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
+use std::process::{Command, Stdio};
 
-use super::{ZpoolEngine, ZpoolResult, Topology, ZpoolProperties, ZpoolProperty};
+
+fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
+    logger.into()
+          .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
+}
+
+use super::{Topology, ZpoolEngine, ZpoolResult};
 pub struct ZpoolOpen3 {
-    cmd_name: OsString
+    cmd_name: OsString,
+    logger: Logger,
 }
 
 impl Default for ZpoolOpen3 {
     fn default() -> ZpoolOpen3 {
         let cmd_name = match env::var_os("ZPOOL_CMD") {
-            Some(val)   => val,
-            None        => "zpool".into()
+            Some(val) => val,
+            None => "zpool".into(),
         };
 
+        let logger = Logger::root(StdLog.fuse(), o!());
         ZpoolOpen3 {
-            cmd_name: cmd_name
+            cmd_name: cmd_name,
+            logger: setup_logger(logger),
         }
     }
 }
 impl ZpoolOpen3 {
-    /// Create new using supplied path as zpool zmd
+    /// Create new using supplied path as zpool cmd using "log" as backend for
+    /// logging.
     pub fn with_cmd<I: Into<OsString>>(cmd_name: I) -> ZpoolOpen3 {
-        ZpoolOpen3 {
-            cmd_name: cmd_name.into()
-        }
+        let mut z = ZpoolOpen3::default();
+        z.cmd_name = cmd_name.into();
+        z
     }
 
-    fn zpool(&self) -> Command {
-        Command::new(&self.cmd_name)
+    /// Create new using supplies logger and default cmd.
+    pub fn with_logger<L: Into<Logger>>(logger: L) -> ZpoolOpen3 {
+        let mut z = ZpoolOpen3::default();
+        z.logger = setup_logger(logger);
+        z
     }
+
+    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
 
     fn zpool_mute(&self) -> Command {
         let mut z = self.zpool();
@@ -65,30 +80,29 @@ impl ZpoolOpen3 {
 impl ZpoolEngine for ZpoolOpen3 {
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool> {
         let mut z = self.zpool_mute();
-        let cmd = z.arg("list").arg(name.as_ref());
-        let status = cmd.status()?;
+        z.arg("list").arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let status = z.status()?;
         Ok(status.success())
     }
 
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>{
+    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool_mute();
         z.arg("destroy");
         if force {
             z.arg("-f");
         }
         z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         z.status().map(|_| Ok(()))?
     }
 
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology, properties: Option<ZpoolProperties>) -> ZpoolResult<()> {
-        if let Some(_) = properties {
-            unimplemented!()
-        }
-
+    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
         z.arg(name.as_ref());
         z.args(topology.into_args());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let status = z.status()?;
         if status.success() {
             Ok(())

@@ -2,7 +2,7 @@
 /// Use to create and updated zpool
 
 use std::ffi::OsString;
-use zpool::vdev::{Vdev, Disk};
+use zpool::vdev::{Disk, Vdev};
 
 /// Structure representing what zpool consist of.
 /// This structure is used in zpool creation and when new drives are attached.
@@ -21,7 +21,8 @@ use zpool::vdev::{Vdev, Disk};
 ///             .build()
 ///             .unwrap();
 /// ```
-/// Overkill example: 2 drives in mirror and a single drive, zil on double mirror and 2 l2rc.
+/// Overkill example: 2 drives in mirror and a single drive, zil on double
+/// mirror and 2 l2rc.
 ///
 /// ```rust
 /// use libzfs::zpool::{Disk,Vdev};
@@ -29,7 +30,8 @@ use zpool::vdev::{Vdev, Disk};
 ///
 ///
 /// let zil_drives = vec![Disk::Disk("hd0".into()), Disk::Disk("hd1".into())];
-/// let mirror_drives = vec![Disk::Disk("hd2".into()), Disk::Disk("hd3".into())];
+/// let mirror_drives = vec![Disk::Disk("hd2".into()),
+/// Disk::Disk("hd3".into())];
 /// let cache_drives = vec![Disk::Disk("hd4".into()), Disk::Disk("hd5".into())];
 /// let topo = TopologyBuilder::default()
 ///             .vdevs(vec![Vdev::Mirror(mirror_drives)])
@@ -40,18 +42,19 @@ use zpool::vdev::{Vdev, Disk};
 ///             .build()
 ///             .unwrap();
 /// ```
-
 #[allow(unused_mut)]
 #[derive(Default, Builder, Debug)]
 #[builder(setter(into))]
 pub struct Topology {
+    /// Devices used to store data
     #[builder(default)]
     vdevs: Vec<Vdev>,
+    /// Devices used to store cache
     #[builder(default)]
     caches: Vec<Disk>,
+    /// Device used as ZFS Intent Log
     #[builder(default)]
-    zil: Option<Vdev>
-
+    zil: Option<Vdev>,
 }
 
 impl Topology {
@@ -71,12 +74,13 @@ impl Topology {
 
         match self.zil {
             Some(ref vdev) => return vdev.is_valid(),
-            None => return true
+            None => return true,
         }
     }
     /// Verify that given topology can be used to create new zpool.
     ///
-    /// That means it as at least one valid vdev and all optional devices are valid if present.
+    /// That means it as at least one valid vdev and all optional devices are
+    /// valid if present.
     pub fn suitable_for_create(&self) -> bool {
         if self.vdevs.len() < 1 {
             return false;

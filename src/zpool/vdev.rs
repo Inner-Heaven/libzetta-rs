@@ -33,14 +33,10 @@ impl Disk {
     }
 
     /// Make a reference to a block device.
-    pub fn disk<O: Into<PathBuf>>(value: O) -> Disk {
-        Disk::Disk(value.into())
-    }
+    pub fn disk<O: Into<PathBuf>>(value: O) -> Disk { Disk::Disk(value.into()) }
 
     /// Make a reference to a sparse file.
-    pub fn file<O: Into<PathBuf>>(value: O) -> Disk {
-        Disk::File(value.into())
-    }
+    pub fn file<O: Into<PathBuf>>(value: O) -> Disk { Disk::File(value.into()) }
 }
 
 /// Basic building block of
