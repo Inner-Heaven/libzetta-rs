@@ -19,28 +19,22 @@ impl Disk {
     /// same. Distinction exists to make sure it will work in the future.
     pub fn is_valid(&self) -> bool {
         match *self {
-            Disk::File(ref path) => path.exists(),
-            Disk::Disk(ref path) => path.exists(),
+            Disk::File(ref path) | Disk::Disk(ref path) => path.exists(),
         }
     }
 
     /// Make Disk usable as arg for Command.
     pub fn into_arg(self) -> OsString {
         match self {
-            Disk::File(path) => path.into_os_string(),
-            Disk::Disk(path) => path.into_os_string(),
+            Disk::File(path) | Disk::Disk(path) => path.into_os_string(),
         }
     }
 
     /// Make a reference to a block device.
-    pub fn disk<O: Into<PathBuf>>(value: O) -> Disk {
-        Disk::Disk(value.into())
-    }
+    pub fn disk<O: Into<PathBuf>>(value: O) -> Disk { Disk::Disk(value.into()) }
 
     /// Make a reference to a sparse file.
-    pub fn file<O: Into<PathBuf>>(value: O) -> Disk {
-        Disk::File(value.into())
-    }
+    pub fn file<O: Into<PathBuf>>(value: O) -> Disk { Disk::File(value.into()) }
 }
 
 /// Basic building block of
@@ -62,8 +56,8 @@ pub enum Vdev {
 }
 
 impl Vdev {
-    #[inline(always)]
-    fn is_valid_raid(disks: &Vec<Disk>, min_disks: usize) -> bool {
+    #[inline]
+    fn is_valid_raid(disks: &[Disk], min_disks: usize) -> bool {
         if disks.len() < min_disks {
             return false;
         }
@@ -83,30 +77,30 @@ impl Vdev {
     pub fn is_valid(&self) -> bool {
         match *self {
             Vdev::Naked(ref disk) => disk.is_valid(),
-            Vdev::Mirror(ref disks) => Vdev::is_valid_raid(&disks, 2),
-            Vdev::RaidZ(ref disks) => Vdev::is_valid_raid(&disks, 3),
-            Vdev::RaidZ2(ref disks) => Vdev::is_valid_raid(&disks, 5),
-            Vdev::RaidZ3(ref disks) => Vdev::is_valid_raid(&disks, 8),
+            Vdev::Mirror(ref disks) => Vdev::is_valid_raid(disks, 2),
+            Vdev::RaidZ(ref disks) => Vdev::is_valid_raid(disks, 3),
+            Vdev::RaidZ2(ref disks) => Vdev::is_valid_raid(disks, 5),
+            Vdev::RaidZ3(ref disks) => Vdev::is_valid_raid(disks, 8),
         }
     }
 
-    #[inline(always)]
-    fn into_args_priv<T: Into<OsString>>(vdev_type: T, disks: Vec<Disk>) -> Vec<OsString> {
+    #[inline]
+    fn conv_to_args<T: Into<OsString>>(vdev_type: T, disks: Vec<Disk>) -> Vec<OsString> {
         let mut ret = Vec::with_capacity(disks.len() + 1);
         ret.push(vdev_type.into());
-        for disk in disks.into_iter() {
+        for disk in disks {
             ret.push(disk.into_arg());
         }
-        return ret;
+        ret
     }
     /// Make turn Vdev into list of arguments.
     pub fn into_args(self) -> Vec<OsString> {
         match self {
             Vdev::Naked(disk) => vec![disk.into_arg()],
-            Vdev::Mirror(disks) => Vdev::into_args_priv("mirror", disks),
-            Vdev::RaidZ(disks) => Vdev::into_args_priv("raidz", disks),
-            Vdev::RaidZ2(disks) => Vdev::into_args_priv("raidz2", disks),
-            Vdev::RaidZ3(disks) => Vdev::into_args_priv("raidz3", disks),
+            Vdev::Mirror(disks) => Vdev::conv_to_args("mirror", disks),
+            Vdev::RaidZ(disks) => Vdev::conv_to_args("raidz", disks),
+            Vdev::RaidZ2(disks) => Vdev::conv_to_args("raidz2", disks),
+            Vdev::RaidZ3(disks) => Vdev::conv_to_args("raidz3", disks),
         }
     }
 }

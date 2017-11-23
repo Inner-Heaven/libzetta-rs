@@ -19,7 +19,6 @@ addons:
     packages:
       - libblkid-dev
       - libattr1-dev
-      - ubuntu-zfs
       - libcurl4-openssl-dev
       - libelf-dev
       - libdw-dev
@@ -29,20 +28,28 @@ addons:
       - libiberty-dev
       - zlib1g-dev
       - libssl-dev
-    sources:
-      - sourceline: ppa:zfs-native/stable
 env:
   global:
     - RUSTFLAGS="-C link-dead-code"
+    - rel=0.7.3
 
+before_script:
+  - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
+  - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
+  - cd /tmp
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
+  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - sudo modprobe zfs
+  - cd $TRAVIS_BUILD_DIR
 script:
-  - |
-    cargo build &&
-    cargo test
+  - cargo build
+  - sudo $(which cargo) test
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
     # Uncomment the following two lines create and upload a report for codecov.io
-    cargo tarpaulin --out Xml
+    sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
   fi

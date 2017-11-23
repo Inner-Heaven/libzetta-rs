@@ -1,8 +1,7 @@
-
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
-
+use std::io;
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
 
@@ -10,13 +9,21 @@ pub mod topology;
 pub use self::topology::{Topology, TopologyBuilder};
 
 pub mod open3;
+pub use self::open3::ZpoolOpen3;
+
+pub mod properties;
+pub use self::properties::{CacheType, FailMode, Health, ZpoolProperties, ZpoolPropertiesWrite,
+                           ZpoolPropertiesWriteBuilder};
 
 quick_error! {
     /// Error kinds. This type will be used across zpool module.
     #[derive(Debug)]
     pub enum ZpoolError {
         /// zpool executable not found in path.
-        CommandNotFound {}
+        Io(err: io::Error) {
+            from()
+            cause(err)
+        }
         /// Trying to manipulate non-existant pool.
         PoolNotFound {}
         /// At least one vdev points to incorrect location.
@@ -28,29 +35,17 @@ quick_error! {
 /// Type alias to `Result<T, ZpoolError>`.
 pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
-/// Structure representing zpool.
-/// It holds very little information about zpool itself besides it's name. Only
-/// gurantee this type
-/// provide is that at some point of time zpool with such name existed when
-/// structure was
-/// instanciated.
-///
-/// It doesn't hold any properties and only hold stats like capacity and health
-/// status at the point
-/// of structure initilization.
-#[derive(Debug, Clone)]
-pub struct Zpool {
-    name: String,
-}
-
 
 /// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
-/// Highly unlikely to reach that goal functions will be added as project grows.
 /// Using trait here, so I can mock it in unit tests.
 pub trait ZpoolEngine {
-    /// Check if pool with given name exists. This will return error only if
-    /// call to `zpool` fail.
-    fn exists(&self, name: &str) -> ZpoolResult<bool>;
-    fn create(&self, name: &str, topology: Topology) -> ZpoolResult<Zpool>;
-    fn get(&self, name: &str) -> ZpoolResult<Zpool>;
+    /// Check if pool with given name exists. This should not return
+    /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html) error, instead
+    /// it should return `Ok(false)`.
+    fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
+    /// Create new zpool.
+    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()>;
+    /// Destroy zpool
+    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    // fn get_properties<N: AsRef<str>>(&self, name: N)
 }
