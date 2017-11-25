@@ -83,7 +83,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let status = z.status()?;
         Ok(status.success())
-    :}
+    }
 
     fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         Command::new("fuser")
