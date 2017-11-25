@@ -92,7 +92,6 @@ fn create_check_delete() {
 }
 
 
-#[test]
 fn cmd_not_found() {
     run_test(|| {
         let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
@@ -108,7 +107,6 @@ fn cmd_not_found() {
     })
 }
 
-#[test]
 fn reuse_vdev() {
     run_test(|| {
         let zpool = ZpoolOpen3::default();

@@ -97,6 +97,13 @@ impl ZpoolEngine for ZpoolOpen3 {
             z.arg("-f");
         }
         z.arg(name.as_ref());
+        let ten_millis = time::Duration::from_secs(5);
+        thread::sleep(ten_millis);
+        Command::new("fuser")
+            .arg("-c")
+            .arg("/tests")
+            .status()
+            .unwrap();
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         z.status().map(|_| Ok(()))?
     }
