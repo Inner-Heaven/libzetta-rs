@@ -44,10 +44,6 @@ before_script:
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
-  - dd if=/dev/zero of=/vdevs/vdev0 bs=1M count=128
-  - cp /vdevs/vdev0 /vdevs/vdev1; cp /vdevs/vdev0 /vdevs/vdev2;
-  - touch /vdevs/vdev3
-  - zpool list zpool-tests && zpool destroy zpool-tests || echo ok
 script:
   - cargo build
   - sudo $(which cargo) test
