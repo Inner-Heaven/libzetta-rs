@@ -25,13 +25,12 @@ use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
 
-
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into()
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolResult};
+use super::{Topology, ZpoolEngine, ZpoolResult, ZpoolError};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -103,12 +102,11 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         z.args(topology.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
-        let status = z.status()?;
-        if status.success() {
+        let out = z.output()?;
+        if out.status.success() {
             Ok(())
         } else {
-            println!("{:?}", status);
-            panic!();
+            Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
 }

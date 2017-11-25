@@ -42,7 +42,7 @@ use zpool::vdev::{Disk, Vdev};
 ///             .build()
 ///             .unwrap();
 /// ```
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, Clone)]
 #[builder(setter(into))]
 pub struct Topology {
     /// Devices used to store data

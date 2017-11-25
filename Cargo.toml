@@ -1,23 +1,24 @@
 [package]
+authors = ["Andrey Cherkashin <with.out@me.com>"]
 name = "libzfs"
 version = "0.1.0"
-authors = ["Andrey Cherkashin <with.out@me.com>"]
-
-
-
 [dependencies]
+derive-getters = "0.0.3"
+derive_builder = "0.5"
+lazy_static = "0.2"
 libc = "0.2"
 quick-error = "1.2"
-derive_builder = "0.5"
+regex = "0.2"
 slog = "2"
 slog-stdlog = "3"
-derive-getters = "0.0.3"
 
 [dev-dependencies]
-tempdir = "0.3"
 cavity = "1.1"
 slog-term = "2"
+tempdir = "0.3"
 
-[target.'cfg(freebsd)'.dependencies]
-libzfs_core-sys="0.1"
+[target]
+[target."cfg(freebsd)"]
+[target."cfg(freebsd)".dependencies]
 libnv-sys = "0.1"
+libzfs_core-sys = "0.1"
