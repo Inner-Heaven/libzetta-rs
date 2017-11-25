@@ -35,7 +35,7 @@ fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
 }
 fn setup() {
     // this is stupid.
-    teardown()
+    teardown();
 
     // Create vdevs if they're missing
     let vdev_dir = Path::new("/vdevs");
