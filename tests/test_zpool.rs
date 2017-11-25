@@ -12,7 +12,6 @@ use cavity::{fill, WriteMode, Bytes};
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::fs;
-
 static ZPOOL_NAME: &'static str = "tests";
 
 fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
@@ -107,6 +106,7 @@ fn cmd_not_found() {
     })
 }
 
+#[test]
 fn reuse_vdev() {
     run_test(|| {
         let zpool = ZpoolOpen3::default();
