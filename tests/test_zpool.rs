@@ -34,15 +34,19 @@ fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
     }
 }
 fn setup() {
+    // this is stupid.
+    teardown()
+
+    // Create vdevs if they're missing
     let vdev_dir = Path::new("/vdevs");
-    let vdev0 = setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
-    let vdev1 = setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
-    let vdev2 = setup_vdev(vdev_dir.join("vdev2"), &Bytes::MegaBytes(1));
+    setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+    setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
+    setup_vdev(vdev_dir.join("vdev2"), &Bytes::MegaBytes(1));
 }
 fn teardown() {
     let z = ZpoolOpen3::default();
     if z.exists(&ZPOOL_NAME).unwrap() {
-        z.destroy(&ZPOOL_NAME, true);
+        z.destroy(&ZPOOL_NAME, true).unwrap();
     }
 }
 
