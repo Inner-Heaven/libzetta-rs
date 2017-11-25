@@ -25,6 +25,7 @@ use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
 
+use std::{thread, time};
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into()
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
