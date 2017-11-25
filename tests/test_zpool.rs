@@ -2,6 +2,7 @@ extern crate libzfs;
 extern crate tempdir;
 extern crate slog_term;
 extern crate cavity;
+extern crate rand;
 
 use libzfs::slog::*;
 use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
@@ -12,15 +13,13 @@ use cavity::{fill, WriteMode, Bytes};
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 
 
 fn get_zpool_name() -> String {
-    let start = SystemTime::now();
-    let since_the_epoch = start.duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-    let name = format!("{}-{}",ZPOOL_NAME_PREFIX, since_the_epoch.as_secs());
+    let mut rng = rand::thread_rng();
+    let suffix = rng.gen::<u64>();
+    let name = format!("{}-{}",ZPOOL_NAME_PREFIX, suffix);
     name.into()
 
 }
