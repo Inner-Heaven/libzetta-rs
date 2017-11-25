@@ -43,7 +43,7 @@ before_script:
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
-  - mkdir /vdevs
+  - sudo mkdir /vdevs && sudo chmod 777 /vdevs
   - dd if =/dev/zero of=/dev/vdev0 bs=1M count=64
   - cp /dev/vdev0 /dev/vdev1 /dev/vdev2 /dev/vdev3
 script:
