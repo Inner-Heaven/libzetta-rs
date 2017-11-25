@@ -46,7 +46,7 @@ before_script:
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
 script:
   - cargo build
-  - sudo $(which cargo) test
+  - sudo $(which cargo) test test_zpool
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
