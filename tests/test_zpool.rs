@@ -56,7 +56,7 @@ fn run_test<T>(test: T)
 
         teardown();
 
-        assert!(result.is_ok());
+        result.unwrap();
 }
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
