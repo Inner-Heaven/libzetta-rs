@@ -46,7 +46,7 @@ before_script:
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
   - dd if=/dev/zero of=/vdevs/vdev0 bs=1M count=64
   - cp /vdevs/vdev0 /vdevs/vdev1; cp /vdevs/vdev0 /vdevs/vdev2;
-  - dd if=/vdevs/zero of=/vdevs/vdev3 bs=1M count=1
+  - touch /vdevs/vdev3
 script:
   - cargo build
   - sudo $(which cargo) test
