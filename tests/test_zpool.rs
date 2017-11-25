@@ -77,11 +77,13 @@ fn create_check_delete() {
 
         zpool.create(&name, topo).unwrap();
 
-        assert!(zpool.exists(&name).unwrap());
+        let result = zpool.exists(&name).unwrap();
+        assert!(result);
 
         zpool.destroy(&name, true).unwrap();
 
-        assert!(!zpool.exists(&name).unwrap());
+        let result = zpool.exists(&name).unwrap();
+        assert!(!result);
     })
 }
 
