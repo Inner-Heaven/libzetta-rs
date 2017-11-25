@@ -25,7 +25,6 @@ use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
 
-use std::{thread, time};
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into()
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
@@ -79,7 +78,7 @@ impl ZpoolOpen3 {
 
 impl ZpoolEngine for ZpoolOpen3 {
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool> {
-        let mut z = self.zpool();
+        let mut z = self.zpool_mute();
         z.arg("list").arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let status = z.status()?;
@@ -87,24 +86,12 @@ impl ZpoolEngine for ZpoolOpen3 {
     }
 
     fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        Command::new("fuser")
-            .arg("-c")
-            .arg("/tests")
-            .status()
-            .unwrap();
-        let mut z = self.zpool();
+        let mut z = self.zpool_mute();
         z.arg("destroy");
         if force {
             z.arg("-f");
         }
         z.arg(name.as_ref());
-        let ten_millis = time::Duration::from_secs(5);
-        thread::sleep(ten_millis);
-        Command::new("fuser")
-            .arg("-c")
-            .arg("/tests")
-            .status()
-            .unwrap();
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         z.status().map(|_| Ok(()))?
     }

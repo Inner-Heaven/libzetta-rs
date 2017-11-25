@@ -12,8 +12,18 @@ use cavity::{fill, WriteMode, Bytes};
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::fs;
-static ZPOOL_NAME: &'static str = "tests";
+use std::time::{SystemTime, UNIX_EPOCH};
+static ZPOOL_NAME_PREFIX: &'static str = "tests";
 
+
+fn get_zpool_name() -> String {
+    let start = SystemTime::now();
+    let since_the_epoch = start.duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+    let name = format!("{}-{}",ZPOOL_NAME_PREFIX, since_the_epoch.as_secs());
+    name.into()
+
+}
 fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
     let path = path.as_ref();
     if path.exists() {
@@ -33,20 +43,16 @@ fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
     }
 }
 fn setup() {
-    // this is stupid.
-    teardown();
-
     // Create vdevs if they're missing
     let vdev_dir = Path::new("/vdevs");
     setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
     setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
-    setup_vdev(vdev_dir.join("vdev2"), &Bytes::MegaBytes(1));
+    setup_vdev(vdev_dir.join("vdev2"), &Bytes::MegaBytes(64 + 10));
+    setup_vdev(vdev_dir.join("vdev3"), &Bytes::MegaBytes(1));
 }
+#[allow(dead_code)]
 fn teardown() {
-    let z = ZpoolOpen3::default();
-    if z.exists(&ZPOOL_NAME).unwrap() {
-        z.destroy(&ZPOOL_NAME, true).unwrap();
-    }
+    //no-op
 }
 
 fn run_test<T>(test: T)
@@ -70,7 +76,7 @@ fn get_logger() -> Logger {
 fn create_check_delete() {
     run_test(|| {
         let zpool = ZpoolOpen3::with_logger(get_logger());
-        let name = ZPOOL_NAME;
+        let name = get_zpool_name();
 
 
         let topo = TopologyBuilder::default()
@@ -90,11 +96,11 @@ fn create_check_delete() {
     })
 }
 
-
+#[test]
 fn cmd_not_found() {
     run_test(|| {
         let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
-        let name = ZPOOL_NAME;
+        let name = get_zpool_name();
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
@@ -110,9 +116,9 @@ fn cmd_not_found() {
 fn reuse_vdev() {
     run_test(|| {
         let zpool = ZpoolOpen3::default();
-        let name_1 = ZPOOL_NAME;
+        let name_1 = get_zpool_name();
         let name_2 = "zpool-tests-fail";
-        let vdev_file = "/vdevs/vdev0";
+        let vdev_file = "/vdevs/vdev1";
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File(vdev_file.into())))
