@@ -47,7 +47,7 @@ before_script:
   - dd if=/dev/zero of=/vdevs/vdev0 bs=1M count=64
   - cp /vdevs/vdev0 /vdevs/vdev1; cp /vdevs/vdev0 /vdevs/vdev2;
   - touch /vdevs/vdev3
-  - zpool destroy zpool-tests || 0
+  - zpool list z && zpool destroy z || echo ok
 script:
   - cargo build
   - sudo $(which cargo) test
