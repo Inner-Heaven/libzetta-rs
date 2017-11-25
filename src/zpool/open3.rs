@@ -78,7 +78,7 @@ impl ZpoolOpen3 {
 
 impl ZpoolEngine for ZpoolOpen3 {
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool> {
-        let mut z = self.zpool_mute();
+        let mut z = self.zpool();
         z.arg("list").arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let status = z.status()?;
@@ -86,7 +86,7 @@ impl ZpoolEngine for ZpoolOpen3 {
     }
 
     fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        let mut z = self.zpool_mute();
+        let mut z = self.zpool();
         z.arg("destroy");
         if force {
             z.arg("-f");
