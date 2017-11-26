@@ -9,6 +9,7 @@ use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{ZpoolError, ZpoolErrorKind};
 
 use cavity::{fill, WriteMode, Bytes};
+use rand::Rng;
 
 use std::panic;
 use std::path::{Path, PathBuf};
