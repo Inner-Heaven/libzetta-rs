@@ -66,7 +66,7 @@ pub enum CacheType {
 /// let props = ZpoolPropertiesWriteBuilder::default().build();
 /// assert!(props.is_ok());
 /// ```
-#[derive(Getters, Builder, Debug, Clone)]
+#[derive(Getters, Builder, Debug, Clone, PartialEq)]
 pub struct ZpoolPropertiesWrite {
     /// Alternate root directory, can only be set during creation or import.
     /// Ignored in other
@@ -118,7 +118,7 @@ pub struct ZpoolPropertiesWrite {
     fail_mode: FailMode,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ZpoolProperties {
     /// Amount of storage space within the pool that has been physically
     /// allocated.
@@ -190,4 +190,26 @@ pub struct ZpoolProperties {
     /// connectivity to the underlying storage device(s) or a failure of all
     /// devices within the pool.
     pub fail_mode: FailMode,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_defaults() {
+        let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();
+        let handmade = ZpoolPropertiesWrite {
+            alt_root: None,
+            read_only: false,
+            auto_expand: false,
+            auto_replace: false,
+            boot_fs: None,
+            cache_file: CacheType::Default,
+            dedup_ditto: 0,
+            delegation: false,
+            fail_mode: FailMode::Wait
+        };
+
+        assert_eq!(handmade, built);
+    }
 }

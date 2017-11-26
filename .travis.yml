@@ -43,6 +43,7 @@ before_script:
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
+  - sudo mkdir /vdevs && sudo chmod 777 /vdevs
 script:
   - cargo build
   - sudo $(which cargo) test
@@ -50,6 +51,6 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
     # Uncomment the following two lines create and upload a report for codecov.io
-    sudo $(which cargo) tarpaulin --out Xml
+    sudo $(which cargo) tarpaulin --out Xml --ciserver travis-ci --ignore-tests
     bash <(curl -s https://codecov.io/bash)
   fi

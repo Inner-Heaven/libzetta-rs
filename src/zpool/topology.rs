@@ -42,7 +42,7 @@ use zpool::vdev::{Disk, Vdev};
 ///             .build()
 ///             .unwrap();
 /// ```
-#[derive(Default, Builder, Debug)]
+#[derive(Default, Builder, Debug, Clone)]
 #[builder(setter(into))]
 pub struct Topology {
     /// Devices used to store data
@@ -80,7 +80,7 @@ impl Topology {
     ///
     /// That means it as at least one valid vdev and all optional devices are
     /// valid if present.
-    pub fn suitable_for_create(&self) -> bool {
+    pub fn is_suitable_for_create(&self) -> bool {
         if self.vdevs.len() < 1 {
             return false;
         }
@@ -162,7 +162,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(topo.suitable_for_create());
+        assert!(topo.is_suitable_for_create());
 
         // Zpool with invalid mirror
         let topo = TopologyBuilder::default()
@@ -170,7 +170,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(!topo.suitable_for_create());
+        assert!(!topo.is_suitable_for_create());
 
         // Zpool with valid cache and valid vdev
         let topo = TopologyBuilder::default()
@@ -179,7 +179,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(topo.suitable_for_create());
+        assert!(topo.is_suitable_for_create());
 
         // Zpool with valid mirror, but invalid cache
         let invalid_path = tmp_dir.path().join("fake");
@@ -190,7 +190,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(!topo.suitable_for_create());
+        assert!(!topo.is_suitable_for_create());
 
         // Zpool with invalid zil
         let invalid_path = tmp_dir.path().join("fake");
@@ -201,7 +201,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(!topo.suitable_for_create());
+        assert!(!topo.is_suitable_for_create());
 
         // Zpool with invalid zil
         let invalid_path = tmp_dir.path().join("fake");
@@ -212,7 +212,7 @@ mod test {
             .build()
             .unwrap();
 
-        assert!(!topo.suitable_for_create());
+        assert!(!topo.is_suitable_for_create());
 
 
         // Just add L2ARC to zpool
@@ -222,6 +222,7 @@ mod test {
             .unwrap();
 
         assert!(topo.is_suitable_for_update());
+        assert!(!topo.is_suitable_for_create());
 
         // Add L2ARC and invalid vdev
         let invalid_path = tmp_dir.path().join("fake");
@@ -233,6 +234,7 @@ mod test {
             .unwrap();
 
         assert!(!topo.is_suitable_for_update());
+
     }
 
     #[test]

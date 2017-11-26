@@ -25,13 +25,12 @@ use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
 
-
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into()
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolResult};
+use super::{Topology, ZpoolEngine, ZpoolResult, ZpoolError};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -86,7 +85,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool_mute();
         z.arg("destroy");
         if force {
@@ -97,18 +96,17 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
         z.arg(name.as_ref());
         z.args(topology.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
-        let status = z.status()?;
-        if status.success() {
+        let out = z.output()?;
+        if out.status.success() {
             Ok(())
         } else {
-            println!("{:?}", status);
-            panic!();
+            Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
 }
