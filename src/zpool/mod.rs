@@ -34,9 +34,8 @@ quick_error! {
         }
         /// Trying to manipulate non-existant pool.
         PoolNotFound {}
-        /// At least one vdev points to incorrect location.
-        /// If vdev type is File then it means file not found.
-        DeviceNotFound {}
+        /// Givin topolog failed validation.
+        InvalidTopology {}
         /// Trying to create new Zpool, but one or more vdevs already used in another pool.
         VdevReuse(vdev: String, pool: String) {
             display("{} is part of {}", vdev, pool)
@@ -52,7 +51,7 @@ impl ZpoolError {
             ZpoolError::CmdNotFound => ZpoolErrorKind::CmdNotFound,
             ZpoolError::Io(_)       => ZpoolErrorKind::Io,
             ZpoolError::PoolNotFound    => ZpoolErrorKind::PoolNotFound,
-            ZpoolError::DeviceNotFound  => ZpoolErrorKind::DeviceNotFound,
+            ZpoolError::InvalidTopology  => ZpoolErrorKind::InvalidTopology,
             ZpoolError::VdevReuse(_,_)  => ZpoolErrorKind::VdevReuse,
             ZpoolError::Other(_)        => ZpoolErrorKind::Other,
         }
@@ -71,7 +70,10 @@ pub enum ZpoolErrorKind {
         /// At least one vdev points to incorrect location.
         /// If vdev type is File then it means file not found.
         DeviceNotFound,
+        /// Trying to create new Zpool, but one or more vdevs already used in another pool.
         VdevReuse,
+        /// Givin topolog failed validation.
+        InvalidTopology,
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other,
 }
@@ -109,10 +111,25 @@ pub trait ZpoolEngine {
     /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html) error, instead
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
+    /// Version of create that doesn't check validness of topology or options.
+    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()>;
-    /// Destroy zpool
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+        if !topology.is_suitable_for_create() {
+            return Err(ZpoolError::InvalidTopology);
+        }
+        self.create_unchecked(name, topology)
+    }
+    /// Version of destroy that doesn't verify if pool exists before removing it.
+    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    /// Destroy zpool.
+    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+
+        self.destroy_unchecked(name, force)
+    }
     // fn get_properties<N: AsRef<str>>(&self, name: N)
 }
 

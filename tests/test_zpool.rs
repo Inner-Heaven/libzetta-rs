@@ -109,6 +109,9 @@ fn cmd_not_found() {
 
         let result = zpool.create(&name, topo);
         assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
+
+        let result = zpool.exists("wat");
+        assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
     })
 }
 
@@ -137,4 +140,20 @@ fn reuse_vdev() {
         }
         zpool.destroy(&name_1, true).unwrap();
     });
+}
+#[test]
+fn create_invalid_topo() {
+        let zpool = ZpoolOpen3::default();
+        let name = get_zpool_name();
+
+
+        let topo = TopologyBuilder::default()
+            .cache(Disk::file("/vdevs/vdev0"))
+            .build()
+            .unwrap();
+
+        let result = zpool.create(&name, topo);
+
+        let err = result.unwrap_err();
+        assert_eq!(ZpoolErrorKind::InvalidTopology, err.kind());
 }

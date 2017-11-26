@@ -4,7 +4,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 /// Every vdev can be backed either by block device or sparse file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Disk {
     /// Sparse file based device.
     File(PathBuf),
@@ -39,7 +39,7 @@ impl Disk {
 
 /// Basic building block of
 /// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Vdev {
     /// Just a single disk or file.
     Naked(Disk),
@@ -103,6 +103,11 @@ impl Vdev {
             Vdev::RaidZ3(disks) => Vdev::conv_to_args("raidz3", disks),
         }
     }
+    /// Short-cut to Vdev::Naked(Disk::Disk(disk))
+    pub fn disk<O: Into<PathBuf>>(value: O) -> Vdev { Vdev::Naked(Disk::Disk(value.into())) }
+
+    /// Short-cut to Vdev::Naked(Disk::File(disk))
+    pub fn file<O: Into<PathBuf>>(value: O) -> Vdev { Vdev::Naked(Disk::File(value.into())) }
 }
 
 #[cfg(test)]
@@ -281,5 +286,29 @@ mod test {
         let args = vdev.into_args();
         assert_eq!(9, args.len());
         assert_eq!(OsString::from("raidz3"), args[0]);
+    }
+
+    #[test]
+    fn short_versions_disk() {
+        let name = "wat";
+        let path = PathBuf::from(&name);
+        let disk = Vdev::Naked(Disk::disk(path.clone()));
+        let disk_left = Vdev::Naked(Disk::Disk(path.clone()));
+
+        assert_eq!(disk_left, disk);
+
+        assert_eq!(disk_left, Vdev::disk(name.clone()));
+    }
+
+    #[test]
+    fn short_versions_file() {
+        let name = "wat";
+        let path = PathBuf::from(&name);
+        let file = Vdev::Naked(Disk::file(path.clone()));
+        let file_left = Vdev::Naked(Disk::File(path.clone()));
+
+        assert_eq!(file_left, file);
+
+        assert_eq!(file_left, Vdev::file(name.clone()));
     }
 }

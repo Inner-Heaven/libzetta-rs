@@ -85,7 +85,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool_mute();
         z.arg("destroy");
         if force {
@@ -96,7 +96,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
         z.arg(name.as_ref());
