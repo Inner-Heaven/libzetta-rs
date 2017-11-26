@@ -21,7 +21,7 @@ fn get_zpool_name() -> String {
     let mut rng = rand::thread_rng();
     let suffix = rng.gen::<u64>();
     let name = format!("{}-{}", ZPOOL_NAME_PREFIX, suffix);
-    name.into()
+    name
 
 }
 fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
@@ -61,7 +61,7 @@ where
 {
     setup();
 
-    let result = panic::catch_unwind(|| test());
+    let result = panic::catch_unwind(test);
 
     teardown();
 
