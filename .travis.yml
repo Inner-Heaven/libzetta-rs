@@ -51,6 +51,6 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
     # Uncomment the following two lines create and upload a report for codecov.io
-    sudo $(which cargo) tarpaulin --out Xml --ciserver travis-ci
+    sudo $(which cargo) tarpaulin --out Xml --ciserver travis-ci --ignore-tests
     bash <(curl -s https://codecov.io/bash)
   fi
