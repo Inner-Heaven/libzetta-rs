@@ -207,7 +207,7 @@ mod test {
             cache_file: CacheType::Default,
             dedup_ditto: 0,
             delegation: false,
-            fail_mode: FailMode::Wait
+            fail_mode: FailMode::Wait,
         };
 
         assert_eq!(handmade, built);

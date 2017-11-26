@@ -4,27 +4,27 @@ extern crate slog_term;
 extern crate cavity;
 extern crate rand;
 
+
+use cavity::{Bytes, WriteMode, fill};
 use libzfs::slog::*;
 use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{ZpoolError, ZpoolErrorKind};
-
-use cavity::{fill, WriteMode, Bytes};
 use rand::Rng;
+use std::fs;
 
 use std::panic;
 use std::path::{Path, PathBuf};
-use std::fs;
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 
 
 fn get_zpool_name() -> String {
     let mut rng = rand::thread_rng();
     let suffix = rng.gen::<u64>();
-    let name = format!("{}-{}",ZPOOL_NAME_PREFIX, suffix);
+    let name = format!("{}-{}", ZPOOL_NAME_PREFIX, suffix);
     name.into()
 
 }
-fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf{
+fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
     let path = path.as_ref();
     if path.exists() {
         let meta = fs::metadata(&path).unwrap();
@@ -52,20 +52,20 @@ fn setup() {
 }
 #[allow(dead_code)]
 fn teardown() {
-    //no-op
+    // no-op
 }
 
 fn run_test<T>(test: T)
-    where T: FnOnce() -> () + panic::UnwindSafe {
-        setup();
+where
+    T: FnOnce() -> () + panic::UnwindSafe,
+{
+    setup();
 
-        let result = panic::catch_unwind(||{
-            test()
-        });
+    let result = panic::catch_unwind(|| test());
 
-        teardown();
+    teardown();
 
-        result.unwrap();
+    result.unwrap();
 }
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
@@ -143,27 +143,27 @@ fn reuse_vdev() {
 }
 #[test]
 fn create_invalid_topo() {
-        let zpool = ZpoolOpen3::default();
-        let name = get_zpool_name();
+    let zpool = ZpoolOpen3::default();
+    let name = get_zpool_name();
 
 
-        let topo = TopologyBuilder::default()
-            .cache(Disk::file("/vdevs/vdev0"))
-            .build()
-            .unwrap();
+    let topo = TopologyBuilder::default()
+        .cache(Disk::file("/vdevs/vdev0"))
+        .build()
+        .unwrap();
 
-        let result = zpool.create(&name, topo);
+    let result = zpool.create(&name, topo);
 
-        let err = result.unwrap_err();
-        assert_eq!(ZpoolErrorKind::InvalidTopology, err.kind());
+    let err = result.unwrap_err();
+    assert_eq!(ZpoolErrorKind::InvalidTopology, err.kind());
 }
 
 #[test]
 fn remove_pool_not_found() {
-        let zpool = ZpoolOpen3::default();
-        let name = get_zpool_name();
+    let zpool = ZpoolOpen3::default();
+    let name = get_zpool_name();
 
-        let err = zpool.destroy(&name, true).unwrap_err();
+    let err = zpool.destroy(&name, true).unwrap_err();
 
-        assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind())
+    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind())
 }

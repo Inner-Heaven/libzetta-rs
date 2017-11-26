@@ -49,40 +49,43 @@ impl ZpoolError {
     pub fn kind(&self) -> ZpoolErrorKind {
         match *self {
             ZpoolError::CmdNotFound => ZpoolErrorKind::CmdNotFound,
-            ZpoolError::Io(_)       => ZpoolErrorKind::Io,
-            ZpoolError::PoolNotFound    => ZpoolErrorKind::PoolNotFound,
-            ZpoolError::InvalidTopology  => ZpoolErrorKind::InvalidTopology,
-            ZpoolError::VdevReuse(_,_)  => ZpoolErrorKind::VdevReuse,
-            ZpoolError::Other(_)        => ZpoolErrorKind::Other,
+            ZpoolError::Io(_) => ZpoolErrorKind::Io,
+            ZpoolError::PoolNotFound => ZpoolErrorKind::PoolNotFound,
+            ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
+            ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
+            ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
 }
 
-/// This is a hack to allow error identification without 100500 lines of code because
+/// This is a hack to allow error identification without 100500 lines of code
+/// because
 /// `std::io::Error` doesn't implement `PartialEq`.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ZpoolErrorKind {
-        /// `zpool` not found in path. Open3 specific error.
-        CmdNotFound,
-        Io,
-        /// Trying to manipulate non-existant pool.
-        PoolNotFound,
-        /// At least one vdev points to incorrect location.
-        /// If vdev type is File then it means file not found.
-        DeviceNotFound,
-        /// Trying to create new Zpool, but one or more vdevs already used in another pool.
-        VdevReuse,
-        /// Givin topolog failed validation.
-        InvalidTopology,
-        /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
-        Other,
+    /// `zpool` not found in path. Open3 specific error.
+    CmdNotFound,
+    Io,
+    /// Trying to manipulate non-existant pool.
+    PoolNotFound,
+    /// At least one vdev points to incorrect location.
+    /// If vdev type is File then it means file not found.
+    DeviceNotFound,
+    /// Trying to create new Zpool, but one or more vdevs already used in
+    /// another pool.
+    VdevReuse,
+    /// Givin topolog failed validation.
+    InvalidTopology,
+    /// Don't know (yet) how to categorize this error. If you see this error -
+    /// open an issues.
+    Other,
 }
 
 impl From<io::Error> for ZpoolError {
     fn from(err: io::Error) -> ZpoolError {
         match err.kind() {
             io::ErrorKind::NotFound => ZpoolError::CmdNotFound,
-            _                       => ZpoolError::Io(err)
+            _ => ZpoolError::Io(err),
         }
     }
 }
@@ -93,7 +96,8 @@ impl ZpoolError {
         let stderr = String::from_utf8_lossy(stderr_raw);
         if RE_REUSE_VDEV.is_match(&stderr) {
             let caps = RE_REUSE_VDEV.captures(&stderr).unwrap();
-            ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(), caps.get(2).unwrap().as_str().into())
+            ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(),
+                                  caps.get(2).unwrap().as_str().into())
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -120,7 +124,8 @@ pub trait ZpoolEngine {
         }
         self.create_unchecked(name, topology)
     }
-    /// Version of destroy that doesn't verify if pool exists before removing it.
+    /// Version of destroy that doesn't verify if pool exists before removing
+    /// it.
     fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     /// Destroy zpool.
     fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {

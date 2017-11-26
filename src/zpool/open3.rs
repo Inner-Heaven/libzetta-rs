@@ -1,6 +1,7 @@
 //! Open3 implementation of [`ZpoolEngine`](trait.ZpoolEngine.html).
 //!
-//! Easy way - [`ZpoolOpen3::default()`](struct.ZpoolOpen3.html#impl-Default). It will look for `ZPOOL_CMD` in current
+//! Easy way - [`ZpoolOpen3::default()`](struct.ZpoolOpen3.html#impl-Default).
+//! It will look for `ZPOOL_CMD` in current
 //! environment and fall back to `zpool` in `PATH`.
 //!
 //! Another way to specify is to use `ZpoolOpen3::new("/path/to/my/zpool")`.
@@ -19,6 +20,7 @@
 //! ```
 //!
 //! It's called open 3 because it opens stdin, stdout, stder.
+
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::env;
@@ -30,7 +32,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolResult, ZpoolError};
+use super::{Topology, ZpoolEngine, ZpoolError, ZpoolResult};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,

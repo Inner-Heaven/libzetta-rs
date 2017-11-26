@@ -19,7 +19,8 @@ impl Disk {
     /// same. Distinction exists to make sure it will work in the future.
     pub fn is_valid(&self) -> bool {
         match *self {
-            Disk::File(ref path) | Disk::Disk(ref path) => path.exists(),
+            Disk::File(ref path) |
+            Disk::Disk(ref path) => path.exists(),
         }
     }
 
