@@ -155,4 +155,15 @@ mod test {
             assert_eq!("wat", text);
         }
     }
+
+    #[test]
+    fn io_error_from() {
+        let cmd_not_found = io::Error::new(io::ErrorKind::NotFound, "oh no");
+        let err = ZpoolError::from(cmd_not_found);
+        assert_eq!(ZpoolErrorKind::CmdNotFound, err.kind());
+
+        let other = io::Error::new(io::ErrorKind::Other, "oh now");
+        let err = ZpoolError::from(other);
+        assert_eq!(ZpoolErrorKind::Io, err.kind());
+    }
 }
