@@ -157,3 +157,13 @@ fn create_invalid_topo() {
         let err = result.unwrap_err();
         assert_eq!(ZpoolErrorKind::InvalidTopology, err.kind());
 }
+
+#[test]
+fn remove_pool_not_found() {
+        let zpool = ZpoolOpen3::default();
+        let name = get_zpool_name();
+
+        let err = zpool.destroy(&name, true).unwrap_err();
+
+        assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind())
+}
