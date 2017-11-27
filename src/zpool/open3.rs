@@ -43,7 +43,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolError, ZpoolResult, ZpoolProperties};
+use super::{Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -125,7 +125,7 @@ impl ZpoolEngine for ZpoolOpen3 {
     }
     fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
         let mut z = self.zpool();
-        z.args(&["list","-p", "-H", "-o"]);
+        z.args(&["list", "-p", "-H", "-o"]);
         z.arg(&*ZPOOL_PROP_ARG);
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));

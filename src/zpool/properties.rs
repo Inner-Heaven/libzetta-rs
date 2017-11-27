@@ -1,6 +1,6 @@
 /// Property related stuff.
 
-use super::{ZpoolResult, ZpoolError};
+use super::{ZpoolError, ZpoolResult};
 use std::path::PathBuf;
 /// Represent state of zpool or vdev. Read
 /// [more](https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html).
@@ -28,10 +28,10 @@ impl Health {
             "ONLINE" => Ok(Health::Online),
             "DEGRADED" => Ok(Health::Degraded),
             "FAULTED" => Ok(Health::Faulted),
-            "OFFLINE"=> Ok(Health::Offline),
+            "OFFLINE" => Ok(Health::Offline),
             "UNAVAIL" => Ok(Health::Unavailable),
             "REMOVED" => Ok(Health::Removed),
-            _   => Err(ZpoolError::ParseError)
+            _ => Err(ZpoolError::ParseError),
         }
     }
 }
@@ -60,7 +60,7 @@ impl FailMode {
             "wait" => Ok(FailMode::Wait),
             "continue" => Ok(FailMode::Continue),
             "panic" => Ok(FailMode::Panic),
-            _   => Err(ZpoolError::ParseError),
+            _ => Err(ZpoolError::ParseError),
         }
     }
 }
@@ -83,7 +83,7 @@ impl CacheType {
         match val_str {
             "-" | "" => Ok(CacheType::Default),
             "none" => Ok(CacheType::None),
-            n   => Ok(CacheType::Custom(String::from(n))),
+            n => Ok(CacheType::Custom(String::from(n))),
         }
     }
 }
@@ -257,103 +257,104 @@ fn parse_u64(val: Option<&str>) -> ZpoolResult<u64> {
 }
 impl ZpoolProperties {
     pub fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
-            let mut stdout: String = String::from_utf8_lossy(&out).into();
-            println!("{:?}", stdout);
-            // remove new linr
-            stdout.pop();
-            let mut cols = stdout.split("\t");
+        let mut stdout: String = String::from_utf8_lossy(&out).into();
+        println!("{:?}", stdout);
+        // remove new line at the end.
+        stdout.pop();
+        let mut cols = stdout.split("\t");
 
-            let alloc = parse_usize(cols.next())?;
+        let alloc = parse_usize(cols.next())?;
 
-            let cap_str = cols.next().ok_or(ZpoolError::ParseError)?;
-            let cap: u8 = cap_str.parse()?;
+        let cap_str = cols.next().ok_or(ZpoolError::ParseError)?;
+        let cap: u8 = cap_str.parse()?;
 
-            let comment_str = cols.next().ok_or(ZpoolError::ParseError)?;
-            let comment = match comment_str {
-                "-" => None,
-                 c  => Some(String::from(c))
-            };
+        let comment_str = cols.next().ok_or(ZpoolError::ParseError)?;
+        let comment = match comment_str {
+            "-" => None,
+            c => Some(String::from(c)),
+        };
 
-            let mut dedup_ratio_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
+        let mut dedup_ratio_string =
+            cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
 
-            // remove 'x'
-            let last_char = {
-                let chars =  dedup_ratio_string.chars();
-                chars.last()
-            };
-            if last_char == Some('x') {
-                dedup_ratio_string.pop();
-            }
-            let dedup_ratio: f64 = dedup_ratio_string.parse()?;
+        // remove 'x'
+        let last_char = {
+            let chars = dedup_ratio_string.chars();
+            chars.last()
+        };
+        if last_char == Some('x') {
+            dedup_ratio_string.pop();
+        }
+        let dedup_ratio: f64 = dedup_ratio_string.parse()?;
 
-            let expand_size_str = cols.next().ok_or(ZpoolError::ParseError)?;
-            let expand_size: Option<usize> = match expand_size_str {
-                "-" => None,
-                c   => Some(c.parse()?)
-            };
+        let expand_size_str = cols.next().ok_or(ZpoolError::ParseError)?;
+        let expand_size: Option<usize> = match expand_size_str {
+            "-" => None,
+            c => Some(c.parse()?),
+        };
 
-            // remove '%'
-            let mut frag_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
-            let last_char = {
-                let chars = frag_string.chars();
-                chars.last()
-            };
-            if last_char == Some('%') {
-                frag_string.pop();
-            }
-            let fragmentation: i8  = frag_string.parse()?;
+        // remove '%'
+        let mut frag_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
+        let last_char = {
+            let chars = frag_string.chars();
+            chars.last()
+        };
+        if last_char == Some('%') {
+            frag_string.pop();
+        }
+        let fragmentation: i8 = frag_string.parse()?;
 
-            let free = parse_i64(cols.next())?;
-            let freeing = parse_i64(cols.next())?;
-            let guid = parse_u64(cols.next())?;
-            let health = Health::try_from_str(cols.next())?;
-            let size = parse_usize(cols.next())?;
-            let leaked = parse_usize(cols.next())?;
+        let free = parse_i64(cols.next())?;
+        let freeing = parse_i64(cols.next())?;
+        let guid = parse_u64(cols.next())?;
+        let health = Health::try_from_str(cols.next())?;
+        let size = parse_usize(cols.next())?;
+        let leaked = parse_usize(cols.next())?;
 
-            let alt_root_str = cols.next().ok_or(ZpoolError::ParseError)?;
-            let alt_root = match alt_root_str {
-                "-" => None,
-                r   => Some(PathBuf::from(r))
-            };
+        let alt_root_str = cols.next().ok_or(ZpoolError::ParseError)?;
+        let alt_root = match alt_root_str {
+            "-" => None,
+            r => Some(PathBuf::from(r)),
+        };
 
 
-            let read_only = parse_bool(cols.next())?;
-            let auto_expand = parse_bool(cols.next())?;
-            let auto_replace = parse_bool(cols.next())?;
+        let read_only = parse_bool(cols.next())?;
+        let auto_expand = parse_bool(cols.next())?;
+        let auto_replace = parse_bool(cols.next())?;
 
-            let boot_fs_str = cols.next().ok_or(ZpoolError::ParseError)?;
-            let boot_fs = match boot_fs_str {
-                "-" => None,
-                r   => Some(String::from(r))
-            };
-            let cache_file = CacheType::try_from_str(cols.next())?;
-            let dedup_ditto = parse_usize(cols.next())?;
-            let delegation = parse_bool(cols.next())?;
-            let fail_mode = FailMode::try_from_str(cols.next())?;
+        let boot_fs_str = cols.next().ok_or(ZpoolError::ParseError)?;
+        let boot_fs = match boot_fs_str {
+            "-" => None,
+            r => Some(String::from(r)),
+        };
+        let cache_file = CacheType::try_from_str(cols.next())?;
+        let dedup_ditto = parse_usize(cols.next())?;
+        let delegation = parse_bool(cols.next())?;
+        let fail_mode = FailMode::try_from_str(cols.next())?;
 
-            Ok(ZpoolProperties {
-                alloc: alloc,
-                capacity: cap,
-                comment: comment,
-                dedup_ratio: dedup_ratio,
-                expand_size: expand_size,
-                fragmentation: fragmentation,
-                free: free,
-                freeing: freeing,
-                guid: guid,
-                health: health,
-                size: size,
-                leaked: leaked,
-                alt_root: alt_root,
-                read_only: read_only,
-                auto_expand: auto_expand,
-                auto_replace: auto_replace,
-                boot_fs: boot_fs,
-                cache_file: cache_file,
-                dedup_ditto: dedup_ditto,
-                delegation: delegation,
-                fail_mode: fail_mode
-            })
+        Ok(ZpoolProperties {
+               alloc: alloc,
+               capacity: cap,
+               comment: comment,
+               dedup_ratio: dedup_ratio,
+               expand_size: expand_size,
+               fragmentation: fragmentation,
+               free: free,
+               freeing: freeing,
+               guid: guid,
+               health: health,
+               size: size,
+               leaked: leaked,
+               alt_root: alt_root,
+               read_only: read_only,
+               auto_expand: auto_expand,
+               auto_replace: auto_replace,
+               boot_fs: boot_fs,
+               cache_file: cache_file,
+               dedup_ditto: dedup_ditto,
+               delegation: delegation,
+               fail_mode: fail_mode,
+           })
     }
 }
 
@@ -384,7 +385,7 @@ mod test {
         let degraded = Some("DEGRADED");
         let faulted = Some("FAULTED");
         let offline = Some("OFFLINE");
-        let unavailable= Some("UNAVAIL");
+        let unavailable = Some("UNAVAIL");
         let removed = Some("REMOVED");
         let bad = Some("wat");
 
@@ -392,7 +393,8 @@ mod test {
         assert_eq!(Health::Degraded, Health::try_from_str(degraded).unwrap());
         assert_eq!(Health::Faulted, Health::try_from_str(faulted).unwrap());
         assert_eq!(Health::Offline, Health::try_from_str(offline).unwrap());
-        assert_eq!(Health::Unavailable, Health::try_from_str(unavailable).unwrap());
+        assert_eq!(Health::Unavailable,
+                   Health::try_from_str(unavailable).unwrap());
         assert_eq!(Health::Removed, Health::try_from_str(removed).unwrap());
 
         let err = Health::try_from_str(bad);
@@ -423,17 +425,21 @@ mod test {
 
     #[test]
     fn parsing_cache_file() {
-        assert_eq!(CacheType::Default, CacheType::try_from_str(Some("-")).unwrap());
-        assert_eq!(CacheType::Default, CacheType::try_from_str(Some("")).unwrap());
-        assert_eq!(CacheType::None, CacheType::try_from_str(Some("none")).unwrap());
-        assert_eq!(CacheType::Custom("/wat".into()), CacheType::try_from_str(Some("/wat")).unwrap());
+        assert_eq!(CacheType::Default,
+                   CacheType::try_from_str(Some("-")).unwrap());
+        assert_eq!(CacheType::Default,
+                   CacheType::try_from_str(Some("")).unwrap());
+        assert_eq!(CacheType::None,
+                   CacheType::try_from_str(Some("none")).unwrap());
+        assert_eq!(CacheType::Custom("/wat".into()),
+                   CacheType::try_from_str(Some("/wat")).unwrap());
 
         let err = CacheType::try_from_str(None);
         assert!(err.is_err());
     }
 
     #[test]
-    fn parsing_props_i128_guid() {
+    fn parsing_props_u64_guid() {
         let line = b"69120\t0\t-\t1.00x\t-\t1%\t67039744\t0\t15867762423891129245\tONLINE\t67108864\t0\t-\toff\toff\toff\t-\t-\t0\ton\twait\n";
         let props = ZpoolProperties::try_from_stdout(line);
         assert!(props.is_ok());
@@ -463,6 +469,15 @@ mod test {
         assert_eq!(Some(PathBuf::from("/mnt")), props.alt_root);
 
         let line = b"waf\tasd";
+        let props = ZpoolProperties::try_from_stdout(line);
+        assert!(props.is_err());
+
+        let line = b"69120\t0\ttouch it\t1.50x\t1\t22%\t67039744\t0\t4957928072935098740\tOFFLINE\t67108864\t0\t/mnt/\toff\toff\toff\tz/ROOT/default\t-\t0\ton\twait\n";
+        let props = ZpoolProperties::try_from_stdout(line).unwrap();
+        assert_eq!(Some(String::from("z/ROOT/default")), props.boot_fs);
+        assert_eq!(Some(1), props.expand_size);
+
+        let line = b"69120\t0\t-\t1.50x\t-\t22%\t67039744\t0\t4957928072935098740\tONLINE\t67108864\t0\t-\toff\toff\toff\t-\t-\t0\tomn\twait\n";
         let props = ZpoolProperties::try_from_stdout(line);
         assert!(props.is_err());
     }

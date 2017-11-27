@@ -2,7 +2,7 @@
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
-use std::num::{ParseIntError, ParseFloatError};
+use std::num::{ParseFloatError, ParseIntError};
 
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
@@ -61,7 +61,7 @@ impl ZpoolError {
             ZpoolError::PoolNotFound => ZpoolErrorKind::PoolNotFound,
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
             ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
-            ZpoolError::ParseError  => ZpoolErrorKind::ParseError,
+            ZpoolError::ParseError => ZpoolErrorKind::ParseError,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -85,7 +85,8 @@ pub enum ZpoolErrorKind {
     VdevReuse,
     /// Givin topolog failed validation.
     InvalidTopology,
-    /// Failed to parse value. Ideally you never see it, if you see it - it's a bug.
+    /// Failed to parse value. Ideally you never see it, if you see it - it's a
+    /// bug.
     ParseError,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
