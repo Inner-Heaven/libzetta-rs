@@ -29,7 +29,7 @@ use std::process::{Command, Stdio};
 
 
 lazy_static! {
-    pub static ref ZPOOL_PROP_ARG: OsString = {
+    static ref ZPOOL_PROP_ARG: OsString = {
         let mut arg = OsString::with_capacity(171);
         arg.push("alloc,cap,comment,dedupratio,expandsize,fragmentation,free,");
         arg.push("freeing,guid,health,size,leaked,altroot,readonly,autoexpand,");

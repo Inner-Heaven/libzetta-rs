@@ -275,8 +275,15 @@ impl ZpoolProperties {
             };
 
             let mut dedup_ratio_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
+
             // remove 'x'
-            dedup_ratio_string.pop();
+            let last_char = {
+                let chars =  dedup_ratio_string.chars();
+                chars.last()
+            };
+            if last_char == Some('x') {
+                dedup_ratio_string.pop();
+            }
             let dedup_ratio: f64 = dedup_ratio_string.parse()?;
 
             let expand_size_str = cols.next().ok_or(ZpoolError::ParseError)?;
@@ -285,9 +292,15 @@ impl ZpoolProperties {
                 c   => Some(c.parse()?)
             };
 
+            // remove '%'
             let mut frag_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
-            // remove 'x'
-            frag_string.pop();
+            let last_char = {
+                let chars = frag_string.chars();
+                chars.last()
+            };
+            if last_char == Some('%') {
+                frag_string.pop();
+            }
             let fragmentation: i8  = frag_string.parse()?;
 
             let free = parse_i64(cols.next())?;
@@ -422,6 +435,13 @@ mod test {
     #[test]
     fn parsing_props_i128_guid() {
         let line = b"69120\t0\t-\t1.00x\t-\t1%\t67039744\t0\t15867762423891129245\tONLINE\t67108864\t0\t-\toff\toff\toff\t-\t-\t0\ton\twait\n";
+        let props = ZpoolProperties::try_from_stdout(line);
+        assert!(props.is_ok());
+    }
+
+    #[test]
+    fn parsing_on_zol() {
+        let line = b"99840\t0\t-\t1.00\t-\t1\t67009024\t0\t5667188105885376774\tONLINE\t67108864\t0\t-\toff\toff\toff\t-\t-\t0\ton\twait\n";
         let props = ZpoolProperties::try_from_stdout(line);
         assert!(props.is_ok());
     }
