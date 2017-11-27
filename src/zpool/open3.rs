@@ -27,12 +27,23 @@ use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
 
+
+lazy_static! {
+    static ref ZPOOL_PROP_ARG: OsString = {
+        let mut arg = OsString::with_capacity(171);
+        arg.push("alloc,cap,comment,dedupratio,expandsize,fragmentation,free,");
+        arg.push("freeing,guid,health,size,leaked,altroot,readonly,autoexpand,");
+        arg.push("autoreplace,bootfs,cachefile,dedupditto,delegation,failmode");
+        arg
+    };
+
+}
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into()
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolError, ZpoolResult};
+use super::{Topology, ZpoolEngine, ZpoolError, ZpoolResult, ZpoolProperties};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -70,6 +81,7 @@ impl ZpoolOpen3 {
 
     fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
 
+    #[allow(dead_code)]
     fn zpool_mute(&self) -> Command {
         let mut z = self.zpool();
         z.stdout(Stdio::null());
@@ -110,5 +122,19 @@ impl ZpoolEngine for ZpoolOpen3 {
         } else {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
+    }
+    fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
+        let mut z = self.zpool();
+        z.args(&["list","-p", "-H", "-o"]);
+        z.arg(&*ZPOOL_PROP_ARG);
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            ZpoolProperties::try_from_stdout(&out.stdout)
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+
     }
 }

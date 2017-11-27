@@ -167,3 +167,28 @@ fn remove_pool_not_found() {
 
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind())
 }
+
+
+#[test]
+fn read_args() {
+    let zpool = ZpoolOpen3::with_logger(get_logger());
+    let name = get_zpool_name();
+
+    let err = zpool.read_properties(&name).unwrap_err();
+    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
+
+    let vdev_path = setup_vdev("/vdevs/vdev4", &Bytes::MegaBytes(64 + 10));
+    let topo = TopologyBuilder::default()
+        .vdev(Vdev::file(vdev_path))
+        .build()
+        .unwrap();
+
+    let result = zpool.create(&name, topo).unwrap();
+
+    let props = zpool.read_properties(&name);
+
+    println!("PROPS: {:?}", props);
+
+    assert!(props.is_ok());
+    zpool.destroy(&name, true).unwrap();
+}
