@@ -2,6 +2,8 @@
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
+use std::num::{ParseIntError, ParseFloatError};
+
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
 
@@ -16,6 +18,7 @@ pub use self::properties::{CacheType, FailMode, Health, ZpoolProperties, ZpoolPr
                            ZpoolPropertiesWriteBuilder};
 
 use regex::Regex;
+
 
 
 lazy_static! {
@@ -40,6 +43,11 @@ quick_error! {
         VdevReuse(vdev: String, pool: String) {
             display("{} is part of {}", vdev, pool)
         }
+        /// Failed to parse value. Ideally you never see it, if you see it - it's a bug.
+        ParseError {
+            from(ParseIntError)
+            from(ParseFloatError)
+        }
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -53,6 +61,7 @@ impl ZpoolError {
             ZpoolError::PoolNotFound => ZpoolErrorKind::PoolNotFound,
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
             ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
+            ZpoolError::ParseError  => ZpoolErrorKind::ParseError,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -76,6 +85,8 @@ pub enum ZpoolErrorKind {
     VdevReuse,
     /// Givin topolog failed validation.
     InvalidTopology,
+    /// Failed to parse value. Ideally you never see it, if you see it - it's a bug.
+    ParseError,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -135,7 +146,15 @@ pub trait ZpoolEngine {
 
         self.destroy_unchecked(name, force)
     }
-    // fn get_properties<N: AsRef<str>>(&self, name: N)
+    /// Read properties of the pool.
+    fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
+    /// Ditto
+    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+        self.read_properties_unchecked(name)
+    }
 }
 
 #[cfg(test)]
