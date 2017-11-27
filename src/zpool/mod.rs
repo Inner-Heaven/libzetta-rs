@@ -190,4 +190,16 @@ mod test {
         let err = ZpoolError::from(other);
         assert_eq!(ZpoolErrorKind::Io, err.kind());
     }
+
+    #[test]
+    fn num_error_from() {
+        let int_err = "as".parse::<i8>().unwrap_err();
+        let float_err = "as".parse::<f32>().unwrap_err();
+
+        let err = ZpoolError::from(int_err);
+        assert_eq!(ZpoolErrorKind::ParseError, err.kind());
+
+        let err = ZpoolError::from(float_err);
+        assert_eq!(ZpoolErrorKind::ParseError, err.kind());
+    }
 }
