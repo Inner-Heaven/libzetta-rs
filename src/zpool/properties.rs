@@ -193,8 +193,8 @@ pub struct ZpoolProperties {
     /// the amount of space remaining to be reclaimed.  Over time
     /// freeing will decrease while free increases.
     pub freeing: i64,
-    /// A unique identifier for the pool. Technically this is i128...
-    pub guid: String,
+    /// A unique identifier for the pool.
+    pub guid: u64,
     /// The current health of the pool.
     pub health: Health,
     /// Total size of the storage pool.
@@ -251,9 +251,9 @@ fn parse_i64(val: Option<&str>) -> ZpoolResult<i64> {
     let val_str = val.ok_or(ZpoolError::ParseError)?;
     Ok(val_str.parse()?)
 }
-fn parse_string(val: Option<&str>) -> ZpoolResult<String> {
+fn parse_u64(val: Option<&str>) -> ZpoolResult<u64> {
     let val_str = val.ok_or(ZpoolError::ParseError)?;
-    Ok(String::from(val_str))
+    Ok(val_str.parse()?)
 }
 impl ZpoolProperties {
     pub fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
@@ -305,7 +305,7 @@ impl ZpoolProperties {
 
             let free = parse_i64(cols.next())?;
             let freeing = parse_i64(cols.next())?;
-            let guid = parse_string(cols.next())?;
+            let guid = parse_u64(cols.next())?;
             let health = Health::try_from_str(cols.next())?;
             let size = parse_usize(cols.next())?;
             let leaked = parse_usize(cols.next())?;
