@@ -258,7 +258,6 @@ fn parse_u64(val: Option<&str>) -> ZpoolResult<u64> {
 impl ZpoolProperties {
     pub fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
         let mut stdout: String = String::from_utf8_lossy(&out).into();
-        println!("{:?}", stdout);
         // remove new line at the end.
         stdout.pop();
         let mut cols = stdout.split("\t");
