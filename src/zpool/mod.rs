@@ -3,6 +3,7 @@
 /// the default impl will call to `zpool(8)`.
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
+use std::path::PathBuf;
 
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
@@ -128,13 +129,13 @@ pub trait ZpoolEngine {
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
     /// Version of create that doesn't check validness of topology or options.
-    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()>;
+    fn create_unchecked<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+    fn create<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()> {
         if !topology.is_suitable_for_create() {
             return Err(ZpoolError::InvalidTopology);
         }
-        self.create_unchecked(name, topology)
+        self.create_unchecked(name, topology, props, mount)
     }
     /// Version of destroy that doesn't verify if pool exists before removing
     /// it.

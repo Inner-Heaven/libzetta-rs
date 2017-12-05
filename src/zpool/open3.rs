@@ -26,6 +26,7 @@ use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
 use std::process::{Command, Stdio};
+use std::path::PathBuf;
 
 
 lazy_static! {
@@ -43,7 +44,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult};
+use super::{Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult, ZpoolPropertiesWrite};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -110,11 +111,18 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+    fn create_unchecked<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
         z.arg(name.as_ref());
         z.args(topology.into_args());
+        if let Some(props) = props.into() {
+            /* noop */
+        }
+        if let Some(mount) = mount.into() {
+            z.arg("-m");
+            z.arg(mount);
+        }
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

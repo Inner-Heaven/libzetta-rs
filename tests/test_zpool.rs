@@ -84,7 +84,7 @@ fn create_check_delete() {
             .build()
             .unwrap();
 
-        zpool.create(&name, topo).unwrap();
+        zpool.create(&name, topo, None, None).unwrap();
 
         let result = zpool.exists(&name).unwrap();
         assert!(result);
@@ -107,7 +107,7 @@ fn cmd_not_found() {
             .build()
             .unwrap();
 
-        let result = zpool.create(&name, topo);
+        let result = zpool.create(&name, topo, None, None);
         assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
 
         let result = zpool.exists("wat");
@@ -128,9 +128,9 @@ fn reuse_vdev() {
             .build()
             .unwrap();
 
-        let result = zpool.create(&name_1, topo.clone());
+        let result = zpool.create(&name_1, topo.clone(), None, None);
         result.unwrap();
-        let result = zpool.create(&name_2, topo.clone());
+        let result = zpool.create(&name_2, topo.clone(), None, None);
         let err = result.unwrap_err();
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
         println!("{:?}", &err);
@@ -152,7 +152,7 @@ fn create_invalid_topo() {
         .build()
         .unwrap();
 
-    let result = zpool.create(&name, topo);
+    let result = zpool.create(&name, topo, None, None);
 
     let err = result.unwrap_err();
     assert_eq!(ZpoolErrorKind::InvalidTopology, err.kind());
@@ -183,7 +183,7 @@ fn read_args() {
         .build()
         .unwrap();
 
-    let result = zpool.create(&name, topo).unwrap();
+    let result = zpool.create(&name, topo, None, None).unwrap();
 
     let props = zpool.read_properties(&name);
 
@@ -191,4 +191,20 @@ fn read_args() {
 
     assert!(props.is_ok());
     zpool.destroy(&name, true).unwrap();
+}
+
+#[test]
+fn create_mount() {
+    let zpool = ZpoolOpen3::default();
+    let name = get_zpool_name();
+    let mut mount_point = PathBuf::from("/tmp");
+    mount_point.push(&name);
+
+    let vdev_path = setup_vdev("/vdevs/vdev5", &Bytes::MegaBytes(64 + 10));
+    let topo = TopologyBuilder::default()
+        .vdev(Vdev::file(vdev_path))
+        .build()
+        .unwrap();
+
+    let result = zpool.create(&name, topo, None, mount_point);
 }
