@@ -250,7 +250,7 @@ fn create_with_props() {
     let name = get_zpool_name();
     let comment = String::from("this is a comment");
 
-    let vdev_path = setup_vdev("/vdevs/vdev6", &Bytes::MegaBytes(64 + 10));
+    let vdev_path = setup_vdev("/vdevs/vdev7", &Bytes::MegaBytes(64 + 10));
     let topo = TopologyBuilder::default()
         .vdev(Vdev::file(vdev_path))
         .build()

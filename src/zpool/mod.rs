@@ -23,6 +23,7 @@ use regex::Regex;
 
 
 lazy_static! {
+    static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
     static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
     static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
 }
@@ -117,6 +118,8 @@ impl ZpoolError {
             let caps = RE_REUSE_VDEV.captures(&stderr).unwrap();
             ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(),
                                   caps.get(2).unwrap().as_str().into())
+        } else if RE_REUSE_VDEV_ZOL.is_match(&stderr) {
+            ZpoolError::VdevReuse(String::new(), String::new())
         } else if RE_TOO_SMALL.is_match(&stderr) {
             ZpoolError::DeviceTooSmall
         } else {
@@ -205,6 +208,12 @@ mod test {
         if let ZpoolError::Other(text) = err {
             assert_eq!("wat", text);
         }
+
+
+        let vdev_reuse_text = b"cannot create \'tests-8804202574521870666\': one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n";
+        let err = ZpoolError::from_stderr(vdev_reuse_text);
+        assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
+
     }
 
     #[test]
