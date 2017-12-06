@@ -23,7 +23,8 @@ use regex::Regex;
 
 
 lazy_static! {
-    static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile re_vdev_reuse)");
+    static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
+    static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
 }
 
 quick_error! {
@@ -49,6 +50,8 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
+        /// Device used in Topology is smaller than 64M
+        DeviceTooSmall {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -63,6 +66,7 @@ impl ZpoolError {
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
             ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
+            ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -89,6 +93,8 @@ pub enum ZpoolErrorKind {
     /// Failed to parse value. Ideally you never see it, if you see it - it's a
     /// bug.
     ParseError,
+    /// Device used in Topology is smaller than 64M
+    DeviceTooSmall,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -111,6 +117,8 @@ impl ZpoolError {
             let caps = RE_REUSE_VDEV.captures(&stderr).unwrap();
             ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(),
                                   caps.get(2).unwrap().as_str().into())
+        } else if RE_TOO_SMALL.is_match(&stderr) {
+            ZpoolError::DeviceTooSmall
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -141,10 +149,7 @@ pub trait ZpoolEngine {
          alt_root: A)
          -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>,
-              P: Into<Option<ZpoolPropertiesWrite>>,
-              M: Into<Option<PathBuf>>,
-              A: Into<Option<PathBuf>>>
+    fn create<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>, A: Into<Option<PathBuf>>>
         (&self,
          name: N,
          topology: Topology,
@@ -223,5 +228,13 @@ mod test {
 
         let err = ZpoolError::from(float_err);
         assert_eq!(ZpoolErrorKind::ParseError, err.kind());
+    }
+
+    #[test]
+    fn too_small() {
+        let text = b"cannot create \'tests-5825559772339520034\': one or more devices is less than the minimum size (64M)\n";
+		let err = ZpoolError::from_stderr(text);
+
+        assert_eq!(ZpoolErrorKind::DeviceTooSmall, err.kind());
     }
 }
