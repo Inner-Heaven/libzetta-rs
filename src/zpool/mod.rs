@@ -129,13 +129,33 @@ pub trait ZpoolEngine {
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
     /// Version of create that doesn't check validness of topology or options.
-    fn create_unchecked<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()>;
+    fn create_unchecked<N: AsRef<str>,
+                        P: Into<Option<ZpoolPropertiesWrite>>,
+                        M: Into<Option<PathBuf>>,
+                        A: Into<Option<PathBuf>>>
+        (&self,
+         name: N,
+         topology: Topology,
+         props: P,
+         mount: M,
+         alt_root: A)
+         -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()> {
+    fn create<N: AsRef<str>,
+              P: Into<Option<ZpoolPropertiesWrite>>,
+              M: Into<Option<PathBuf>>,
+              A: Into<Option<PathBuf>>>
+        (&self,
+         name: N,
+         topology: Topology,
+         props: P,
+         mount: M,
+         alt_root: A)
+         -> ZpoolResult<()> {
         if !topology.is_suitable_for_create() {
             return Err(ZpoolError::InvalidTopology);
         }
-        self.create_unchecked(name, topology, props, mount)
+        self.create_unchecked(name, topology, props, mount, alt_root)
     }
     /// Version of destroy that doesn't verify if pool exists before removing
     /// it.

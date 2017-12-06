@@ -25,8 +25,8 @@ use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
-use std::process::{Command, Stdio};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 
 lazy_static! {
@@ -44,7 +44,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
           .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult, ZpoolPropertiesWrite};
+use super::{Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -111,18 +111,35 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn create_unchecked<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>>(&self, name: N, topology: Topology, props: P, mount: M) -> ZpoolResult<()> {
+    fn create_unchecked<N: AsRef<str>,
+                        P: Into<Option<ZpoolPropertiesWrite>>,
+                        M: Into<Option<PathBuf>>,
+                        A: Into<Option<PathBuf>>>
+        (&self,
+         name: N,
+         topology: Topology,
+         props: P,
+         mount: M,
+         alt_root: A)
+         -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
-        z.arg(name.as_ref());
-        z.args(topology.into_args());
         if let Some(props) = props.into() {
-            /* noop */
+            for arg in props.into_args().into_iter() {
+                z.arg("-o");
+                z.arg(arg);
+            }
         }
         if let Some(mount) = mount.into() {
             z.arg("-m");
             z.arg(mount);
         }
+        if let Some(alt_root) = alt_root.into() {
+            z.arg("-R");
+            z.arg(alt_root);
+        }
+        z.arg(name.as_ref());
+        z.args(topology.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
