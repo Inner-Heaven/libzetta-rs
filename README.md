@@ -1,6 +1,7 @@
 ![RsFreeBSD](libzfs.png)
 [![Build Status](https://travis-ci.org/Inner-Heaven/libzfs-rs.svg?branch=master)](https://travis-ci.org/Inner-Heaven/libzfs-rs)
 [![codecov](https://codecov.io/gh/Inner-Heaven/libwzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
 > Use ZFS from Rust. (very expiremental)
 
@@ -21,3 +22,6 @@ Yeah, not today.
 ## LICENSE
 
 [BSD-2-Clause](LICENSE).
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_large)
