@@ -132,7 +132,9 @@ fn reuse_vdev() {
             .build()
             .unwrap();
 
-        let result = zpool.create(&name_1, topo.clone(), None, None, None);
+        let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
+
+        let result = zpool.create(&name_1, topo.clone(), Some(props), None, None);
         result.unwrap();
         let result = zpool.create(&name_2, topo.clone(), None, None, None);
         let err = result.unwrap_err();
@@ -250,6 +252,7 @@ fn create_with_props() {
     let name = get_zpool_name();
     let comment = String::from("this is a comment");
 
+    let alt_root = PathBuf::from("/mnt");
     let vdev_path = setup_vdev("/vdevs/vdev7", &Bytes::MegaBytes(64 + 10));
     let topo = TopologyBuilder::default()
         .vdev(Vdev::file(vdev_path))
@@ -263,7 +266,7 @@ fn create_with_props() {
         .build()
         .unwrap();
 
-    let _ = zpool.create(&name, topo, props, None, None).unwrap();
+    let _ = zpool.create(&name, topo, props, Some(alt_root.clone()), Some(alt_root.clone())).unwrap();
 
     let props = zpool.read_properties(&name).unwrap();
     assert_eq!(true, props.auto_expand);
