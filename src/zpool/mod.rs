@@ -3,6 +3,7 @@
 /// the default impl will call to `zpool(8)`.
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
+use std::path::PathBuf;
 
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
@@ -22,7 +23,9 @@ use regex::Regex;
 
 
 lazy_static! {
-    static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile re_vdev_reuse)");
+    static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
+    static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
+    static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
 }
 
 quick_error! {
@@ -48,6 +51,8 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
+        /// Device used in Topology is smaller than 64M
+        DeviceTooSmall {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -62,6 +67,7 @@ impl ZpoolError {
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
             ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
+            ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -88,6 +94,8 @@ pub enum ZpoolErrorKind {
     /// Failed to parse value. Ideally you never see it, if you see it - it's a
     /// bug.
     ParseError,
+    /// Device used in Topology is smaller than 64M
+    DeviceTooSmall,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -110,6 +118,10 @@ impl ZpoolError {
             let caps = RE_REUSE_VDEV.captures(&stderr).unwrap();
             ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(),
                                   caps.get(2).unwrap().as_str().into())
+        } else if RE_REUSE_VDEV_ZOL.is_match(&stderr) {
+            ZpoolError::VdevReuse(String::new(), String::new())
+        } else if RE_TOO_SMALL.is_match(&stderr) {
+            ZpoolError::DeviceTooSmall
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -128,13 +140,30 @@ pub trait ZpoolEngine {
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
     /// Version of create that doesn't check validness of topology or options.
-    fn create_unchecked<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()>;
+    fn create_unchecked<N: AsRef<str>,
+                        P: Into<Option<ZpoolPropertiesWrite>>,
+                        M: Into<Option<PathBuf>>,
+                        A: Into<Option<PathBuf>>>
+        (&self,
+         name: N,
+         topology: Topology,
+         props: P,
+         mount: M,
+         alt_root: A)
+         -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>>(&self, name: N, topology: Topology) -> ZpoolResult<()> {
+    fn create<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>, A: Into<Option<PathBuf>>>
+        (&self,
+         name: N,
+         topology: Topology,
+         props: P,
+         mount: M,
+         alt_root: A)
+         -> ZpoolResult<()> {
         if !topology.is_suitable_for_create() {
             return Err(ZpoolError::InvalidTopology);
         }
-        self.create_unchecked(name, topology)
+        self.create_unchecked(name, topology, props, mount, alt_root)
     }
     /// Version of destroy that doesn't verify if pool exists before removing
     /// it.
@@ -179,6 +208,12 @@ mod test {
         if let ZpoolError::Other(text) = err {
             assert_eq!("wat", text);
         }
+
+
+        let vdev_reuse_text = b"cannot create \'tests-8804202574521870666\': one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n";
+        let err = ZpoolError::from_stderr(vdev_reuse_text);
+        assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
+
     }
 
     #[test]
@@ -202,5 +237,13 @@ mod test {
 
         let err = ZpoolError::from(float_err);
         assert_eq!(ZpoolErrorKind::ParseError, err.kind());
+    }
+
+    #[test]
+    fn too_small() {
+        let text = b"cannot create \'tests-5825559772339520034\': one or more devices is less than the minimum size (64M)\n";
+		let err = ZpoolError::from_stderr(text);
+
+        assert_eq!(ZpoolErrorKind::DeviceTooSmall, err.kind());
     }
 }

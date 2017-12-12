@@ -1,7 +1,10 @@
+use super::{ZpoolError, ZpoolResult};
 /// Property related stuff.
 
-use super::{ZpoolError, ZpoolResult};
+use std::ffi::OsString;
 use std::path::PathBuf;
+
+
 /// Represent state of zpool or vdev. Read
 /// [more](https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html).
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -22,6 +25,7 @@ pub enum Health {
 
 impl Health {
     /// parse str to Health.
+    #[doc(hidden)]
     pub fn try_from_str(val: Option<&str>) -> ZpoolResult<Health> {
         let val_str = val.ok_or(ZpoolError::ParseError)?;
         match val_str {
@@ -54,6 +58,7 @@ pub enum FailMode {
 }
 impl FailMode {
     /// parse str to FailMode.
+    #[doc(hidden)]
     pub fn try_from_str(val: Option<&str>) -> ZpoolResult<FailMode> {
         let val_str = val.ok_or(ZpoolError::ParseError)?;
         match val_str {
@@ -61,6 +66,14 @@ impl FailMode {
             "continue" => Ok(FailMode::Continue),
             "panic" => Ok(FailMode::Panic),
             _ => Err(ZpoolError::ParseError),
+        }
+    }
+    #[doc(hidden)]
+    pub fn as_str(&self) -> &str {
+        match *self {
+            FailMode::Wait => "wait",
+            FailMode::Continue => "continue",
+            FailMode::Panic => "panic",
         }
     }
 }
@@ -86,21 +99,29 @@ impl CacheType {
             n => Ok(CacheType::Custom(String::from(n))),
         }
     }
+    #[doc(hidden)]
+    pub fn as_str(&self) -> &str {
+        match *self {
+            CacheType::Default => "",
+            CacheType::None => "none",
+            CacheType::Custom(ref e) => e,
+        }
+    }
 }
 
-/// Available properties for write. See `zpool(8)` for more information.
+/// Available properties for write at run time. This doesn't include properties
+/// that are writable
+/// only during creation/import of zpool. See `zpool(8)` for more information.
 ///
 /// ```rust
 /// use libzfs::zpool::ZpoolPropertiesWriteBuilder;
-/// use std::path::PathBuf;
 /// use libzfs::zpool::CacheType;
 ///
 /// let props = ZpoolPropertiesWriteBuilder::default()
-///                 .alt_root(PathBuf::from("/mnt/ext_pool"))
 ///                 .build()
 ///                 .unwrap();
 ///
-/// assert!(!props.read_only());
+/// assert!(!props.auto_expand());
 /// assert!(props.boot_fs().is_none());
 /// assert_eq!(props.cache_file(), &CacheType::Default);
 ///
@@ -109,17 +130,6 @@ impl CacheType {
 /// ```
 #[derive(Getters, Builder, Debug, Clone, PartialEq)]
 pub struct ZpoolPropertiesWrite {
-    /// Alternate root directory, can only be set during creation or import.
-    /// Ignored in other
-    /// cases.
-    #[builder(default)]
-    #[builder(setter(into))]
-    alt_root: Option<PathBuf>,
-
-    /// Pool is read only
-    #[builder(default="false")]
-    read_only: bool,
-
     /// Controls automatic pool expansion when the underlying LUN is grown.
     #[builder(default="false")]
     auto_expand: bool,
@@ -139,13 +149,12 @@ pub struct ZpoolPropertiesWrite {
     /// Controls the location of where the pool configuration is cached.
     #[builder(default="CacheType::Default")]
     cache_file: CacheType,
-    /// Threshold for the number of block ditto copies. If the reference
-    /// count for a deduplicated block increases above this number, a new
-    /// ditto copy of this block is automatically stored. Default setting is
-    /// 0 which causes no ditto copies to be created for deduplicated blocks.
-    /// The miniumum legal nonzero setting is 100.
-    #[builder(default = "0")]
-    dedup_ditto: u64,
+
+    /// An administrator can provide additional information about a pool using
+    /// this property.
+    #[builder(default)]
+    #[builder(setter(into))]
+    comment: String,
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See zfs(8) for more
     /// information on ZFS delegated administration.
@@ -157,6 +166,24 @@ pub struct ZpoolPropertiesWrite {
     /// devices within the pool.
     #[builder(default = "FailMode::Wait")]
     fail_mode: FailMode,
+}
+
+impl ZpoolPropertiesWrite {
+    #[doc(hidden)]
+    pub fn into_args(self) -> Vec<OsString> {
+        let mut ret = Vec::with_capacity(8);
+        ret.push(format!("autoexpand={}", map_bool(&self.auto_expand)));
+        ret.push(format!("autoreplace={}", map_bool(&self.auto_replace)));
+        ret.push(format!("cachefile={}", self.cache_file.as_str()));
+        ret.push(format!("comment={}", self.comment));
+        ret.push(format!("delegation={}", map_bool(&self.delegation)));
+        ret.push(format!("failmode={}", self.fail_mode.as_str()));
+        if let Some(ref btfs) = self.boot_fs {
+            ret.push(format!("bootfs={}", btfs));
+        }
+        ret.iter().map(OsString::from).collect()
+
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -235,6 +262,12 @@ pub struct ZpoolProperties {
     pub fail_mode: FailMode,
 }
 
+fn map_bool(val: &bool) -> &str {
+    match val {
+        &true => "on",
+        &false => "off",
+    }
+}
 fn parse_bool(val: Option<&str>) -> ZpoolResult<bool> {
     let val_str = val.ok_or(ZpoolError::ParseError)?;
     match val_str {
@@ -364,13 +397,11 @@ mod test {
     fn test_defaults() {
         let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();
         let handmade = ZpoolPropertiesWrite {
-            alt_root: None,
-            read_only: false,
             auto_expand: false,
             auto_replace: false,
             boot_fs: None,
             cache_file: CacheType::Default,
-            dedup_ditto: 0,
+            comment: String::new(),
             delegation: false,
             fail_mode: FailMode::Wait,
         };
@@ -479,5 +510,74 @@ mod test {
         let line = b"69120\t0\t-\t1.50x\t-\t22%\t67039744\t0\t4957928072935098740\tONLINE\t67108864\t0\t-\toff\toff\toff\t-\t-\t0\tomn\twait\n";
         let props = ZpoolProperties::try_from_stdout(line);
         assert!(props.is_err());
+    }
+
+    #[test]
+    fn to_arg() {
+        let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
+        let expected: Vec<OsString> = vec!["autoexpand=off",
+                                           "autoreplace=off",
+                                           "cachefile=",
+                                           "comment=",
+                                           "delegation=off",
+                                           "failmode=wait"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        let result = props.into_args();
+        assert_eq!(expected, result);
+
+
+        let props = ZpoolPropertiesWriteBuilder::default()
+            .auto_expand(true)
+            .cache_file(CacheType::None)
+            .fail_mode(FailMode::Panic)
+            .build()
+            .unwrap();
+        let expected: Vec<OsString> = vec!["autoexpand=on",
+                                           "autoreplace=off",
+                                           "cachefile=none",
+                                           "comment=",
+                                           "delegation=off",
+                                           "failmode=panic"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        let result = props.into_args();
+        assert_eq!(expected, result);
+
+        let props = ZpoolPropertiesWriteBuilder::default()
+            .fail_mode(FailMode::Continue)
+            .cache_file(CacheType::Custom("wat".into()))
+            .build()
+            .unwrap();
+        let expected: Vec<OsString> = vec!["autoexpand=off",
+                                           "autoreplace=off",
+                                           "cachefile=wat",
+                                           "comment=",
+                                           "delegation=off",
+                                           "failmode=continue"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        let result = props.into_args();
+        assert_eq!(expected, result);
+
+        let props = ZpoolPropertiesWriteBuilder::default()
+            .auto_replace(true)
+            .comment("a test")
+            .build()
+            .unwrap();
+        let expected: Vec<OsString> = vec!["autoexpand=off",
+                                           "autoreplace=on",
+                                           "cachefile=",
+                                           "comment=a test",
+                                           "delegation=off",
+                                           "failmode=wait"]
+            .into_iter()
+            .map(OsString::from)
+            .collect();
+        let result = props.into_args();
+        assert_eq!(expected, result);
     }
 }
