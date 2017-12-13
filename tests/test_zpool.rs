@@ -266,7 +266,7 @@ fn create_with_props() {
         .build()
         .unwrap();
 
-    let _ = zpool.create(&name, topo, props, Some(alt_root.clone()), Some(alt_root.clone())).unwrap();
+    zpool.create(&name, topo, props, Some(alt_root.clone()), Some(alt_root.clone())).unwrap();
 
     let props = zpool.read_properties(&name).unwrap();
     assert_eq!(true, props.auto_expand);

@@ -263,10 +263,7 @@ pub struct ZpoolProperties {
 }
 
 fn map_bool(val: &bool) -> &str {
-    match val {
-        &true => "on",
-        &false => "off",
-    }
+    if *val { "on" } else { "off" }
 }
 fn parse_bool(val: Option<&str>) -> ZpoolResult<bool> {
     let val_str = val.ok_or(ZpoolError::ParseError)?;
@@ -290,10 +287,10 @@ fn parse_u64(val: Option<&str>) -> ZpoolResult<u64> {
 }
 impl ZpoolProperties {
     pub fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
-        let mut stdout: String = String::from_utf8_lossy(&out).into();
+        let mut stdout: String = String::from_utf8_lossy(out).into();
         // remove new line at the end.
         stdout.pop();
-        let mut cols = stdout.split("\t");
+        let mut cols = stdout.split('\t');
 
         let alloc = parse_usize(cols.next())?;
 

@@ -125,7 +125,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         let mut z = self.zpool();
         z.arg("create");
         if let Some(props) = props.into() {
-            for arg in props.into_args().into_iter() {
+            for arg in props.into_args() {
                 z.arg("-o");
                 z.arg(arg);
             }
