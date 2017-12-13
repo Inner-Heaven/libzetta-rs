@@ -242,7 +242,7 @@ mod test {
     #[test]
     fn too_small() {
         let text = b"cannot create \'tests-5825559772339520034\': one or more devices is less than the minimum size (64M)\n";
-		let err = ZpoolError::from_stderr(text);
+        let err = ZpoolError::from_stderr(text);
 
         assert_eq!(ZpoolErrorKind::DeviceTooSmall, err.kind());
     }
