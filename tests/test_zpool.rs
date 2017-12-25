@@ -77,7 +77,7 @@ fn get_logger() -> Logger {
 }
 
 #[test]
-fn create_check_delete() {
+fn create_check_update_delete() {
     run_test(|| {
         let zpool = ZpoolOpen3::with_logger(get_logger());
         let name = get_zpool_name();
@@ -92,6 +92,41 @@ fn create_check_delete() {
 
         let result = zpool.exists(&name).unwrap();
         assert!(result);
+
+        let props = zpool.read_properties(&name).unwrap();
+        let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
+            .auto_expand(true)
+            .auto_replace(true)
+            .comment("Wat")
+            .fail_mode(FailMode::Panic)
+            .build()
+            .unwrap();
+
+        zpool.update_properties(&name, updated_props).unwrap();
+        let props = zpool.read_properties(&name).unwrap();
+        assert_eq!(true, props.auto_expand);
+        assert_eq!(true, props.auto_replace);
+        assert_eq!(Some(String::from("Wat")), props.comment);
+        assert_eq!(FailMode::Panic, props.fail_mode);
+
+        let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
+            .comment("Wat")
+            .build()
+            .unwrap();
+        zpool.update_properties(&name, updated_props).unwrap();
+        let props = zpool.read_properties(&name).unwrap();
+        assert_eq!(true, props.auto_expand);
+        assert_eq!(true, props.auto_replace);
+        assert_eq!(Some(String::from("Wat")), props.comment);
+        assert_eq!(FailMode::Panic, props.fail_mode);
+
+        let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
+            .comment(String::new())
+            .build()
+            .unwrap();
+        zpool.update_properties(&name, updated_props).unwrap();
+        let props = zpool.read_properties(&name).unwrap();
+        assert_eq!(None, props.comment);
 
         zpool.destroy(&name, true).unwrap();
 
@@ -266,7 +301,12 @@ fn create_with_props() {
         .build()
         .unwrap();
 
-    zpool.create(&name, topo, props, Some(alt_root.clone()), Some(alt_root.clone())).unwrap();
+    zpool.create(&name,
+                 topo,
+                 props,
+                 Some(alt_root.clone()),
+                 Some(alt_root.clone()))
+         .unwrap();
 
     let props = zpool.read_properties(&name).unwrap();
     assert_eq!(true, props.auto_expand);
