@@ -15,8 +15,8 @@ pub mod open3;
 pub use self::open3::ZpoolOpen3;
 
 pub mod properties;
-pub use self::properties::{CacheType, FailMode, Health, ZpoolProperties, ZpoolPropertiesWrite,
-                           ZpoolPropertiesWriteBuilder};
+pub use self::properties::{CacheType, FailMode, Health, PropPair, ZpoolProperties,
+                           ZpoolPropertiesWrite, ZpoolPropertiesWriteBuilder};
 
 use regex::Regex;
 
@@ -152,7 +152,10 @@ pub trait ZpoolEngine {
          alt_root: A)
          -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>, P: Into<Option<ZpoolPropertiesWrite>>, M: Into<Option<PathBuf>>, A: Into<Option<PathBuf>>>
+    fn create<N: AsRef<str>,
+              P: Into<Option<ZpoolPropertiesWrite>>,
+              M: Into<Option<PathBuf>>,
+              A: Into<Option<PathBuf>>>
         (&self,
          name: N,
          topology: Topology,
@@ -185,6 +188,61 @@ pub trait ZpoolEngine {
         }
         self.read_properties_unchecked(name)
     }
+
+    /// Update zpool propetries.
+    fn update_properties<N: AsRef<str>>(&self,
+                                        name: N,
+                                        props: ZpoolPropertiesWrite)
+                                        -> ZpoolResult<ZpoolProperties> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+
+        let current = self.read_properties_unchecked(&name)?;
+
+        if current.auto_expand != *props.auto_expand() {
+            self.set_unchecked(&name, "autoexpand", props.auto_expand())?;
+        }
+
+        if current.read_only != *props.read_only() {
+            self.set_unchecked(&name, "readonly", props.read_only())?;
+        }
+
+        if current.auto_replace != *props.auto_replace() {
+            self.set_unchecked(&name, "autoreplace", props.auto_replace())?;
+        }
+
+        if current.cache_file != *props.cache_file() {
+            self.set_unchecked(&name, "cachefile", props.cache_file())?;
+        }
+
+        // remove comment
+        let desired = if props.comment().is_empty() {
+            None
+        } else {
+            Some(props.comment().clone())
+        };
+        if current.comment != desired {
+            self.set_unchecked(&name, "comment", props.comment())?;
+        }
+
+        if current.delegation != *props.delegation() {
+            self.set_unchecked(&name, "delegation", props.delegation())?;
+        }
+
+        if current.fail_mode != *props.fail_mode() {
+            self.set_unchecked(&name, "failmode", props.fail_mode())?;
+        }
+
+        self.read_properties_unchecked(name)
+    }
+
+    /// Internal function used to set values. Should be avoided.
+    fn set_unchecked<N: AsRef<str>, P: PropPair>(&self,
+                                                 name: N,
+                                                 key: &str,
+                                                 value: &P)
+                                                 -> ZpoolResult<()>;
 }
 
 #[cfg(test)]

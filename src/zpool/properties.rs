@@ -4,6 +4,28 @@ use super::{ZpoolError, ZpoolResult};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+pub trait PropPair {
+    fn to_pair(&self, key: &str) -> String;
+}
+
+impl PropPair for FailMode {
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
+}
+
+impl PropPair for bool {
+    fn to_pair(&self, key: &str) -> String {
+        let val = if *self { "on" } else { "off" };
+        format!("{}={}", key, val)
+    }
+}
+
+impl PropPair for CacheType {
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
+}
+
+impl PropPair for String {
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, &self) }
+}
 
 /// Represent state of zpool or vdev. Read
 /// [more](https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html).
@@ -130,6 +152,9 @@ impl CacheType {
 /// ```
 #[derive(Getters, Builder, Debug, Clone, PartialEq)]
 pub struct ZpoolPropertiesWrite {
+    /// Make zpool readonly. This can only be changed during import.
+    #[builder(default="false")]
+    read_only: bool,
     /// Controls automatic pool expansion when the underlying LUN is grown.
     #[builder(default="false")]
     auto_expand: bool,
@@ -171,18 +196,36 @@ pub struct ZpoolPropertiesWrite {
 impl ZpoolPropertiesWrite {
     #[doc(hidden)]
     pub fn into_args(self) -> Vec<OsString> {
-        let mut ret = Vec::with_capacity(8);
-        ret.push(format!("autoexpand={}", map_bool(&self.auto_expand)));
-        ret.push(format!("autoreplace={}", map_bool(&self.auto_replace)));
-        ret.push(format!("cachefile={}", self.cache_file.as_str()));
-        ret.push(format!("comment={}", self.comment));
-        ret.push(format!("delegation={}", map_bool(&self.delegation)));
-        ret.push(format!("failmode={}", self.fail_mode.as_str()));
+        let mut ret = Vec::with_capacity(10);
+        ret.push(PropPair::to_pair(&self.auto_expand, "autoexpand"));
+        ret.push(PropPair::to_pair(&self.auto_replace, "autoreplace"));
+        ret.push(PropPair::to_pair(&self.cache_file, "cachefile"));
+        ret.push(PropPair::to_pair(&self.comment, "comment"));
+        ret.push(PropPair::to_pair(&self.delegation, "delegation"));
+        ret.push(PropPair::to_pair(&self.fail_mode, "failmode"));
         if let Some(ref btfs) = self.boot_fs {
-            ret.push(format!("bootfs={}", btfs));
+            ret.push(PropPair::to_pair(btfs, "bootfs"));
         }
         ret.iter().map(OsString::from).collect()
 
+    }
+}
+
+impl ZpoolPropertiesWriteBuilder {
+    /// Construct new builder given existing properties. Useful for updates.
+    pub fn from_props(props: &ZpoolProperties) -> ZpoolPropertiesWriteBuilder {
+        let mut b = ZpoolPropertiesWriteBuilder::default();
+        b.read_only(props.read_only);
+        b.auto_expand(props.auto_expand);
+        b.auto_replace(props.auto_replace);
+        b.boot_fs(props.boot_fs.clone());
+        b.cache_file(props.cache_file.clone());
+        b.delegation(props.delegation);
+        b.fail_mode(props.fail_mode.clone());
+        if let Some(ref comment) = props.comment {
+            b.comment(comment.clone());
+        }
+        b
     }
 }
 
@@ -262,9 +305,6 @@ pub struct ZpoolProperties {
     pub fail_mode: FailMode,
 }
 
-fn map_bool(val: &bool) -> &str {
-    if *val { "on" } else { "off" }
-}
 fn parse_bool(val: Option<&str>) -> ZpoolResult<bool> {
     let val_str = val.ok_or(ZpoolError::ParseError)?;
     match val_str {
@@ -299,7 +339,7 @@ impl ZpoolProperties {
 
         let comment_str = cols.next().ok_or(ZpoolError::ParseError)?;
         let comment = match comment_str {
-            "-" => None,
+            "-" | "" => None,
             c => Some(String::from(c)),
         };
 
@@ -394,6 +434,7 @@ mod test {
     fn test_defaults() {
         let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();
         let handmade = ZpoolPropertiesWrite {
+            read_only: false,
             auto_expand: false,
             auto_replace: false,
             boot_fs: None,
