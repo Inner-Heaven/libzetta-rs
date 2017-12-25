@@ -122,11 +122,13 @@ fn create_check_update_delete() {
 
         let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
             .comment(String::new())
+            .delegation(true)
             .build()
             .unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
         assert_eq!(None, props.comment);
+        assert_eq!(true, props.delegation);
 
         zpool.destroy(&name, true).unwrap();
 

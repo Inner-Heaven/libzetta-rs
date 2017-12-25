@@ -204,10 +204,6 @@ pub trait ZpoolEngine {
             self.set_unchecked(&name, "autoexpand", props.auto_expand())?;
         }
 
-        if current.read_only != *props.read_only() {
-            self.set_unchecked(&name, "readonly", props.read_only())?;
-        }
-
         if current.auto_replace != *props.auto_replace() {
             self.set_unchecked(&name, "autoreplace", props.auto_replace())?;
         }

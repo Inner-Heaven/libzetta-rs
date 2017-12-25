@@ -196,7 +196,7 @@ pub struct ZpoolPropertiesWrite {
 impl ZpoolPropertiesWrite {
     #[doc(hidden)]
     pub fn into_args(self) -> Vec<OsString> {
-        let mut ret = Vec::with_capacity(10);
+        let mut ret = Vec::with_capacity(7);
         ret.push(PropPair::to_pair(&self.auto_expand, "autoexpand"));
         ret.push(PropPair::to_pair(&self.auto_replace, "autoreplace"));
         ret.push(PropPair::to_pair(&self.cache_file, "cachefile"));
@@ -445,6 +445,13 @@ mod test {
         };
 
         assert_eq!(handmade, built);
+    }
+
+    #[test]
+    fn test_create_props() {
+        let built = ZpoolPropertiesWriteBuilder::default().boot_fs(Some("bootpool".into())).build().unwrap();
+        let args = built.into_args();
+        assert_eq!(7, args.len());
     }
 
     #[test]
