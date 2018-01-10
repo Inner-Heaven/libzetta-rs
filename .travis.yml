@@ -34,6 +34,7 @@ env:
     - rel=0.7.3
 
 before_script:
+  - sudo rm /var/lib/apt/lists/partial/repo.mongodb.org_apt_ubuntu_dists_trusty_mongodb-org_3.4_multiverse_binary-i386_Packages
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
   - sudo apt-get update -qq -y && sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
   - cd /tmp
