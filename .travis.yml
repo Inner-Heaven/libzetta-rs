@@ -35,12 +35,12 @@ env:
 
 before_script:
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
-  - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
+  - sudo apt-get update -qq -y && sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
   - cd /tmp
   - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
   - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
-  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
-  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
