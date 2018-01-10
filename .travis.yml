@@ -36,7 +36,7 @@ env:
 before_script:
   - ls /etc/apt/sources.list.d/
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
-  - sudo apt-get update -qq -y && sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
+  - sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
   - cd /tmp
   - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
   - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
