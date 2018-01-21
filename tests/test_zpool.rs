@@ -150,19 +150,20 @@ fn create_check_update_delete() {
 
 #[test]
 fn cmd_not_found() {
-    let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
-    let name = get_zpool_name();
+    run_test(|name| {
+        let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
 
-    let topo = TopologyBuilder::default()
-        .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
-        .build()
-        .unwrap();
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
+            .build()
+            .unwrap();
 
-    let result = zpool.create(&name, topo, None, None, None);
-    assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
+        let result = zpool.create(&name, topo, None, None, None);
+        assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
 
-    let result = zpool.exists("wat");
-    assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
+        let result = zpool.exists("wat");
+        assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
+    });
 }
 
 #[test]
