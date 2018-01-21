@@ -3,7 +3,8 @@ extern crate tempdir;
 extern crate slog_term;
 extern crate cavity;
 extern crate rand;
-
+#[macro_use]
+extern crate lazy_static;
 
 use cavity::{Bytes, WriteMode, fill};
 use libzfs::slog::*;
@@ -14,9 +15,13 @@ use std::fs;
 
 use std::panic;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::fs::DirBuilder;
+
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
-
-
+lazy_static! {
+    static ref SHARED: Mutex<u8> = Mutex::new(0);
+}
 fn get_zpool_name() -> String {
     let mut rng = rand::thread_rng();
     let suffix = rng.gen::<u64>();
@@ -26,6 +31,12 @@ fn get_zpool_name() -> String {
 }
 fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
     let path = path.as_ref();
+
+    let parent = path.parent().unwrap();
+    DirBuilder::new()
+        .recursive(true)
+        .create(parent).unwrap();
+
     if path.exists() {
         let meta = fs::metadata(&path).unwrap();
         assert!(meta.is_file());
@@ -50,20 +61,21 @@ fn setup() {
     setup_vdev(vdev_dir.join("vdev2"), &Bytes::MegaBytes(64 + 10));
     setup_vdev(vdev_dir.join("vdev3"), &Bytes::MegaBytes(1));
 }
-#[allow(dead_code)]
-fn teardown() {
-    // no-op
-}
-
 fn run_test<T>(test: T)
-where
-    T: FnOnce() -> () + panic::UnwindSafe,
+    where
+    T: FnOnce(String) -> () + panic::UnwindSafe,
 {
+    let lock = SHARED.lock().unwrap();
     setup();
 
-    let result = panic::catch_unwind(test);
+    let name = get_zpool_name();
+    let result = panic::catch_unwind(|| {
+        test(name.clone());
+    });
 
-    teardown();
+    let zpool = ZpoolOpen3::default();
+    let _ = zpool.destroy(&name, true);
+    drop(lock);
 
     result.unwrap();
 }
@@ -78,9 +90,8 @@ fn get_logger() -> Logger {
 
 #[test]
 fn create_check_update_delete() {
-    run_test(|| {
+    run_test(|name| {
         let zpool = ZpoolOpen3::with_logger(get_logger());
-        let name = get_zpool_name();
 
 
         let topo = TopologyBuilder::default()
@@ -139,28 +150,25 @@ fn create_check_update_delete() {
 
 #[test]
 fn cmd_not_found() {
-    run_test(|| {
-        let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
-        let name = get_zpool_name();
+    let zpool = ZpoolOpen3::with_cmd("zpool-not-found");
+    let name = get_zpool_name();
 
-        let topo = TopologyBuilder::default()
-            .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
-            .build()
-            .unwrap();
+    let topo = TopologyBuilder::default()
+        .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
+        .build()
+        .unwrap();
 
-        let result = zpool.create(&name, topo, None, None, None);
-        assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
+    let result = zpool.create(&name, topo, None, None, None);
+    assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
 
-        let result = zpool.exists("wat");
-        assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
-    })
+    let result = zpool.exists("wat");
+    assert_eq!(ZpoolErrorKind::CmdNotFound, result.unwrap_err().kind());
 }
 
 #[test]
 fn reuse_vdev() {
-    run_test(|| {
+    run_test(|name_1| {
         let zpool = ZpoolOpen3::default();
-        let name_1 = get_zpool_name();
         let name_2 = "zpool-tests-fail";
         let vdev_file = "/vdevs/vdev1";
 
@@ -202,20 +210,13 @@ fn create_invalid_topo() {
 }
 
 #[test]
-fn remove_pool_not_found() {
+fn pool_not_found() {
     let zpool = ZpoolOpen3::default();
     let name = get_zpool_name();
 
     let err = zpool.destroy(&name, true).unwrap_err();
 
-    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind())
-}
-
-
-#[test]
-fn pool_not_found() {
-    let zpool = ZpoolOpen3::default();
-    let name = get_zpool_name();
+    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 
     let err = zpool.read_properties(&name).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
@@ -227,100 +228,129 @@ fn pool_not_found() {
 
 #[test]
 fn read_args() {
-    let zpool = ZpoolOpen3::default();
-    let name = get_zpool_name();
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
 
-    let vdev_path = setup_vdev("/vdevs/vdev4", &Bytes::MegaBytes(64 + 10));
-    let topo = TopologyBuilder::default()
-        .vdev(Vdev::file(vdev_path))
-        .build()
-        .unwrap();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::file(vdev_path))
+            .build()
+            .unwrap();
 
-    zpool.create(&name, topo, None, None, None).unwrap();
+        zpool.create(&name, topo, None, None, None).unwrap();
 
-    let props = zpool.read_properties(&name);
+        let props = zpool.read_properties(&name);
 
-    assert!(props.is_ok());
-    zpool.destroy(&name, true).unwrap();
+        assert!(props.is_ok());
+        zpool.destroy(&name, true).unwrap();
+    });
 }
 
 #[test]
 fn create_mount() {
-    let zpool = ZpoolOpen3::default();
-    let name = get_zpool_name();
-    let mut mount_point = PathBuf::from("/tmp");
-    mount_point.push(&name);
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let mut mount_point = PathBuf::from("/tmp");
+        mount_point.push(&name);
 
-    let vdev_path = setup_vdev("/vdevs/vdev5", &Bytes::MegaBytes(64 + 10));
-    let topo = TopologyBuilder::default()
-        .vdev(Vdev::file(vdev_path))
-        .build()
-        .unwrap();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::file(vdev_path))
+            .build()
+            .unwrap();
 
-    assert!(!mount_point.exists());
-    let result = zpool.create(&name, topo, None, mount_point.clone(), None);
-    result.unwrap();
-    assert!(mount_point.exists());
-    zpool.destroy(&name, true).unwrap();
+        assert!(!mount_point.exists());
+        let result = zpool.create(&name, topo, None, mount_point.clone(), None);
+        result.unwrap();
+        assert!(mount_point.exists());
+        zpool.destroy(&name, true).unwrap();
+    });
 }
 
 #[test]
 fn create_mount_and_alt_root() {
-    let zpool = ZpoolOpen3::default();
-    let name = get_zpool_name();
-    let mut mount_point = PathBuf::from("/tmp");
-    mount_point.push(&name);
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let mut mount_point = PathBuf::from("/tmp");
+        mount_point.push(&name);
 
-    let mut expected = PathBuf::from("/mnt/tmp");
-    expected.push(&name);
+        let mut expected = PathBuf::from("/mnt/tmp");
+        expected.push(&name);
 
-    let alt_root = PathBuf::from("/mnt");
+        let alt_root = PathBuf::from("/mnt");
 
-    let vdev_path = setup_vdev("/vdevs/vdev6", &Bytes::MegaBytes(64 + 10));
-    let topo = TopologyBuilder::default()
-        .vdev(Vdev::file(vdev_path))
-        .build()
-        .unwrap();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::file(vdev_path))
+            .build()
+            .unwrap();
 
-    let result = zpool.create(&name, topo, None, mount_point.clone(), alt_root.clone());
-    result.unwrap();
+        let result = zpool.create(&name, topo, None, mount_point.clone(), alt_root.clone());
+        result.unwrap();
 
-    let props = zpool.read_properties(&name).unwrap();
-    assert_eq!(props.alt_root, Some(PathBuf::from("/mnt")));
+        let props = zpool.read_properties(&name).unwrap();
+        assert_eq!(props.alt_root, Some(PathBuf::from("/mnt")));
 
-    assert!(expected.exists());
-    zpool.destroy(&name, true).unwrap();
+        assert!(expected.exists());
+        zpool.destroy(&name, true).unwrap();
+    });
 }
 #[test]
 fn create_with_props() {
-    let zpool = ZpoolOpen3::default();
-    let name = get_zpool_name();
-    let comment = String::from("this is a comment");
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let comment = String::from("this is a comment");
 
-    let alt_root = PathBuf::from("/mnt");
-    let vdev_path = setup_vdev("/vdevs/vdev7", &Bytes::MegaBytes(64 + 10));
-    let topo = TopologyBuilder::default()
-        .vdev(Vdev::file(vdev_path))
-        .build()
-        .unwrap();
+        let alt_root = PathBuf::from("/mnt");
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::file(vdev_path))
+            .build()
+            .unwrap();
 
-    let props = ZpoolPropertiesWriteBuilder::default()
-        .auto_expand(true)
-        .comment(comment.clone())
-        .fail_mode(FailMode::Panic)
-        .build()
-        .unwrap();
+        let props = ZpoolPropertiesWriteBuilder::default()
+            .auto_expand(true)
+            .comment(comment.clone())
+            .fail_mode(FailMode::Panic)
+            .build()
+            .unwrap();
 
-    zpool.create(&name,
-                 topo,
-                 props,
-                 Some(alt_root.clone()),
-                 Some(alt_root.clone()))
-         .unwrap();
+        zpool.create(&name,
+                     topo,
+                     props,
+                     Some(alt_root.clone()),
+                     Some(alt_root.clone()))
+            .unwrap();
 
-    let props = zpool.read_properties(&name).unwrap();
-    assert_eq!(true, props.auto_expand);
-    assert_eq!(FailMode::Panic, props.fail_mode);
-    assert_eq!(Some(comment.clone()), props.comment);
-    zpool.destroy(&name, true).unwrap();
+        let props = zpool.read_properties(&name).unwrap();
+        assert_eq!(true, props.auto_expand);
+        assert_eq!(FailMode::Panic, props.fail_mode);
+        assert_eq!(Some(comment.clone()), props.comment);
+        zpool.destroy(&name, true).unwrap();
+    });
+}
+
+#[test]
+fn test_export_import() {
+    run_test(|name| {
+        let vdev_dir = Path::new("/vdevs/import");
+        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::with_logger(get_logger());
+
+
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo, None, None, None).unwrap();
+
+        let result = zpool.export(&name, false);
+        assert!(result.is_ok());
+        let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
+        assert_eq!(list.len(), 1);
+
+        let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
+        assert!(result.is_ok());
+        zpool.destroy(&name, true).unwrap();
+    });
 }
