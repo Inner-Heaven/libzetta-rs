@@ -239,6 +239,22 @@ pub trait ZpoolEngine {
                                                  key: &str,
                                                  value: &P)
                                                  -> ZpoolResult<()>;
+    /// Export Pool.
+    fn export<N:AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+        self.export_unchecked(name, force)
+    }
+
+    fn export_unchecked<N:AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    /// List of pools available for import in `/dev/` directory.
+    fn available(&self) -> ZpoolResult<Vec<String>>;
+    /// List of pools availabl
+    fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<String>>;
+
+    /// Import pool
+    fn import_from_dir<N:AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
