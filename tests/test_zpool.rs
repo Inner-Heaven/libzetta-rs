@@ -91,7 +91,7 @@ fn get_logger() -> Logger {
 #[test]
 fn create_check_update_delete() {
     run_test(|name| {
-        let zpool = ZpoolOpen3::with_logger(get_logger());
+        let zpool = ZpoolOpen3::default();
 
 
         let topo = TopologyBuilder::default()
@@ -224,6 +224,10 @@ fn pool_not_found() {
     let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
     let err = zpool.update_properties(&name, props).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
+
+
+    let err = zpool.export("fake", true).unwrap_err();
+    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 }
 
 #[test]
@@ -351,6 +355,7 @@ fn test_export_import() {
 
         let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
         assert!(result.is_ok());
+
         zpool.destroy(&name, true).unwrap();
     });
 }

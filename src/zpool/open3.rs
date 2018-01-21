@@ -26,7 +26,7 @@ use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command, Stdio, Output};
 use regex::Regex;
 
 
@@ -92,6 +92,19 @@ impl ZpoolOpen3 {
         z.stdout(Stdio::null());
         z.stderr(Stdio::null());
         z
+    }
+
+    fn list_from_output(&self, out: Output) -> ZpoolResult<Vec<String>> {
+        if out.status.success() {
+            let stdout: String = String::from_utf8_lossy(&out.stdout).into();
+            debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", RE_POOLS_IMPORT.captures(&stdout)));
+            let pools = RE_POOLS_IMPORT.captures_iter(&stdout)
+                .map(|caps| caps.get(1).expect("Failed to parse stdout").as_str().to_string())
+                .collect();
+            Ok(pools)
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
     }
 }
 
@@ -200,7 +213,11 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
     fn available(&self) -> ZpoolResult<Vec<String>> {
-        unimplemented!();
+        let mut z = self.zpool();
+        z.arg("import");
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        self.list_from_output(out)
     }
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<String>> {
         let mut z = self.zpool();
@@ -209,16 +226,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(dir);
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        if out.status.success() {
-            let stdout: String = String::from_utf8_lossy(&out.stdout).into();
-            debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", RE_POOLS_IMPORT.captures(&stdout)));
-            let pools = RE_POOLS_IMPORT.captures_iter(&stdout)
-                .map(|caps| caps.get(1).expect("Failed to parse stdout").as_str().to_string())
-                .collect();
-            Ok(pools)
-        } else {
-            Err(ZpoolError::from_stderr(&out.stderr))
-        }
+        self.list_from_output(out)
     }
 
     fn import_from_dir<N:AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
