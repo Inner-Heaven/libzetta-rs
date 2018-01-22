@@ -4,6 +4,7 @@
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
+use regex::Regex;
 
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
@@ -18,7 +19,9 @@ pub mod properties;
 pub use self::properties::{CacheType, FailMode, Health, PropPair, ZpoolProperties,
                            ZpoolPropertiesWrite, ZpoolPropertiesWriteBuilder};
 
-use regex::Regex;
+pub mod description;
+pub use self::description::Zpool;
+
 
 
 
