@@ -15,7 +15,7 @@ raid_enum = @{ "mirror" | "raidz1" | "raidz2" | "raidz2" }
 raid_name = ${ raid_enum ~ ("-" ~ digits)? }
 name = @{ ("_" | "-" | "."| alpha_num)+ }
 
-action_good_msg = _{ text ~ "\n" }
+action_good_msg = ${ text ~ "\n" }
 action_bad_msg = ${ text ~ "\n" ~ whitespace{8} ~ text ~ "\n" }
 action_msg = {action_bad_msg | action_good_msg }
 
@@ -23,7 +23,7 @@ pool_name = { whitespace* ~ "pool:" ~ name ~ "\n" }
 pool_id = { whitespace* ~ "id:" ~ digits ~ "\n" }
 state = { whitespace* ~ "state:" ~ state_enum ~ "\n" }
 status = { whitespace* ~ "status:" ~ action_good_msg}
-action = { whitespace* ~ "action:" ~ action_msg }
+action = { whitespace* ~ "action: " ~ action_msg }
 see = { "see:" ~ url ~ "\n" }
 config = { whitespace* ~ "config:" ~ "\n" }
 

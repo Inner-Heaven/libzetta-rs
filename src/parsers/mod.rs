@@ -11,8 +11,9 @@ mod test {
     use pest::Parser;
     use parsers::*;
     use zpool::Zpool;
+
     #[test]
-    fn test_action() {
+    fn test_action_good() {
         let one_line = " action: The pool can be imported using its name or numeric identifier.\n";
         parses_to! {
             parser: StdoutParser,
@@ -24,8 +25,11 @@ mod test {
                 ])
             ]
         }
+    }
 
-        let two_lines =" action: The pool cannot be imported. Attach the missing\n        devices and try again.\n";
+    #[test]
+    fn test_action_bad() {
+        let two_lines = " action: The pool cannot be imported. Attach the missing\n        devices and try again.\n";
         parses_to! {
             parser: StdoutParser,
             input: two_lines,
@@ -39,7 +43,7 @@ mod test {
     }
 
     #[test]
-    fn test_naked() {
+    fn test_naked_good() {
         let stdout_valid_two_disks = r#"pool: naked_test
      id: 3364973538352047455
   state: ONLINE
@@ -60,7 +64,7 @@ mod test {
                     pool_name(0, 17, [name(6,16)]),
                     pool_id(22, 46, [digits(26,45)]),
                     state(48, 62, [state_enum(55, 61)]),
-                    action(63, 134, [action_msg(71, 134)]),
+                    action(63, 134, [action_msg(71, 134, [action_good_msg(71, 134)])]),
                     config(135, 143),
                     pool_line(152, 182, [name(152, 162), state_enum(175, 181)]),
                     vdevs(192, 268, [
@@ -87,7 +91,10 @@ mod test {
         let mut  pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);
-        /*
+    }
+
+    #[test]
+    fn test_naked_bad() {
     let stdout_invalid_two_disks = r#"pool: naked_test
      id: 3364973538352047455
   state: UNAVAIL
@@ -103,6 +110,7 @@ mod test {
         Additional devices are known to be part of this pool, though their
         exact configuration cannot be determined.
         "#;
+    /*
         let pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         for pair in pairs.clone() {
             // A pair is a combination of the rule which matched and a span of input
@@ -116,7 +124,38 @@ mod test {
             }
         }
 
-        println!("{:#?}", pairs);*/
+        println!("{:#?}", pairs); */
+        parses_to! {
+            parser: StdoutParser,
+            input: stdout_invalid_two_disks,
+            rule: Rule::header,
+            tokens: [
+                header(0, 364, [
+                    pool_name(0, 17, [name(6,16)]),
+                    pool_id(22, 46, [digits(26,45)]),
+                    state(48, 63, [state_enum(55, 62)]),
+                    status(64, 121, [action_good_msg(72, 121)]),
+                    action(122, 209, [action_msg(130, 209, [action_bad_msg(130, 209)])]),
+                    see(212, 252, [url(217, 251)]),
+                    config(253, 261),
+                    pool_line(270, 317, [name(270, 280), state_enum(293, 300)]),
+                    vdevs(327, 364, [
+                        vdev(327, 355, [
+                            naked_vdev(327, 355, [
+                                disk_line(327, 355, [
+                                    path(327, 346),
+                                    state_enum(348, 354)
+                                ])
+                            ])
+                        ])
+                    ])
+                ])
+            ]
+        }
+
+        let mut  pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        Zpool::from_pest_pair(pair);
     }
 }
 

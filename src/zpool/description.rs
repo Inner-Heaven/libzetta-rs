@@ -24,8 +24,8 @@ impl Zpool {
                 Rule::pool_id => { zpool.id(get_u64_from_pair(pair));},
                 Rule::state => { zpool.health(get_health_from_pair(pair));},
                 Rule::vdevs => { zpool.topology(get_topology_from_pair(pair));},
-                Rule::config | Rule::action | Rule::pool_line => {},
-                _ => unreachable!()
+                Rule::config | Rule::action | Rule::pool_line  | Rule::status | Rule::see => {},
+                _ => unreachable!();
             }
         }
 
