@@ -32,7 +32,7 @@ addons:
 env:
   global:
     - RUSTFLAGS="-C link-dead-code"
-    - rel=0.7.3
+    - rel=0.7.12
 before_cache: |
   if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
     RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
