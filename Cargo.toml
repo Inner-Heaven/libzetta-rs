@@ -7,6 +7,8 @@ derive-getters = "0.0.3"
 derive_builder = "0.5"
 lazy_static = "1.0"
 libc = "0.2"
+pest = "1.0"
+pest_derive = "1.0"
 quick-error = "1.2"
 regex = "0.2"
 slog = "2"
@@ -14,9 +16,9 @@ slog-stdlog = "3"
 
 [dev-dependencies]
 cavity = "1.1"
+rand = "0.4"
 slog-term = "2"
 tempdir = "0.3"
-rand = "0.4"
 
 [target]
 [target."cfg(freebsd)"]

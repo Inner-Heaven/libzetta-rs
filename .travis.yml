@@ -4,6 +4,7 @@ dist: trusty
 language: rust
 rust:
   - nightly
+  - beta
   - stable
 os:
   - linux
@@ -32,6 +33,10 @@ env:
   global:
     - RUSTFLAGS="-C link-dead-code"
     - rel=0.7.3
+before_cache: |
+  if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
+  fi
 
 before_script:
   - ls /etc/apt/sources.list.d/
@@ -48,10 +53,9 @@ before_script:
 script:
   - cargo build
   - sudo $(which cargo) test
+
 after_success: |
-  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
-    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
-    # Uncomment the following two lines create and upload a report for codecov.io
-    sudo $(which cargo) tarpaulin --out Xml --ciserver travis-ci --ignore-tests
+  if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
+    sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
   fi
