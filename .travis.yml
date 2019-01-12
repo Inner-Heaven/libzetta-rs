@@ -52,7 +52,6 @@ before_script:
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
   - rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
 script:
-  - [[ "$TRAVIS_RUST_VERSION" == nightly ]] && cargo clippy
   - cargo build
   - sudo $(which cargo) test
 
