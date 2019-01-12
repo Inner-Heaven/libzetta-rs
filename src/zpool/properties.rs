@@ -32,7 +32,7 @@ impl PropPair for String {
 pub enum Health {
     /// Healthy and operational
     Online,
-    /// Unhealthy, but ooperational,
+    /// Unhealthy, but operational,
     Degraded,
     /// Not operational
     Faulted,
@@ -40,7 +40,7 @@ pub enum Health {
     Offline,
     /// Can't open device.
     Unavailable,
-    /// Phusically removed while the sytem was running.
+    /// Physically removed while the system was running.
     Removed,
 }
 
@@ -288,7 +288,7 @@ pub struct ZpoolProperties {
     /// count for a deduplicated block increases above this number, a new
     /// ditto copy of this block is automatically stored. Default setting is
     /// 0 which causes no ditto copies to be created for deduplicated blocks.
-    /// The miniumum legal nonzero setting is 100.
+    /// The minimum legal nonzero setting is 100.
     pub dedup_ditto: usize,
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See `zfs(8)` for more

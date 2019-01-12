@@ -40,9 +40,9 @@ quick_error! {
         Io(err: io::Error) {
             cause(err)
         }
-        /// Trying to manipulate non-existant pool.
+        /// Trying to manipulate non-existent pool.
         PoolNotFound {}
-        /// Givin topolog failed validation.
+        /// Given topology failed validation.
         InvalidTopology {}
         /// Trying to create new Zpool, but one or more vdevs already used in another pool.
         VdevReuse(vdev: String, pool: String) {
@@ -83,7 +83,7 @@ pub enum ZpoolErrorKind {
     /// `zpool` not found in path. Open3 specific error.
     CmdNotFound,
     Io,
-    /// Trying to manipulate non-existant pool.
+    /// Trying to manipulate non-existent pool.
     PoolNotFound,
     /// At least one vdev points to incorrect location.
     /// If vdev type is File then it means file not found.
@@ -91,7 +91,7 @@ pub enum ZpoolErrorKind {
     /// Trying to create new Zpool, but one or more vdevs already used in
     /// another pool.
     VdevReuse,
-    /// Givin topolog failed validation.
+    /// Given topology failed validation.
     InvalidTopology,
     /// Failed to parse value. Ideally you never see it, if you see it - it's a
     /// bug.
@@ -259,7 +259,7 @@ pub trait ZpoolEngine {
     fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     /// List of pools available for import in `/dev/` directory.
     fn available(&self) -> ZpoolResult<Vec<Zpool>>;
-    /// List of pools availabl
+    /// List of pools available
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>>;
 
     /// Import pool

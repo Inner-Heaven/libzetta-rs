@@ -149,7 +149,7 @@ mod test {
     }
 
     #[test]
-    fn test_muiltiple_import() {
+    fn test_multiple_import() {
         let stdout = r#"pool: naked_test
      id: 3364973538352047455
   state: ONLINE

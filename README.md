@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
-> Use ZFS from Rust. (very expiremental)
+> Use ZFS from Rust. (very experimental)
 
 ## Installation
 Not yet. Won't be on crate.io until 1.0.

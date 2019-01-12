@@ -41,7 +41,7 @@ lazy_static! {
         arg
     };
     static ref RE_POOLS_IMPORT: Regex =
-        Regex::new(r"pool:\s(\w+)").expect("Failled to compile RE_POOLS_IMPORT");
+        Regex::new(r"pool:\s(\w+)").expect("Failed to compile RE_POOLS_IMPORT");
 }
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
