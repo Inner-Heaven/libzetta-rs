@@ -52,15 +52,15 @@ mod test {
           /vdevs/import/vdev1  ONLINE
           "#;
 
-        // let pairs = StdoutParser::parse(Rule::header,
+        // let pairs = StdoutParser::parse(Rule::zpool_import,
         // stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
             input: stdout_valid_two_disks,
-            rule: Rule::header,
+            rule: Rule::zpool_import,
             tokens: [
-                header(0, 258, [
+                zpool_import(0, 258, [
                     pool_name(0, 17, [name(6,16)]),
                     pool_id(17, 46, [digits(26,45)]),
                     state(46, 62, [state_enum(55, 61)]),
@@ -88,7 +88,7 @@ mod test {
                 ])
             ]
         }
-        let mut pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks)
+        let mut pairs = StdoutParser::parse(Rule::zpool_import, stdout_valid_two_disks)
             .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);
@@ -111,15 +111,15 @@ mod test {
         Additional devices are known to be part of this pool, though their
         exact configuration cannot be determined.
         "#;
-        // let pairs = StdoutParser::parse(Rule::header,
+        // let pairs = StdoutParser::parse(Rule::zpool_import,
         // stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
             input: stdout_invalid_two_disks,
-            rule: Rule::header,
+            rule: Rule::zpool_import,
             tokens: [
-                header(0, 356, [
+                zpool_import(0, 356, [
                     pool_name(0, 17, [name(6,16)]),
                     pool_id(17, 46, [digits(26,45)]),
                     state(46, 63, [state_enum(55, 62)]),
@@ -142,7 +142,7 @@ mod test {
             ]
         }
 
-        let mut pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks)
+        let mut pairs = StdoutParser::parse(Rule::zpool_import, stdout_invalid_two_disks)
             .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);

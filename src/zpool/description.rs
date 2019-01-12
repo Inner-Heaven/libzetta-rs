@@ -18,7 +18,7 @@ pub struct Zpool {
 
 impl Zpool {
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
-        debug_assert!(pair.as_rule() == Rule::header);
+        debug_assert!(pair.as_rule() == Rule::zpool_import);
         let pairs = pair.into_inner();
         let mut zpool = ZpoolBuilder::default();
         for pair in pairs {
