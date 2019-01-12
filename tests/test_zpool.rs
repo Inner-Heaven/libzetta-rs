@@ -1,22 +1,22 @@
-extern crate libzfs;
-extern crate tempdir;
-extern crate slog_term;
 extern crate cavity;
+extern crate libzfs;
 extern crate rand;
+extern crate slog_term;
+extern crate tempdir;
 #[macro_use]
 extern crate lazy_static;
 
-use cavity::{Bytes, WriteMode, fill};
+use cavity::{fill, Bytes, WriteMode};
 use libzfs::slog::*;
 use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
 use rand::Rng;
 use std::fs;
 
+use std::fs::DirBuilder;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::fs::DirBuilder;
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -27,15 +27,12 @@ fn get_zpool_name() -> String {
     let suffix = rng.gen::<u64>();
     let name = format!("{}-{}", ZPOOL_NAME_PREFIX, suffix);
     name
-
 }
 fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
     let path = path.as_ref();
 
     let parent = path.parent().unwrap();
-    DirBuilder::new()
-        .recursive(true)
-        .create(parent).unwrap();
+    DirBuilder::new().recursive(true).create(parent).unwrap();
 
     if path.exists() {
         let meta = fs::metadata(&path).unwrap();
@@ -81,18 +78,19 @@ fn run_test<T>(test: T)
 }
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    Logger::root(slog_term::FullFormat::new(plain)
-                     .use_original_order()
-                     .build()
-                     .fuse(),
-                 o!())
+    Logger::root(
+        slog_term::FullFormat::new(plain)
+            .use_original_order()
+            .build()
+            .fuse(),
+        o!(),
+    )
 }
 
 #[test]
 fn create_check_update_delete() {
     run_test(|name| {
         let zpool = ZpoolOpen3::default();
-
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File("/vdevs/vdev0".into())))
@@ -198,7 +196,6 @@ fn create_invalid_topo() {
     let zpool = ZpoolOpen3::default();
     let name = get_zpool_name();
 
-
     let topo = TopologyBuilder::default()
         .cache(Disk::file("/vdevs/vdev0"))
         .build()
@@ -225,7 +222,6 @@ fn pool_not_found() {
     let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
     let err = zpool.update_properties(&name, props).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
-
 
     let err = zpool.export("fake", true).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
@@ -320,11 +316,14 @@ fn create_with_props() {
             .build()
             .unwrap();
 
-        zpool.create(&name,
-                     topo,
-                     props,
-                     Some(alt_root.clone()),
-                     Some(alt_root.clone()))
+        zpool
+            .create(
+                &name,
+                topo,
+                props,
+                Some(alt_root.clone()),
+                Some(alt_root.clone()),
+            )
             .unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
@@ -341,7 +340,6 @@ fn test_export_import() {
         let vdev_dir = Path::new("/vdevs/import");
         setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::with_logger(get_logger());
-
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))

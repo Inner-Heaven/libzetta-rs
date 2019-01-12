@@ -1,6 +1,5 @@
 /// Topology is a structure that describes zpool vdev structure.
 /// Use to create and updated zpool
-
 use std::ffi::OsString;
 use zpool::vdev::{Disk, Vdev};
 
@@ -12,35 +11,33 @@ use zpool::vdev::{Disk, Vdev};
 /// Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
 ///
 /// ```rust
-/// use libzfs::zpool::{Disk,Vdev};
-/// use libzfs::zpool::{TopologyBuilder};
+/// use libzfs::zpool::TopologyBuilder;
+/// use libzfs::zpool::{Disk, Vdev};
 ///
 /// let drives = vec![Disk::disk("hd0"), Disk::disk("hd1")];
 /// let topo = TopologyBuilder::default()
-///             .vdevs(vec![Vdev::Mirror(drives)])
-///             .build()
-///             .unwrap();
+///     .vdevs(vec![Vdev::Mirror(drives)])
+///     .build()
+///     .unwrap();
 /// ```
 /// Overkill example: 2 drives in mirror and a single drive, zil on double
 /// mirror and 2 l2rc.
 ///
 /// ```rust
-/// use libzfs::zpool::{Disk,Vdev};
-/// use libzfs::zpool::{TopologyBuilder};
-///
+/// use libzfs::zpool::TopologyBuilder;
+/// use libzfs::zpool::{Disk, Vdev};
 ///
 /// let zil_drives = vec![Disk::Disk("hd0".into()), Disk::Disk("hd1".into())];
-/// let mirror_drives = vec![Disk::Disk("hd2".into()),
-/// Disk::Disk("hd3".into())];
+/// let mirror_drives = vec![Disk::Disk("hd2".into()), Disk::Disk("hd3".into())];
 /// let cache_drives = vec![Disk::Disk("hd4".into()), Disk::Disk("hd5".into())];
 /// let topo = TopologyBuilder::default()
-///             .vdevs(vec![Vdev::Mirror(mirror_drives)])
-///             .cache(Disk::File("/tmp/sparse.file".into()))
-///             .vdev(Vdev::Naked(Disk::Disk("sd0".into())))
-///             .caches(cache_drives)
-///             .zil(Vdev::Mirror(zil_drives))
-///             .build()
-///             .unwrap();
+///     .vdevs(vec![Vdev::Mirror(mirror_drives)])
+///     .cache(Disk::File("/tmp/sparse.file".into()))
+///     .vdev(Vdev::Naked(Disk::Disk("sd0".into())))
+///     .caches(cache_drives)
+///     .zil(Vdev::Mirror(zil_drives))
+///     .build()
+///     .unwrap();
 /// ```
 #[derive(Default, Builder, Debug, Clone)]
 #[builder(setter(into))]
@@ -214,7 +211,6 @@ mod test {
 
         assert!(!topo.is_suitable_for_create());
 
-
         // Just add L2ARC to zpool
         let topo = TopologyBuilder::default()
             .cache(Disk::File(file_path.clone()))
@@ -234,7 +230,6 @@ mod test {
             .unwrap();
 
         assert!(!topo.is_suitable_for_update());
-
     }
 
     #[test]
@@ -256,7 +251,6 @@ mod test {
 
         assert_eq!(expected, result);
 
-
         // Zpool with mirror as ZIL and two vdevs
         let topo = TopologyBuilder::default()
             .vdev(naked_vdev.clone())
@@ -268,7 +262,6 @@ mod test {
         let result = topo.into_args();
         let expected = args_from_slice(&[path, path, "log", "mirror", path, path]);
         assert_eq!(expected, result);
-
 
         // Zraid
         let topo = TopologyBuilder::default()

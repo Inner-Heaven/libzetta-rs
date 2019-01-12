@@ -1,12 +1,11 @@
-
 #[derive(Parser)]
 #[grammar = "parsers/stdout.pest"] // relative to src
 pub struct StdoutParser;
 
 #[cfg(test)]
 mod test {
-    use pest::Parser;
     use parsers::*;
+    use pest::Parser;
     use zpool::Zpool;
 
     #[test]
@@ -26,7 +25,8 @@ mod test {
 
     #[test]
     fn test_action_bad() {
-        let two_lines = " action: The pool cannot be imported. Attach the missing\n        devices and try again.\n";
+        let two_lines = " action: The pool cannot be imported. Attach the missing\n        \
+                         devices and try again.\n";
         parses_to! {
             parser: StdoutParser,
             input: two_lines,
@@ -52,7 +52,8 @@ mod test {
           /vdevs/import/vdev1  ONLINE
           "#;
 
-        // let pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        // let pairs = StdoutParser::parse(Rule::header,
+        // stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
@@ -87,14 +88,15 @@ mod test {
                 ])
             ]
         }
-        let mut  pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        let mut pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks)
+            .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);
     }
 
     #[test]
     fn test_naked_bad() {
-    let stdout_invalid_two_disks = r#"pool: naked_test
+        let stdout_invalid_two_disks = r#"pool: naked_test
      id: 3364973538352047455
   state: UNAVAIL
  status: One or more devices are missing from the system.
@@ -109,7 +111,8 @@ mod test {
         Additional devices are known to be part of this pool, though their
         exact configuration cannot be determined.
         "#;
-        // let pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        // let pairs = StdoutParser::parse(Rule::header,
+        // stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
         // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
@@ -139,9 +142,9 @@ mod test {
             ]
         }
 
-        let mut  pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        let mut pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks)
+            .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);
     }
 }
-

@@ -1,6 +1,5 @@
 use super::{ZpoolError, ZpoolResult};
 /// Property related stuff.
-
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -136,12 +135,10 @@ impl CacheType {
 /// only during creation/import of zpool. See `zpool(8)` for more information.
 ///
 /// ```rust
-/// use libzfs::zpool::ZpoolPropertiesWriteBuilder;
 /// use libzfs::zpool::CacheType;
+/// use libzfs::zpool::ZpoolPropertiesWriteBuilder;
 ///
-/// let props = ZpoolPropertiesWriteBuilder::default()
-///                 .build()
-///                 .unwrap();
+/// let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
 ///
 /// assert!(!props.auto_expand());
 /// assert!(props.boot_fs().is_none());
@@ -153,10 +150,10 @@ impl CacheType {
 #[derive(Getters, Builder, Debug, Clone, PartialEq)]
 pub struct ZpoolPropertiesWrite {
     /// Make zpool readonly. This can only be changed during import.
-    #[builder(default="false")]
+    #[builder(default = "false")]
     read_only: bool,
     /// Controls automatic pool expansion when the underlying LUN is grown.
-    #[builder(default="false")]
+    #[builder(default = "false")]
     auto_expand: bool,
 
     /// Controls automatic device replacement. If set to "on", any new device,
@@ -164,7 +161,7 @@ pub struct ZpoolPropertiesWrite {
     /// same physical location as a device that previously belonged to the
     /// pool, is automatically
     /// formatted and replaced. The default behavior is "off".
-    #[builder(default="false")]
+    #[builder(default = "false")]
     auto_replace: bool,
 
     ///  Identifies the default bootable dataset for the root pool.
@@ -172,7 +169,7 @@ pub struct ZpoolPropertiesWrite {
     boot_fs: Option<String>,
 
     /// Controls the location of where the pool configuration is cached.
-    #[builder(default="CacheType::Default")]
+    #[builder(default = "CacheType::Default")]
     cache_file: CacheType,
 
     /// An administrator can provide additional information about a pool using
@@ -183,7 +180,7 @@ pub struct ZpoolPropertiesWrite {
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See zfs(8) for more
     /// information on ZFS delegated administration.
-    #[builder(default="false")]
+    #[builder(default = "false")]
     delegation: bool,
     /// Controls the system behavior in the event of catastrophic pool
     /// failure. This condition is typically a result of a loss of
@@ -207,7 +204,6 @@ impl ZpoolPropertiesWrite {
             ret.push(PropPair::to_pair(btfs, "bootfs"));
         }
         ret.iter().map(OsString::from).collect()
-
     }
 }
 
@@ -343,8 +339,10 @@ impl ZpoolProperties {
             c => Some(String::from(c)),
         };
 
-        let mut dedup_ratio_string =
-            cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
+        let mut dedup_ratio_string = cols
+            .next()
+            .ok_or(ZpoolError::ParseError)
+            .map(String::from)?;
 
         // remove 'x'
         let last_char = {
@@ -363,7 +361,10 @@ impl ZpoolProperties {
         };
 
         // remove '%'
-        let mut frag_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
+        let mut frag_string = cols
+            .next()
+            .ok_or(ZpoolError::ParseError)
+            .map(String::from)?;
         let last_char = {
             let chars = frag_string.chars();
             chars.last()
@@ -386,7 +387,6 @@ impl ZpoolProperties {
             r => Some(PathBuf::from(r)),
         };
 
-
         let read_only = parse_bool(cols.next())?;
         let auto_expand = parse_bool(cols.next())?;
         let auto_replace = parse_bool(cols.next())?;
@@ -402,28 +402,28 @@ impl ZpoolProperties {
         let fail_mode = FailMode::try_from_str(cols.next())?;
 
         Ok(ZpoolProperties {
-               alloc: alloc,
-               capacity: cap,
-               comment: comment,
-               dedup_ratio: dedup_ratio,
-               expand_size: expand_size,
-               fragmentation: fragmentation,
-               free: free,
-               freeing: freeing,
-               guid: guid,
-               health: health,
-               size: size,
-               leaked: leaked,
-               alt_root: alt_root,
-               read_only: read_only,
-               auto_expand: auto_expand,
-               auto_replace: auto_replace,
-               boot_fs: boot_fs,
-               cache_file: cache_file,
-               dedup_ditto: dedup_ditto,
-               delegation: delegation,
-               fail_mode: fail_mode,
-           })
+            alloc: alloc,
+            capacity: cap,
+            comment: comment,
+            dedup_ratio: dedup_ratio,
+            expand_size: expand_size,
+            fragmentation: fragmentation,
+            free: free,
+            freeing: freeing,
+            guid: guid,
+            health: health,
+            size: size,
+            leaked: leaked,
+            alt_root: alt_root,
+            read_only: read_only,
+            auto_expand: auto_expand,
+            auto_replace: auto_replace,
+            boot_fs: boot_fs,
+            cache_file: cache_file,
+            dedup_ditto: dedup_ditto,
+            delegation: delegation,
+            fail_mode: fail_mode,
+        })
     }
 }
 
@@ -449,7 +449,10 @@ mod test {
 
     #[test]
     fn test_create_props() {
-        let built = ZpoolPropertiesWriteBuilder::default().boot_fs(Some("bootpool".into())).build().unwrap();
+        let built = ZpoolPropertiesWriteBuilder::default()
+            .boot_fs(Some("bootpool".into()))
+            .build()
+            .unwrap();
         let args = built.into_args();
         assert_eq!(7, args.len());
     }
@@ -468,8 +471,10 @@ mod test {
         assert_eq!(Health::Degraded, Health::try_from_str(degraded).unwrap());
         assert_eq!(Health::Faulted, Health::try_from_str(faulted).unwrap());
         assert_eq!(Health::Offline, Health::try_from_str(offline).unwrap());
-        assert_eq!(Health::Unavailable,
-                   Health::try_from_str(unavailable).unwrap());
+        assert_eq!(
+            Health::Unavailable,
+            Health::try_from_str(unavailable).unwrap()
+        );
         assert_eq!(Health::Removed, Health::try_from_str(removed).unwrap());
 
         let err = Health::try_from_str(bad);
@@ -500,14 +505,22 @@ mod test {
 
     #[test]
     fn parsing_cache_file() {
-        assert_eq!(CacheType::Default,
-                   CacheType::try_from_str(Some("-")).unwrap());
-        assert_eq!(CacheType::Default,
-                   CacheType::try_from_str(Some("")).unwrap());
-        assert_eq!(CacheType::None,
-                   CacheType::try_from_str(Some("none")).unwrap());
-        assert_eq!(CacheType::Custom("/wat".into()),
-                   CacheType::try_from_str(Some("/wat")).unwrap());
+        assert_eq!(
+            CacheType::Default,
+            CacheType::try_from_str(Some("-")).unwrap()
+        );
+        assert_eq!(
+            CacheType::Default,
+            CacheType::try_from_str(Some("")).unwrap()
+        );
+        assert_eq!(
+            CacheType::None,
+            CacheType::try_from_str(Some("none")).unwrap()
+        );
+        assert_eq!(
+            CacheType::Custom("/wat".into()),
+            CacheType::try_from_str(Some("/wat")).unwrap()
+        );
 
         let err = CacheType::try_from_str(None);
         assert!(err.is_err());
@@ -560,18 +573,19 @@ mod test {
     #[test]
     fn to_arg() {
         let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
-        let expected: Vec<OsString> = vec!["autoexpand=off",
-                                           "autoreplace=off",
-                                           "cachefile=",
-                                           "comment=",
-                                           "delegation=off",
-                                           "failmode=wait"]
+        let expected: Vec<OsString> = vec![
+            "autoexpand=off",
+            "autoreplace=off",
+            "cachefile=",
+            "comment=",
+            "delegation=off",
+            "failmode=wait",
+        ]
             .into_iter()
             .map(OsString::from)
             .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
-
 
         let props = ZpoolPropertiesWriteBuilder::default()
             .auto_expand(true)
@@ -579,12 +593,14 @@ mod test {
             .fail_mode(FailMode::Panic)
             .build()
             .unwrap();
-        let expected: Vec<OsString> = vec!["autoexpand=on",
-                                           "autoreplace=off",
-                                           "cachefile=none",
-                                           "comment=",
-                                           "delegation=off",
-                                           "failmode=panic"]
+        let expected: Vec<OsString> = vec![
+            "autoexpand=on",
+            "autoreplace=off",
+            "cachefile=none",
+            "comment=",
+            "delegation=off",
+            "failmode=panic",
+        ]
             .into_iter()
             .map(OsString::from)
             .collect();
@@ -596,12 +612,14 @@ mod test {
             .cache_file(CacheType::Custom("wat".into()))
             .build()
             .unwrap();
-        let expected: Vec<OsString> = vec!["autoexpand=off",
-                                           "autoreplace=off",
-                                           "cachefile=wat",
-                                           "comment=",
-                                           "delegation=off",
-                                           "failmode=continue"]
+        let expected: Vec<OsString> = vec![
+            "autoexpand=off",
+            "autoreplace=off",
+            "cachefile=wat",
+            "comment=",
+            "delegation=off",
+            "failmode=continue",
+        ]
             .into_iter()
             .map(OsString::from)
             .collect();
@@ -613,12 +631,14 @@ mod test {
             .comment("a test")
             .build()
             .unwrap();
-        let expected: Vec<OsString> = vec!["autoexpand=off",
-                                           "autoreplace=on",
-                                           "cachefile=",
-                                           "comment=a test",
-                                           "delegation=off",
-                                           "failmode=wait"]
+        let expected: Vec<OsString> = vec![
+            "autoexpand=off",
+            "autoreplace=on",
+            "cachefile=",
+            "comment=a test",
+            "delegation=off",
+            "failmode=wait",
+        ]
             .into_iter()
             .map(OsString::from)
             .collect();

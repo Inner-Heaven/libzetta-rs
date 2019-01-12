@@ -1,5 +1,4 @@
 /// Vdec data types
-
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -19,8 +18,7 @@ impl Disk {
     /// same. Distinction exists to make sure it will work in the future.
     pub fn is_valid(&self) -> bool {
         match *self {
-            Disk::File(ref path) |
-            Disk::Disk(ref path) => path.exists(),
+            Disk::File(ref path) | Disk::Disk(ref path) => path.exists(),
         }
     }
 
@@ -245,9 +243,11 @@ mod test {
         let vdev = Vdev::Mirror(get_disks(2, &file_path));
 
         let args = vdev.into_args();
-        let expected: Vec<OsString> = vec!["mirror".into(),
-                                           file_path.clone().into(),
-                                           file_path.clone().into()];
+        let expected: Vec<OsString> = vec![
+            "mirror".into(),
+            file_path.clone().into(),
+            file_path.clone().into(),
+        ];
         assert_eq!(expected, args);
     }
 
