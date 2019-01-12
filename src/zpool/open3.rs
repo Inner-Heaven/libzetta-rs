@@ -66,7 +66,7 @@ impl Default for ZpoolOpen3 {
 
         let logger = Logger::root(StdLog.fuse(), o!());
         ZpoolOpen3 {
-            cmd_name: cmd_name,
+            cmd_name,
             logger: setup_logger(logger),
         }
     }
@@ -120,17 +120,6 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        let mut z = self.zpool_mute();
-        z.arg("destroy");
-        if force {
-            z.arg("-f");
-        }
-        z.arg(name.as_ref());
-        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
-        z.status().map(|_| Ok(()))?
-    }
-
     fn create_unchecked<
         N: AsRef<str>,
         P: Into<Option<ZpoolPropertiesWrite>>,
@@ -169,6 +158,17 @@ impl ZpoolEngine for ZpoolOpen3 {
         } else {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
+    }
+
+    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+        let mut z = self.zpool_mute();
+        z.arg("destroy");
+        if force {
+            z.arg("-f");
+        }
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        z.status().map(|_| Ok(()))?
     }
     fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
         let mut z = self.zpool();

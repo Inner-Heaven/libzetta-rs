@@ -304,6 +304,7 @@ mod test {
         assert_eq!(ZpoolErrorKind::Io, err.kind());
     }
 
+    //noinspection RsTypeCheck
     #[test]
     fn num_error_from() {
         let int_err = "as".parse::<i8>().unwrap_err();
