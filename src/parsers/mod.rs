@@ -1,7 +1,4 @@
 
-#[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("stdout.pest");
-
 #[derive(Parser)]
 #[grammar = "parsers/stdout.pest"] // relative to src
 pub struct StdoutParser;
@@ -55,30 +52,32 @@ mod test {
           /vdevs/import/vdev1  ONLINE
           "#;
 
+        // let pairs = StdoutParser::parse(Rule::header, stdout_valid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
             input: stdout_valid_two_disks,
             rule: Rule::header,
             tokens: [
-                header(0, 268, [
+                header(0, 258, [
                     pool_name(0, 17, [name(6,16)]),
-                    pool_id(22, 46, [digits(26,45)]),
-                    state(48, 62, [state_enum(55, 61)]),
-                    action(63, 134, [action_msg(71, 134, [action_good_msg(71, 134)])]),
-                    config(135, 143),
-                    pool_line(152, 182, [name(152, 162), state_enum(175, 181)]),
-                    vdevs(192, 268, [
-                        vdev(192,220, [
-                            naked_vdev(192, 220, [
-                                disk_line(192, 220, [
+                    pool_id(17, 46, [digits(26,45)]),
+                    state(46, 62, [state_enum(55, 61)]),
+                    action(62, 134, [action_msg(71, 134, [action_good_msg(71, 134)])]),
+                    config(134, 143),
+                    pool_line(144, 182, [name(152, 162), state_enum(175, 181)]),
+                    vdevs(182, 258, [
+                        vdev(182,220, [
+                            naked_vdev(182, 220, [
+                                disk_line(182, 220, [
                                     path(192, 211),
                                     state_enum(213, 219)
                                 ])
                             ])
                         ]),
-                        vdev(230,258, [
-                            naked_vdev(230, 258, [
-                                disk_line(230, 258, [
+                        vdev(220,258, [
+                            naked_vdev(220, 258, [
+                                disk_line(220, 258, [
                                     path(230, 249),
                                     state_enum(251, 257)
                                 ])
@@ -110,39 +109,26 @@ mod test {
         Additional devices are known to be part of this pool, though their
         exact configuration cannot be determined.
         "#;
-    /*
-        let pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
-        for pair in pairs.clone() {
-            // A pair is a combination of the rule which matched and a span of input
-            println!("Rule:    {:?}", pair.as_rule());
-            println!("Span:    {:?}", pair.clone().into_span());
-            println!("Text:    {}", pair.clone().into_span().as_str());
-            for inner_pair in pair.into_inner() {
-                println!("Rule:    {:?}", inner_pair.as_rule());
-                println!("Span:    {:?}", inner_pair.clone().into_span());
-                println!("Text:    {}", inner_pair.clone().into_span().as_str());
-            }
-        }
-
-        println!("{:#?}", pairs); */
+        // let pairs = StdoutParser::parse(Rule::header, stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
+        // println!("{:#?}", pairs);
         parses_to! {
             parser: StdoutParser,
             input: stdout_invalid_two_disks,
             rule: Rule::header,
             tokens: [
-                header(0, 364, [
+                header(0, 356, [
                     pool_name(0, 17, [name(6,16)]),
-                    pool_id(22, 46, [digits(26,45)]),
-                    state(48, 63, [state_enum(55, 62)]),
-                    status(64, 121, [action_good_msg(72, 121)]),
-                    action(122, 209, [action_msg(130, 209, [action_bad_msg(130, 209)])]),
-                    see(212, 252, [url(217, 251)]),
-                    config(253, 261),
-                    pool_line(270, 317, [name(270, 280), state_enum(293, 300)]),
-                    vdevs(327, 364, [
-                        vdev(327, 355, [
-                            naked_vdev(327, 355, [
-                                disk_line(327, 355, [
+                    pool_id(17, 46, [digits(26,45)]),
+                    state(46, 63, [state_enum(55, 62)]),
+                    status(63, 121, [action_good_msg(71, 121)]),
+                    action(121, 209, [action_msg(130, 209, [action_bad_msg(130, 209)])]),
+                    see(209, 252, [url(217, 251)]),
+                    config(252, 261),
+                    pool_line(262, 317, [name(270, 280), state_enum(293, 300)]),
+                    vdevs(317, 356, [
+                        vdev(317, 355, [
+                            naked_vdev(317, 355, [
+                                disk_line(317, 355, [
                                     path(327, 346),
                                     state_enum(348, 354)
                                 ])
