@@ -8,9 +8,12 @@ use pest::iterators::Pair;
 #[derive(Getters, Builder)]
 pub struct Zpool {
     name: String,
-    id: u64,
+    /// Only visible during import
+    #[builder(default)]
+    id: Option<u64>,
     health: Health,
     topology: Topology,
+    action: String,
 }
 
 impl Zpool {
@@ -24,7 +27,7 @@ impl Zpool {
                     zpool.name(get_string_from_pair(pair));
                 }
                 Rule::pool_id => {
-                    zpool.id(get_u64_from_pair(pair));
+                    zpool.id(Some(get_u64_from_pair(pair)));
                 }
                 Rule::state => {
                     zpool.health(get_health_from_pair(pair));
@@ -32,7 +35,10 @@ impl Zpool {
                 Rule::vdevs => {
                     zpool.topology(get_topology_from_pair(pair));
                 }
-                Rule::config | Rule::action | Rule::pool_line | Rule::status | Rule::see => {}
+                Rule::action => {
+                    zpool.action(get_action_from_pair(pair));
+                }
+                Rule::config | Rule::pool_line | Rule::status | Rule::see => {}
                 _ => unreachable!(),
             }
         }
@@ -79,4 +85,11 @@ fn get_string_from_pair(pair: Pair<Rule>) -> String {
 fn get_value_from_pair(pair: Pair<Rule>) -> Pair<Rule> {
     let mut pairs = pair.into_inner();
     pairs.next().unwrap()
+}
+
+#[inline]
+fn get_action_from_pair(pair: Pair<Rule>) -> String {
+    let mut pairs = pair.into_inner();
+    let action_msg = pairs.next().unwrap();
+    get_string_from_pair(action_msg)
 }
