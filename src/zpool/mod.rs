@@ -1,10 +1,10 @@
+use regex::Regex;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
-use regex::Regex;
 
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
@@ -16,14 +16,14 @@ pub mod open3;
 pub use self::open3::ZpoolOpen3;
 
 pub mod properties;
-pub use self::properties::{CacheType, FailMode, Health, PropPair, ZpoolProperties,
-                           ZpoolPropertiesWrite, ZpoolPropertiesWriteBuilder};
+
+pub use self::properties::{
+    CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
+    ZpoolPropertiesWriteBuilder,
+};
 
 pub mod description;
 pub use self::description::Zpool;
-
-
-
 
 lazy_static! {
     static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
@@ -119,8 +119,10 @@ impl ZpoolError {
         let stderr = String::from_utf8_lossy(stderr_raw);
         if RE_REUSE_VDEV.is_match(&stderr) {
             let caps = RE_REUSE_VDEV.captures(&stderr).unwrap();
-            ZpoolError::VdevReuse(caps.get(1).unwrap().as_str().into(),
-                                  caps.get(2).unwrap().as_str().into())
+            ZpoolError::VdevReuse(
+                caps.get(1).unwrap().as_str().into(),
+                caps.get(2).unwrap().as_str().into(),
+            )
         } else if RE_REUSE_VDEV_ZOL.is_match(&stderr) {
             ZpoolError::VdevReuse(String::new(), String::new())
         } else if RE_TOO_SMALL.is_match(&stderr) {
@@ -134,7 +136,6 @@ impl ZpoolError {
 /// Type alias to `Result<T, ZpoolError>`.
 pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
-
 /// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
 /// Using trait here, so I can mock it in unit tests.
 pub trait ZpoolEngine {
@@ -143,29 +144,33 @@ pub trait ZpoolEngine {
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
     /// Version of create that doesn't check validness of topology or options.
-    fn create_unchecked<N: AsRef<str>,
-                        P: Into<Option<ZpoolPropertiesWrite>>,
-                        M: Into<Option<PathBuf>>,
-                        A: Into<Option<PathBuf>>>
-        (&self,
-         name: N,
-         topology: Topology,
-         props: P,
-         mount: M,
-         alt_root: A)
-         -> ZpoolResult<()>;
+    fn create_unchecked<
+        N: AsRef<str>,
+        P: Into<Option<ZpoolPropertiesWrite>>,
+        M: Into<Option<PathBuf>>,
+        A: Into<Option<PathBuf>>,
+    >(
+        &self,
+        name: N,
+        topology: Topology,
+        props: P,
+        mount: M,
+        alt_root: A,
+    ) -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<N: AsRef<str>,
-              P: Into<Option<ZpoolPropertiesWrite>>,
-              M: Into<Option<PathBuf>>,
-              A: Into<Option<PathBuf>>>
-        (&self,
-         name: N,
-         topology: Topology,
-         props: P,
-         mount: M,
-         alt_root: A)
-         -> ZpoolResult<()> {
+    fn create<
+        N: AsRef<str>,
+        P: Into<Option<ZpoolPropertiesWrite>>,
+        M: Into<Option<PathBuf>>,
+        A: Into<Option<PathBuf>>,
+    >(
+        &self,
+        name: N,
+        topology: Topology,
+        props: P,
+        mount: M,
+        alt_root: A,
+    ) -> ZpoolResult<()> {
         if !topology.is_suitable_for_create() {
             return Err(ZpoolError::InvalidTopology);
         }
@@ -192,11 +197,12 @@ pub trait ZpoolEngine {
         self.read_properties_unchecked(name)
     }
 
-    /// Update zpool propetries.
-    fn update_properties<N: AsRef<str>>(&self,
-                                        name: N,
-                                        props: ZpoolPropertiesWrite)
-                                        -> ZpoolResult<ZpoolProperties> {
+    /// Update zpool properties.
+    fn update_properties<N: AsRef<str>>(
+        &self,
+        name: N,
+        props: ZpoolPropertiesWrite,
+    ) -> ZpoolResult<ZpoolProperties> {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
         }
@@ -237,27 +243,28 @@ pub trait ZpoolEngine {
     }
 
     /// Internal function used to set values. Should be avoided.
-    fn set_unchecked<N: AsRef<str>, P: PropPair>(&self,
-                                                 name: N,
-                                                 key: &str,
-                                                 value: &P)
-                                                 -> ZpoolResult<()>;
+    fn set_unchecked<N: AsRef<str>, P: PropPair>(
+        &self,
+        name: N,
+        key: &str,
+        value: &P,
+    ) -> ZpoolResult<()>;
     /// Export Pool.
-    fn export<N:AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
         }
         self.export_unchecked(name, force)
     }
 
-    fn export_unchecked<N:AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     /// List of pools available for import in `/dev/` directory.
     fn available(&self) -> ZpoolResult<Vec<String>>;
     /// List of pools availabl
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<String>>;
 
     /// Import pool
-    fn import_from_dir<N:AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
+    fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
@@ -282,11 +289,9 @@ mod test {
             assert_eq!("wat", text);
         }
 
-
         let vdev_reuse_text = b"cannot create \'tests-8804202574521870666\': one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n";
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
-
     }
 
     #[test]

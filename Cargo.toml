@@ -3,20 +3,20 @@ authors = ["Andrey Cherkashin <with.out@me.com>"]
 name = "libzfs"
 version = "0.1.0"
 [dependencies]
-derive-getters = "0.0.3"
-derive_builder = "0.5"
+derive-getters = "0.0.7"
+derive_builder = "0.7"
 lazy_static = "1.0"
 libc = "0.2"
-pest = "1.0"
-pest_derive = "1.0"
+pest = "2.1"
+pest_derive = "2.1"
 quick-error = "1.2"
-regex = "0.2"
+regex = "1.1"
 slog = "2"
 slog-stdlog = "3"
 
 [dev-dependencies]
 cavity = "1.1"
-rand = "0.4"
+rand = "0.6"
 slog-term = "2"
 tempdir = "0.3"
 

@@ -1,7 +1,7 @@
-use zpool::{Health, Topology, TopologyBuilder};
-use ::parsers::Rule;
+use parsers::Rule;
 use std::path::PathBuf;
-use zpool::{Vdev};
+use zpool::Vdev;
+use zpool::{Health, Topology, TopologyBuilder};
 
 use pest::iterators::Pair;
 
@@ -10,7 +10,7 @@ pub struct Zpool {
     name: String,
     id: u64,
     health: Health,
-    topology: Topology
+    topology: Topology,
 }
 
 impl Zpool {
@@ -20,12 +20,20 @@ impl Zpool {
         let mut zpool = ZpoolBuilder::default();
         for pair in pairs {
             match pair.as_rule() {
-                Rule::pool_name => { zpool.name(get_string_from_pair(pair));},
-                Rule::pool_id => { zpool.id(get_u64_from_pair(pair));},
-                Rule::state => { zpool.health(get_health_from_pair(pair));},
-                Rule::vdevs => { zpool.topology(get_topology_from_pair(pair));},
-                Rule::config | Rule::action | Rule::pool_line  | Rule::status | Rule::see => {},
-                _ => unreachable!()
+                Rule::pool_name => {
+                    zpool.name(get_string_from_pair(pair));
+                }
+                Rule::pool_id => {
+                    zpool.id(get_u64_from_pair(pair));
+                }
+                Rule::state => {
+                    zpool.health(get_health_from_pair(pair));
+                }
+                Rule::vdevs => {
+                    zpool.topology(get_topology_from_pair(pair));
+                }
+                Rule::config | Rule::action | Rule::pool_line | Rule::status | Rule::see => {}
+                _ => unreachable!(),
             }
         }
 
@@ -43,9 +51,11 @@ fn get_topology_from_pair(pair: Pair<Rule>) -> Topology {
                 let mut line = vdev.into_inner();
                 let path = PathBuf::from(line.next().unwrap().as_str());
                 topo.vdev(Vdev::disk(path));
-            },
-            Rule::raided_vdev => { unimplemented!(); },
-            _ => unreachable!()
+            }
+            Rule::raided_vdev => {
+                unimplemented!();
+            }
+            _ => unreachable!(),
         }
     }
     topo.build().unwrap()

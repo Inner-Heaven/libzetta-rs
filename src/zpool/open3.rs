@@ -21,14 +21,13 @@
 //!
 //! It's called open 3 because it opens stdin, stdout, stder.
 
+use regex::Regex;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process::{Command, Stdio, Output};
-use regex::Regex;
-
+use std::process::{Command, Output, Stdio};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -38,17 +37,18 @@ lazy_static! {
         arg.push("autoreplace,bootfs,cachefile,dedupditto,delegation,failmode");
         arg
     };
-
-    static ref RE_POOLS_IMPORT: Regex = Regex::new(r"pool:\s(\w+)").expect("Failled to compile RE_POOLS_IMPORT");
-
+    static ref RE_POOLS_IMPORT: Regex =
+        Regex::new(r"pool:\s(\w+)").expect("Failled to compile RE_POOLS_IMPORT");
 }
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger.into()
-          .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
+    logger
+        .into()
+        .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{PropPair, Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite,
-            ZpoolResult};
+use super::{
+    PropPair, Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult,
+};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -98,8 +98,14 @@ impl ZpoolOpen3 {
         if out.status.success() {
             let stdout: String = String::from_utf8_lossy(&out.stdout).into();
             debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", RE_POOLS_IMPORT.captures(&stdout)));
-            let pools = RE_POOLS_IMPORT.captures_iter(&stdout)
-                .map(|caps| caps.get(1).expect("Failed to parse stdout").as_str().to_string())
+            let pools = RE_POOLS_IMPORT
+                .captures_iter(&stdout)
+                .map(|caps| {
+                    caps.get(1)
+                        .expect("Failed to parse stdout")
+                        .as_str()
+                        .to_string()
+                })
                 .collect();
             Ok(pools)
         } else {
@@ -128,17 +134,19 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn create_unchecked<N: AsRef<str>,
-                        P: Into<Option<ZpoolPropertiesWrite>>,
-                        M: Into<Option<PathBuf>>,
-                        A: Into<Option<PathBuf>>>
-        (&self,
-         name: N,
-         topology: Topology,
-         props: P,
-         mount: M,
-         alt_root: A)
-         -> ZpoolResult<()> {
+    fn create_unchecked<
+        N: AsRef<str>,
+        P: Into<Option<ZpoolPropertiesWrite>>,
+        M: Into<Option<PathBuf>>,
+        A: Into<Option<PathBuf>>,
+    >(
+        &self,
+        name: N,
+        topology: Topology,
+        props: P,
+        mount: M,
+        alt_root: A,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
         if let Some(props) = props.into() {
@@ -177,14 +185,14 @@ impl ZpoolEngine for ZpoolOpen3 {
         } else {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
-
     }
 
-    fn set_unchecked<N: AsRef<str>, P: PropPair>(&self,
-                                                 name: N,
-                                                 key: &str,
-                                                 value: &P)
-                                                 -> ZpoolResult<()> {
+    fn set_unchecked<N: AsRef<str>, P: PropPair>(
+        &self,
+        name: N,
+        key: &str,
+        value: &P,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("set");
         z.arg(OsString::from(PropPair::to_pair(value, key)));
@@ -197,7 +205,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
-    fn export_unchecked<N:AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("export");
         if force {
@@ -229,7 +237,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         self.list_from_output(out)
     }
 
-    fn import_from_dir<N:AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
+    fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("import");
         z.arg("-d");
@@ -244,4 +252,3 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 }
-
