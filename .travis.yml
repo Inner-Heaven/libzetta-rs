@@ -50,7 +50,9 @@ before_script:
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
   - sudo mkdir /vdevs && sudo chmod 777 /vdevs
+  - rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
 script:
+  - [[ "$TRAVIS_RUST_VERSION" == nightly ]] && cargo clippy
   - cargo build
   - sudo $(which cargo) test
 
@@ -58,4 +60,6 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
     sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
+
+    cargo clippy
   fi

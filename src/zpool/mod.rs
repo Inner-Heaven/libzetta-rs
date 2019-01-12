@@ -5,7 +5,6 @@ use regex::Regex;
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
-
 pub mod vdev;
 pub use self::vdev::{Disk, Vdev};
 
@@ -259,9 +258,9 @@ pub trait ZpoolEngine {
 
     fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     /// List of pools available for import in `/dev/` directory.
-    fn available(&self) -> ZpoolResult<Vec<String>>;
+    fn available(&self) -> ZpoolResult<Vec<Zpool>>;
     /// List of pools availabl
-    fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<String>>;
+    fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>>;
 
     /// Import pool
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;

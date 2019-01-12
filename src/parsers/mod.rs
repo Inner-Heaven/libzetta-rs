@@ -147,4 +147,41 @@ mod test {
         let pair = pairs.next().unwrap();
         Zpool::from_pest_pair(pair);
     }
+
+    #[test]
+    fn test_muiltiple_import() {
+        let stdout = r#"pool: naked_test
+     id: 3364973538352047455
+  state: ONLINE
+ action: The pool can be imported using its name or numeric identifier.
+ config:
+
+        naked_test             ONLINE
+          /vdevs/import/vdev0  ONLINE
+          /vdevs/import/vdev1  ONLINE
+
+     pool: naked_test2
+     id: 3364973538352047455
+  state: ONLINE
+ action: The pool can be imported using its name or numeric identifier.
+ config:
+
+        naked_test             ONLINE
+          /vdevs/import/vdev0  ONLINE
+          /vdevs/import/vdev1  ONLINE
+          "#;
+
+        let pairs = StdoutParser::parse(Rule::zpools_import, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let mut zpools = pairs.map(|pair| Zpool::from_pest_pair(pair));
+
+        let first = zpools.next().unwrap();
+        assert_eq!(first.name(), &String::from("naked_test"));
+
+        let second = zpools.next().unwrap();
+        assert_eq!(second.name(), &String::from("naked_test2"));
+
+        let none = zpools.next();
+
+        assert!(none.is_none());
+    }
 }

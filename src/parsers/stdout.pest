@@ -40,3 +40,4 @@ vdevs = { vdev_line+ }
 
 
 zpool_import = { pool_name ~ pool_id ~ state ~ status? ~ action ~ see? ~ config ~ "\n" ~ pool_line ~  vdevs }
+zpools_import = _{ zpool_import*  ~ whitespace* }
