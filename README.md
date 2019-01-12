@@ -21,11 +21,15 @@ Yeah, not today.
 
 ## Current feature status
 
+### zpool
+
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
 | open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     Limited*    |      ❌      |     ❌    |       ❌      |
 
-* Allows you to list available pools to import, but only shows names.
+### zfs
+
+Literally nothing
 
 ## LICENSE
 
