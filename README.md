@@ -19,6 +19,13 @@ ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be 
 ## Usage
 Yeah, not today.
 
+## Current feature status
+
+|       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
+|-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
+| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     Limited*    |      ❌      |     ❌    |       ❌      |
+
+* Allows you to list available pools to import, but only shows names.
 
 ## LICENSE
 

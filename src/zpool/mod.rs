@@ -197,7 +197,7 @@ pub trait ZpoolEngine {
         self.read_properties_unchecked(name)
     }
 
-    /// Update zpool propetries.
+    /// Update zpool properties.
     fn update_properties<N: AsRef<str>>(
         &self,
         name: N,
