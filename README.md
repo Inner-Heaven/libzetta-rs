@@ -25,7 +25,7 @@ Yeah, not today.
 
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     Limited*    |      ❌      |     ❌    |       ❌      |
+| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     ✔    |      ❌      |     ❌    |       ❌      |
 
 ### zfs
 
