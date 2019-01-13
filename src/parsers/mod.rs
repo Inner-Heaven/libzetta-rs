@@ -220,10 +220,6 @@ config:
 errors: Pretend this is actual error
 "#;
 
-
-        let pairs = StdoutParser::parse(Rule::zpools,
-                                        stdout).unwrap_or_else(|e| panic!("{}", e));
-
         let pairs = StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
 
         let mut zpools = pairs.map(|pair| Zpool::from_pest_pair(pair));

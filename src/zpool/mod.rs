@@ -264,6 +264,19 @@ pub trait ZpoolEngine {
 
     /// Import pool
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
+
+    /// Status of a single pool
+    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
+
+    /// Status of a single pool
+    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+        self.status_unchecked(name)
+    }
+    /// Get a status of each pool active in the system
+    fn all(&self) -> ZpoolResult<Vec<Zpool>>;
 }
 
 #[cfg(test)]

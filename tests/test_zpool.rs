@@ -356,5 +356,49 @@ fn test_export_import() {
         assert!(result.is_ok());
 
         zpool.destroy(&name, true).unwrap();
+
+        let result = zpool.available().unwrap();
+        assert!(result.is_empty());
+    });
+}
+
+#[test]
+fn test_status() {
+    run_test(|name| {
+        let vdev_dir = Path::new("/vdevs/import");
+        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::with_logger(get_logger());
+
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+
+        let result = zpool.status(&name).unwrap();
+        assert_eq!(&name, result.name());
+        assert_eq!(&topo, result.topology());
+    });
+}
+#[test]
+fn test_all() {
+    run_test(|name| {
+        let vdev_dir = Path::new("/vdevs/import");
+        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::with_logger(get_logger());
+
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+
+        let result = zpool.all().unwrap();
+        assert_eq!(1, result.len());
+        let result = result.into_iter().next().unwrap();
+        assert_eq!(&name, result.name());
+        assert_eq!(&topo, result.topology());
     });
 }

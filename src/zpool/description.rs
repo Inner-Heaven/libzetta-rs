@@ -15,7 +15,7 @@ pub struct Zpool {
     topology: Topology,
     action: String,
     #[builder(default)]
-    errors: Option<String>
+    errors: Option<String>,
 }
 
 impl Zpool {
@@ -25,24 +25,12 @@ impl Zpool {
         let mut zpool = ZpoolBuilder::default();
         for pair in pairs {
             match pair.as_rule() {
-                Rule::pool_name => {
-                    zpool.name(get_string_from_pair(pair));
-                }
-                Rule::pool_id => {
-                    zpool.id(Some(get_u64_from_pair(pair)));
-                }
-                Rule::state => {
-                    zpool.health(get_health_from_pair(pair));
-                }
-                Rule::vdevs => {
-                    zpool.topology(get_topology_from_pair(pair));
-                }
-                Rule::action => {
-                    zpool.action(get_string_from_pair(pair));
-                }
-                Rule::errors => {
-                    zpool.errors(get_error_from_pair(pair));
-                }
+                Rule::pool_name => { zpool.name(get_string_from_pair(pair)); }
+                Rule::pool_id => { zpool.id(Some(get_u64_from_pair(pair))); }
+                Rule::state => { zpool.health(get_health_from_pair(pair)); }
+                Rule::vdevs => { zpool.topology(get_topology_from_pair(pair)); }
+                Rule::action => { zpool.action(get_string_from_pair(pair)); }
+                Rule::errors => { zpool.errors(get_error_from_pair(pair)); }
                 Rule::config | Rule::pool_line | Rule::status | Rule::see | Rule::pool_headers => {}
                 Rule::scan_line => {}
                 _ => unreachable!(),
@@ -75,6 +63,7 @@ fn get_topology_from_pair(pair: Pair<Rule>) -> Topology {
     }
     topo.build().unwrap()
 }
+
 #[inline]
 fn get_health_from_pair(pair: Pair<Rule>) -> Health {
     let health = get_string_from_pair(pair);
@@ -90,6 +79,7 @@ fn get_u64_from_pair(pair: Pair<Rule>) -> u64 {
 fn get_string_from_pair(pair: Pair<Rule>) -> String {
     String::from(get_value_from_pair(pair).as_str())
 }
+
 #[inline]
 fn get_value_from_pair(pair: Pair<Rule>) -> Pair<Rule> {
     let mut pairs = pair.into_inner();

@@ -21,7 +21,6 @@
 //!
 //! It's called open 3 because it opens stdin, stdout, stder.
 
-use regex::Regex;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::env;
@@ -40,8 +39,6 @@ lazy_static! {
         arg.push("autoreplace,bootfs,cachefile,dedupditto,delegation,failmode");
         arg
     };
-    static ref RE_POOLS_IMPORT: Regex =
-        Regex::new(r"pool:\s(\w+)").expect("Failed to compile RE_POOLS_IMPORT");
 }
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -247,5 +244,32 @@ impl ZpoolEngine for ZpoolOpen3 {
         } else {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
+    }
+    /// Status of a single pool
+    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
+        let mut z = self.zpool();
+        z.arg("status");
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        let zpools = self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
+        if zpools.is_empty() {
+            return Err(ZpoolError::PoolNotFound);
+        }
+        let zpool = zpools.into_iter().next().unwrap();
+        if zpool.name().as_str() != name.as_ref() {
+            error!(self.logger, "Somehow got wrong zpool?"; "wanted" => name.as_ref(), "got" => zpool.name().as_str());
+            return Err(ZpoolError::PoolNotFound);
+        }
+        Ok(zpool)
+    }
+
+    /// Get a status of each pool active in the system
+    fn all(&self) -> ZpoolResult<Vec<Zpool>> {
+        let mut z = self.zpool();
+        z.arg("status");
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        self.zpools_from_import(out)
     }
 }
