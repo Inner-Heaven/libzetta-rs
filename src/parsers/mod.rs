@@ -241,4 +241,5 @@ errors: Pretend this is actual error
 
         let none = zpools.next();
         assert!(none.is_none());
+    }
 }
