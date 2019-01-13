@@ -100,7 +100,7 @@ impl ZpoolOpen3 {
     fn zpools_from_import(&self, out: Output) -> ZpoolResult<Vec<Zpool>> {
         if out.status.success() {
             let stdout: String = String::from_utf8_lossy(&out.stdout).into();
-            StdoutParser::parse(Rule::zpools_import, stdout.as_ref())
+            StdoutParser::parse(Rule::zpools, stdout.as_ref())
                 .map_err(|_| ZpoolError::ParseError)
                 .map(|pairs| {
                     pairs.map(Zpool::from_pest_pair).collect()

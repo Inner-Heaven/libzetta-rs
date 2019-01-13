@@ -3,11 +3,13 @@ whitespace = _{ " " | "\t" }
 digit = _{ '0'..'9' }
 digits =  { digit ~ (digit | "_")* }
 alpha = _{ 'a'..'z' | 'A'..'Z' }
-symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" }
+symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" | "\'" | "\"" | "(" | ")" | "-" }
 alpha_num = _{ digit | alpha }
 alpha_nums = _{ alpha_num+ }
 text = _{ (alpha_num | whitespace |symbol)+ }
-path = @{ "/" ~ (name ~ "/"?)+ }
+file_path = _{ "/" ~ (name ~ "/"?)+ }
+device_name = _{ name }
+path = @{ (file_path | device_name ) }
 url = @{ ("http" | "https") ~ ":/" ~ path }
 
 state_enum = { "ONLINE" | "UNAVAIL"| "DEGRADED" | "FAULTED" }
@@ -15,15 +17,11 @@ raid_enum = @{ "mirror" | "raidz1" | "raidz2" | "raidz2" }
 raid_name = ${ raid_enum ~ ("-" ~ digits)? }
 name = @{ ("_" | "-" | "."| alpha_num)+ }
 
-action_good_msg = ${ text ~ "\n" }
-action_bad_msg = ${ text ~ "\n" ~ whitespace{8} ~ text ~ "\n" }
-action_msg = {action_bad_msg | action_good_msg }
-
 pool_name = { whitespace* ~ "pool:" ~ whitespace ~ name ~ "\n" }
 pool_id = { whitespace* ~ "id:" ~ whitespace ~ digits ~ "\n" }
 state = { whitespace* ~ "state:" ~ whitespace ~ state_enum ~ "\n" }
-status = { whitespace* ~ "status:" ~ action_good_msg}
-action = { whitespace* ~ "action: " ~ action_msg }
+status = { whitespace* ~ "status:" ~ multi_line_text }
+action = { whitespace* ~ "action: " ~ multi_line_text }
 see = { whitespace* ~ "see:" ~ whitespace ~ url ~ "\n" }
 config = { whitespace* ~ "config:" ~ "\n" }
 
@@ -31,13 +29,20 @@ pool_line = { whitespace* ~ name ~ whitespace* ~ state_enum ~ text? ~ "\n"  }
 raid_line = { ("mirror" | "raidz1" | "raidz2" | "raidz2") ~ digits ~ state_enum ~ text ~ "\n" }
 disk_line = { whitespace* ~ path ~ whitespace* ~ state_enum ~ text? ~ "\n"? }
 
+scan_line = { whitespace* ~ "scan:" ~ whitespace* ~ text_line }
+pool_headers = _{ whitespace* ~ "NAME" ~ whitespace* ~ "STATE"  ~ whitespace* ~ "READ" ~ whitespace* ~ "WRITE" ~ whitespace* ~ "CKSUM" ~ "\n" }
+no_errors = { "No known data errors" }
+errors = { whitespace* ~ "errors:" ~ whitespace* ~ (no_errors | multi_line_text) }
 naked_vdev = { disk_line }
 raided_vdev = { raid_line ~ disk_line+}
 vdev = { raided_vdev | naked_vdev }
 vdev_line = _{ vdev ~ "\n"? }
-
 vdevs = { vdev_line+ }
 
+zpool = { "\n"? ~ pool_name ~ pool_id? ~ state ~ status? ~ action ~ scan_line? ~ see? ~ config ~ "\n" ~ pool_headers? ~ pool_line ~  vdevs ~ errors? ~ "\n"?}
+zpools = _{ zpool*  ~ whitespace* }
 
-zpool_import = { pool_name ~ pool_id ~ state ~ status? ~ action ~ see? ~ config ~ "\n" ~ pool_line ~  vdevs }
-zpools_import = _{ zpool_import*  ~ whitespace* }
+
+text_line = _{ text ~ "\n" }
+aligned_text_line = _{ whitespace{8} ~ text ~ "\n" }
+multi_line_text = { text_line ~ aligned_text_line{, 4} }
