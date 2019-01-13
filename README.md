@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
-> Use ZFS from Rust. (very expiremental)
+> Use ZFS from Rust. (very experimental)
 
 ## Installation
 Not yet. Won't be on crate.io until 1.0.
@@ -21,11 +21,15 @@ Yeah, not today.
 
 ## Current feature status
 
+### zpool
+
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     Limited*    |      ❌      |     ❌    |       ❌      |
+| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     ✔    |      ❌      |     ❌    |       ❌      |
 
-* Allows you to list available pools to import, but only shows names.
+### zfs
+
+Literally nothing
 
 ## LICENSE
 

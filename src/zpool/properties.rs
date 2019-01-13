@@ -32,7 +32,7 @@ impl PropPair for String {
 pub enum Health {
     /// Healthy and operational
     Online,
-    /// Unhealthy, but ooperational,
+    /// Unhealthy, but operational,
     Degraded,
     /// Not operational
     Faulted,
@@ -40,7 +40,7 @@ pub enum Health {
     Offline,
     /// Can't open device.
     Unavailable,
-    /// Phusically removed while the sytem was running.
+    /// Physically removed while the system was running.
     Removed,
 }
 
@@ -288,7 +288,7 @@ pub struct ZpoolProperties {
     /// count for a deduplicated block increases above this number, a new
     /// ditto copy of this block is automatically stored. Default setting is
     /// 0 which causes no ditto copies to be created for deduplicated blocks.
-    /// The miniumum legal nonzero setting is 100.
+    /// The minimum legal nonzero setting is 100.
     pub dedup_ditto: usize,
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See `zfs(8)` for more
@@ -402,27 +402,27 @@ impl ZpoolProperties {
         let fail_mode = FailMode::try_from_str(cols.next())?;
 
         Ok(ZpoolProperties {
-            alloc: alloc,
+            alloc,
             capacity: cap,
-            comment: comment,
-            dedup_ratio: dedup_ratio,
-            expand_size: expand_size,
-            fragmentation: fragmentation,
-            free: free,
-            freeing: freeing,
-            guid: guid,
-            health: health,
-            size: size,
-            leaked: leaked,
-            alt_root: alt_root,
-            read_only: read_only,
-            auto_expand: auto_expand,
-            auto_replace: auto_replace,
-            boot_fs: boot_fs,
-            cache_file: cache_file,
-            dedup_ditto: dedup_ditto,
-            delegation: delegation,
-            fail_mode: fail_mode,
+            comment,
+            dedup_ratio,
+            expand_size,
+            fragmentation,
+            free,
+            freeing,
+            guid,
+            health,
+            size,
+            leaked,
+            alt_root,
+            read_only,
+            auto_expand,
+            auto_replace,
+            boot_fs,
+            cache_file,
+            dedup_ditto,
+            delegation,
+            fail_mode,
         })
     }
 }

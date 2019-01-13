@@ -78,7 +78,7 @@ impl Topology {
     /// That means it as at least one valid vdev and all optional devices are
     /// valid if present.
     pub fn is_suitable_for_create(&self) -> bool {
-        if self.vdevs.len() < 1 {
+        if self.vdevs.is_empty() {
             return false;
         }
         self.is_suitable_for_update()

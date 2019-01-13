@@ -1,4 +1,4 @@
-/// Vdec data types
+/// Vdev data types
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -67,9 +67,9 @@ impl Vdev {
     ///
     /// For Naked it means that what ever it points to exists.
     ///
-    /// For Mirror it checks that it's atleast two valid disks.
+    /// For Mirror it checks that it's at least two valid disks.
     ///
-    /// For RaidZ it checks that it's aleast three valid disk. And so goes on.
+    /// For RaidZ it checks that it's at least three valid disk. And so goes on.
     /// This gives false negative results in RAIDZ2 and RAIDZ3. This is
     /// intentional.
     /// possible makes no sense.
