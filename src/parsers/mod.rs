@@ -261,7 +261,7 @@ errors: No known data errors
         assert_eq!(first.name(), &String::from("tests-12167169401705616934"));
 
         let vdev = &first.topology().vdevs()[0];
-        let vdev_expected = Vdev::Naked(Disk::Disk(std::path::PathBuf::from("/vdevs/import/vdev0")));
+        let vdev_expected = Vdev::Naked(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
         assert_eq!(&vdev_expected, vdev);
     }
 }

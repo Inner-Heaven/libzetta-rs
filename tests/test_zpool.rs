@@ -372,7 +372,7 @@ fn test_status() {
         let zpool = ZpoolOpen3::default();
 
         let topo = TopologyBuilder::default()
-            .vdev(Vdev::Naked(Disk::Disk("/vdevs/import/vdev0".into())))
+            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
             .build()
             .unwrap();
         zpool.create(&name, topo.clone(), None, None, None).unwrap();
@@ -387,11 +387,11 @@ fn test_status() {
 fn test_all() {
     run_test(|name| {
         let vdev_dir = Path::new("/vdevs/");
-        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::with_logger(get_logger());
 
         let topo = TopologyBuilder::default()
-            .vdev(Vdev::Naked(Disk::Disk("/vdevs/import/vdev0".into())))
+            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
             .build()
             .unwrap();
         zpool.create(&name, topo.clone(), None, None, None).unwrap();

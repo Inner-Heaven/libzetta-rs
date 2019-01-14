@@ -55,7 +55,12 @@ fn get_topology_from_pair(pair: Pair<Rule>) -> Topology {
                 let disk_line = line.next().unwrap();
                 let path_pair = disk_line.into_inner().next().unwrap();
                 let path = PathBuf::from(path_pair.as_str());
-                topo.vdev(Vdev::disk(path));
+                // This sucks, but oh well
+                if path.is_relative() {
+                    topo.vdev(Vdev::disk(path));
+                } else {
+                    topo.vdev(Vdev::file(path));
+                }
             }
             Rule::raided_vdev => {
                 unimplemented!();
