@@ -59,6 +59,4 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
     sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
-    rustup component add clippy
-    cargo clippy
   fi
