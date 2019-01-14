@@ -388,7 +388,7 @@ fn test_all() {
     run_test(|name| {
         let vdev_dir = Path::new("/vdevs/");
         setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
-        let zpool = ZpoolOpen3::with_logger(get_logger());
+        let zpool = ZpoolOpen3::default();
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
