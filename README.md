@@ -25,7 +25,10 @@ Yeah, not today.
 
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     ✔    |      ❌      |     ❌    |       ❌      |
+| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ❌   |    ✔   |    ✔   |     ✔    |      ✔ ¹     |     ❌    |       ❌      |
+
+1. Reads the status, but api isn't stable and does poor job at reporting scrubbing status.
+
 
 ### zfs
 
