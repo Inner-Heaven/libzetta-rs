@@ -77,6 +77,9 @@ fn run_test<T>(test: T)
 
     result.unwrap();
 }
+
+// Only used for debugging
+#[allow(dead_code)]
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
     Logger::root(
@@ -367,12 +370,11 @@ fn test_export_import() {
 #[test]
 fn test_status() {
     run_test(|name| {
-        let vdev_dir = Path::new("/vdevs/");
-        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::default();
 
         let topo = TopologyBuilder::default()
-            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
+            .vdev(Vdev::Naked(Disk::File(vdev_path)))
             .build()
             .unwrap();
         zpool.create(&name, topo.clone(), None, None, None).unwrap();
@@ -386,12 +388,10 @@ fn test_status() {
 #[test]
 fn test_all() {
     run_test(|name| {
-        let vdev_dir = Path::new("/vdevs/");
-        setup_vdev(vdev_dir.join("vdev1"), &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::default();
-
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let topo = TopologyBuilder::default()
-            .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
+            .vdev(Vdev::Naked(Disk::File(vdev_path)))
             .build()
             .unwrap();
         zpool.create(&name, topo.clone(), None, None, None).unwrap();
