@@ -52,11 +52,11 @@ before_script:
 script:
   - cargo build
   - sudo $(which cargo) test
+  - sudo chmod -R 777 /home/travis/.cargo/registry/
+  - sudo chmod -R 777 /home/travis/build/Inner-Heaven/libzfs-rs/target/
 
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
     sudo $(which cargo) tarpaulin --out Xml
     bash <(curl -s https://codecov.io/bash)
-    rustup component add clippy
-    cargo clippy
   fi

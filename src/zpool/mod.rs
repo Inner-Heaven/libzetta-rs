@@ -1,33 +1,32 @@
-use regex::Regex;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
-pub mod vdev;
-pub use self::vdev::{Disk, Vdev};
 
-pub mod topology;
-pub use self::topology::{Topology, TopologyBuilder};
+use regex::Regex;
 
-pub mod open3;
+pub use self::description::Zpool;
 pub use self::open3::ZpoolOpen3;
-
-pub mod properties;
-
 pub use self::properties::{
     CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
     ZpoolPropertiesWriteBuilder,
 };
+pub use self::topology::{Topology, TopologyBuilder};
+pub use self::vdev::{Disk, Vdev};
+
+pub mod vdev;
+pub mod topology;
+pub mod open3;
+pub mod properties;
 
 pub mod description;
-pub use self::description::Zpool;
-
 lazy_static! {
     static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
     static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
     static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
+    static ref RE_PERMISSION_DENIED: Regex = Regex::new(r"cannot create \S+: permission denied\n").expect("failed to compile RE_PERMISSION_DENIED");
 }
 
 quick_error! {
@@ -55,6 +54,10 @@ quick_error! {
         }
         /// Device used in Topology is smaller than 64M
         DeviceTooSmall {}
+        /// Permission denied to create zpool. This might happened because:
+        /// a) you running it as not root
+        /// b) you running it inside jail that isn't allowed to operate zfs
+        PermissionDenied {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -70,6 +73,7 @@ impl ZpoolError {
             ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
             ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
+            ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -98,6 +102,10 @@ pub enum ZpoolErrorKind {
     ParseError,
     /// Device used in Topology is smaller than 64M
     DeviceTooSmall,
+    /// Permission denied to create zpool. This might happened because:
+    /// a) you running it as not root
+    /// b) you running it inside jail that isn't allowed to operate zfs
+    PermissionDenied,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -126,6 +134,8 @@ impl ZpoolError {
             ZpoolError::VdevReuse(String::new(), String::new())
         } else if RE_TOO_SMALL.is_match(&stderr) {
             ZpoolError::DeviceTooSmall
+        } else if RE_PERMISSION_DENIED.is_match(&stderr) {
+            ZpoolError::PermissionDenied
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -264,11 +274,25 @@ pub trait ZpoolEngine {
 
     /// Import pool
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
+
+    /// Status of a single pool
+    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
+
+    /// Status of a single pool
+    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
+        if !self.exists(&name)? {
+            return Err(ZpoolError::PoolNotFound);
+        }
+        self.status_unchecked(name)
+    }
+    /// Get a status of each pool active in the system
+    fn all(&self) -> ZpoolResult<Vec<Zpool>>;
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
     fn error_parsing() {
         let vdev_reuse_text = b"invalid vdev specification\nuse '-f' to override the following errors:\n/vdevs/vdev0 is part of active pool 'tank'";
@@ -323,5 +347,13 @@ mod test {
         let err = ZpoolError::from_stderr(text);
 
         assert_eq!(ZpoolErrorKind::DeviceTooSmall, err.kind());
+    }
+
+    #[test]
+    fn permission_denied() {
+        let text = b"cannot create \'tests-10742509212158788460\': permission denied\n";
+        let err = ZpoolError::from_stderr(text);
+
+        assert_eq!(ZpoolErrorKind::PermissionDenied, err.kind());
     }
 }

@@ -4,10 +4,11 @@ pub struct StdoutParser;
 
 #[cfg(test)]
 mod test {
-    use parsers::*;
     use pest::Parser;
-    use zpool::Zpool;
+
+    use parsers::*;
     use zpool::vdev::{Disk, Vdev};
+    use zpool::Zpool;
 
     #[test]
     fn test_action_single_line() {
@@ -220,10 +221,6 @@ config:
 errors: Pretend this is actual error
 "#;
 
-
-        let pairs = StdoutParser::parse(Rule::zpools,
-                                        stdout).unwrap_or_else(|e| panic!("{}", e));
-
         let pairs = StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
 
         let mut zpools = pairs.map(|pair| Zpool::from_pest_pair(pair));
@@ -241,5 +238,30 @@ errors: Pretend this is actual error
 
         let none = zpools.next();
         assert!(none.is_none());
+    }
+
+    #[test]
+    fn test_no_status_line_in_status() {
+        let stdout = r#"  pool: tests-12167169401705616934
+ state: ONLINE
+  scan: none requested
+config:
+
+        NAME                   STATE     READ WRITE CKSUM
+        tests-12167169401705616934  ONLINE       0     0     0
+          /vdevs/import/vdev0  ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+
+        let pairs = StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let mut zpools = pairs.map(|pair| Zpool::from_pest_pair(pair));
+
+        let first = zpools.next().unwrap();
+        assert_eq!(first.name(), &String::from("tests-12167169401705616934"));
+
+        let vdev = &first.topology().vdevs()[0];
+        let vdev_expected = Vdev::Naked(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
+        assert_eq!(&vdev_expected, vdev);
     }
 }

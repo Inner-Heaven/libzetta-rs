@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 /// Every vdev can be backed either by block device or sparse file.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Disk {
     /// Sparse file based device.
     File(PathBuf),
@@ -38,7 +38,7 @@ impl Disk {
 
 /// Basic building block of
 /// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Vdev {
     /// Just a single disk or file.
     Naked(Disk),

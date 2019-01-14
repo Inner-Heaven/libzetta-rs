@@ -1,22 +1,23 @@
 extern crate cavity;
+#[macro_use]
+extern crate lazy_static;
 extern crate libzfs;
 extern crate rand;
 extern crate slog_term;
 extern crate tempdir;
-#[macro_use]
-extern crate lazy_static;
 
-use cavity::{fill, Bytes, WriteMode};
-use libzfs::slog::*;
-use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
-use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
-use rand::Rng;
 use std::fs;
-
 use std::fs::DirBuilder;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+
+use cavity::{Bytes, fill, WriteMode};
+use rand::Rng;
+
+use libzfs::slog::*;
+use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
+use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -76,6 +77,9 @@ fn run_test<T>(test: T)
 
     result.unwrap();
 }
+
+// Only used for debugging
+#[allow(dead_code)]
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
     Logger::root(
@@ -339,13 +343,14 @@ fn test_export_import() {
     run_test(|name| {
         let vdev_dir = Path::new("/vdevs/import");
         setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
-        let zpool = ZpoolOpen3::with_logger(get_logger());
+        let zpool = ZpoolOpen3::default();
+        //let zpool = ZpoolOpen3::with_logger(get_logger());
 
         let topo = TopologyBuilder::default()
             .vdev(Vdev::Naked(Disk::File("/vdevs/import/vdev0".into())))
             .build()
             .unwrap();
-        zpool.create(&name, topo, None, None, None).unwrap();
+        zpool.create(&name, topo, None, None, None).expect("Failed to create pool for export");
 
         let result = zpool.export(&name, false);
         assert!(result.is_ok());
@@ -356,5 +361,53 @@ fn test_export_import() {
         assert!(result.is_ok());
 
         zpool.destroy(&name, true).unwrap();
+
+        let result = zpool.available().unwrap();
+        assert!(result.is_empty());
+    });
+}
+
+#[test]
+fn test_status() {
+    run_test(|name| {
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::default();
+
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File(vdev_path)))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+
+        let result = zpool.status(&name).unwrap();
+        assert_eq!(&name, result.name());
+        assert_eq!(&topo, result.topology());
+    });
+}
+#[test]
+fn test_all() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File(vdev_path)))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+
+        let result = zpool.all().unwrap();
+        assert_eq!(1, result.len());
+        let result = result.into_iter().next().unwrap();
+        assert_eq!(&name, result.name());
+        assert_eq!(&topo, result.topology());
+    });
+}
+
+#[test]
+fn test_zpool_with_logger() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::with_logger(get_logger());
     });
 }
