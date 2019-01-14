@@ -21,15 +21,21 @@
 //!
 //! It's called open 3 because it opens stdin, stdout, stder.
 
-use slog::{Drain, Logger};
-use slog_stdlog::StdLog;
 use std::env;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
-use zpool::description::Zpool;
-use parsers::{StdoutParser, Rule};
+
 use pest::Parser;
+use slog::{Drain, Logger};
+use slog_stdlog::StdLog;
+
+use parsers::{Rule, StdoutParser};
+use zpool::description::Zpool;
+
+use super::{
+    PropPair, Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult,
+};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -46,9 +52,6 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
         .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-use super::{
-    PropPair, Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult,
-};
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger: Logger,
@@ -103,6 +106,9 @@ impl ZpoolOpen3 {
                     pairs.map(Zpool::from_pest_pair).collect()
                 })
         } else {
+            if out.stderr.is_empty() && out.stdout.is_empty() {
+                return Ok(Vec::new());
+            }
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
@@ -239,6 +245,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
+        println!("{:#?}", out);
         if out.status.success() {
             Ok(())
         } else {

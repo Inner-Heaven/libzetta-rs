@@ -1,9 +1,10 @@
-use parsers::Rule;
 use std::path::PathBuf;
-use zpool::Vdev;
-use zpool::{Health, Topology, TopologyBuilder};
 
 use pest::iterators::Pair;
+
+use parsers::Rule;
+use zpool::{Health, Topology, TopologyBuilder};
+use zpool::Vdev;
 
 #[derive(Getters, Builder, Debug)]
 pub struct Zpool {
@@ -13,7 +14,8 @@ pub struct Zpool {
     id: Option<u64>,
     health: Health,
     topology: Topology,
-    action: String,
+    #[builder(default)]
+    action: Option<String>,
     #[builder(default)]
     errors: Option<String>,
 }
@@ -29,7 +31,7 @@ impl Zpool {
                 Rule::pool_id => { zpool.id(Some(get_u64_from_pair(pair))); }
                 Rule::state => { zpool.health(get_health_from_pair(pair)); }
                 Rule::vdevs => { zpool.topology(get_topology_from_pair(pair)); }
-                Rule::action => { zpool.action(get_string_from_pair(pair)); }
+                Rule::action => { zpool.action(Some(get_string_from_pair(pair))); }
                 Rule::errors => { zpool.errors(get_error_from_pair(pair)); }
                 Rule::config | Rule::pool_line | Rule::status | Rule::see | Rule::pool_headers => {}
                 Rule::scan_line => {}
