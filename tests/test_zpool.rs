@@ -404,3 +404,10 @@ fn test_all() {
         assert_eq!(&topo, result.topology());
     });
 }
+
+#[test]
+fn test_zpool_with_logger() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::with_logger(get_logger());
+    });
+}
