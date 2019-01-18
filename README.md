@@ -7,7 +7,7 @@
 > Use ZFS from Rust. (very experimental)
 
 ## Installation
-Not yet. Won't be on crate.io until 0.1.0. Even then it  will be ther just, so I can read docs.rs. 
+Not yet. Won't be on crate.io until 0.2.0. Even then it will be very alpha. Wait for 1.0.1 which when it will have stable API, integrated into another libpandemonium project, properly documented, etc.
 
 ## Usage
 Public API for `zpool` interface is almost stable, but until I start work on `zfs` portion I don't want to call it stable.
