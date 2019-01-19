@@ -27,6 +27,8 @@ lazy_static! {
     static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
     static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
     static ref RE_PERMISSION_DENIED: Regex = Regex::new(r"cannot create \S+: permission denied\n").expect("failed to compile RE_PERMISSION_DENIED");
+    static ref RE_NO_ACTIVE_SCRUBS: Regex = Regex::new(r"cannot (pause|cancel) scrubbing .+: there is no active scrub\n").expect("failed to compile RE_NO_ACTIVE_SCRUBS");
+    static ref RE_NO_SUCH_POOL: Regex = Regex::new(r"cannot open '\S+': no such pool\n?").expect("failed to compile RE_NO_SUCH_POOL");
 }
 
 quick_error! {
@@ -58,6 +60,8 @@ quick_error! {
         /// a) you running it as not root
         /// b) you running it inside jail that isn't allowed to operate zfs
         PermissionDenied {}
+        /// Trying to pause/stop scrub thas either never stared or already completed
+        NoActiveScrubs {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -74,6 +78,7 @@ impl ZpoolError {
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
             ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
+            ZpoolError::NoActiveScrubs => ZpoolErrorKind::NoActiveScrubs,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -106,6 +111,8 @@ pub enum ZpoolErrorKind {
     /// a) you running it as not root
     /// b) you running it inside jail that isn't allowed to operate zfs
     PermissionDenied,
+    /// Trying to pause/stop scrub thas either never stared or already completed
+    NoActiveScrubs,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -136,6 +143,10 @@ impl ZpoolError {
             ZpoolError::DeviceTooSmall
         } else if RE_PERMISSION_DENIED.is_match(&stderr) {
             ZpoolError::PermissionDenied
+        } else if RE_NO_ACTIVE_SCRUBS.is_match(&stderr) {
+            ZpoolError::NoActiveScrubs
+        } else if RE_NO_SUCH_POOL.is_match(&stderr) {
+            ZpoolError::PoolNotFound
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -275,10 +286,10 @@ pub trait ZpoolEngine {
     /// Import pool
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 
-    /// Status of a single pool
+    /// Get the detailed health status for the given pools.
     fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
 
-    /// Status of a single pool
+    /// Get the detailed health status for the given pool.
     fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
@@ -287,6 +298,18 @@ pub trait ZpoolEngine {
     }
     /// Get a status of each pool active in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>>;
+
+    ///  Begins a scrub or resumes a paused scrub.  The scrub examines all data in the specified
+    ///  pools to verify that it checksums correctly. For replicated (mirror or raidz) devices, ZFS
+    ///  automatically repairs any damage discovered during the scrub.
+    fn scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+    ///  Pause scrubbing. Scrub pause state and progress are periodically synced to disk. If the
+    ///  system is restarted or pool is exported during a paused scrub, even after import, scrub
+    ///  will remain paused until it is resumed.  Once resumed the scrub will pick up from the
+    ///  place where it was last checkpointed to disk.
+    fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+    ///  Stop scrubbing.
+    fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
@@ -355,5 +378,23 @@ mod test {
         let err = ZpoolError::from_stderr(text);
 
         assert_eq!(ZpoolErrorKind::PermissionDenied, err.kind());
+    }
+
+    #[test]
+    fn no_active_scrubs() {
+        let text = b"cannot pause scrubbing hell: there is no active scrub\n";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::NoActiveScrubs, err.kind());
+
+        let text = b"cannot cancel scrubbing hell: there is no active scrub\n";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::NoActiveScrubs, err.kind());
+    }
+
+    #[test]
+    fn no_such_pool() {
+        let text = b"cannot open 'hellasd': no such pool\n";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
     }
 }
