@@ -407,7 +407,39 @@ fn test_all() {
 
 #[test]
 fn test_zpool_with_logger() {
+    let _zpool = ZpoolOpen3::with_logger(get_logger());
+}
+
+#[test]
+fn test_zpool_scrub_not_found() {
+    let zpool = ZpoolOpen3::default();
+    let name = "non-existent";
+
+    let result = zpool.scrub(name);
+    assert_eq!(ZpoolErrorKind::PoolNotFound, result.unwrap_err().kind());
+
+    let result = zpool.stop_scrub(name);
+    assert_eq!(ZpoolErrorKind::PoolNotFound, result.unwrap_err().kind());
+}
+
+#[test]
+fn test_zpool_scrub() {
     run_test(|name| {
-        let zpool = ZpoolOpen3::with_logger(get_logger());
+        let zpool = ZpoolOpen3::default();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File(vdev_path)))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+        let result = zpool.stop_scrub(&name);
+        assert_eq!(ZpoolErrorKind::NoActiveScrubs, result.unwrap_err().kind());
+
+        let result = zpool.pause_scrub(&name);
+        assert_eq!(ZpoolErrorKind::NoActiveScrubs, result.unwrap_err().kind());
+
+        let result = zpool.scrub(&name);
+        assert!(result.is_ok());
     });
 }

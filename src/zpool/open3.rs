@@ -279,4 +279,42 @@ impl ZpoolEngine for ZpoolOpen3 {
         let out = z.output()?;
         self.zpools_from_import(out)
     }
+    fn scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("scrub");
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+    fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("scrub");
+        z.arg("-p");
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+    fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("scrub");
+        z.arg("-s");
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
 }
