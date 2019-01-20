@@ -12,6 +12,12 @@ Not yet. Won't be on crate.io until 0.2.0. Even then it will be very alpha. Wait
 ## Usage
 Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable. 
 
+### FreeBSD
+This library mostly focused on FreeBSD support. This should work on any FreeBSD version since 9.2. However, I have no intention on supporting anything other than current releases. Yes, I know FreeBSD is switching to ZOL branch.
+
+### Linux
+Right now it defintly works with `0.7.2` maybe entire `0.7.x` branch. Only reason there is Linux support is because there is no free public CI that has FreeBSD executors. Linux support is minimum effort - if I upgrade zfs to the version and suddenly all tests are failing - I'm going to rollback and lock previous version.
+
 ## How it works
 ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be it, but it really isn't. While `libzfs_core` is somewhat stable `libnvpair` used in it isn't and `libnv` isn't available on Linux. I might embed portable `libnv`. Now the tricky part — `libzfs_core` is just for zfs, there is not `libzpool_core` which means you either have to rely on unstable (in terms of API) `libzpool` or use `zpool(8)`. I decided to use `zpool(8)` because that's a recommended way of doing it.
 
