@@ -7,7 +7,7 @@ mod test {
     use pest::Parser;
 
     use parsers::*;
-    use zpool::{TopologyBuilder, Zpool};
+    use zpool::{Health, TopologyBuilder, Zpool};
     use zpool::vdev::{Disk, Vdev};
 
     #[test]
@@ -320,5 +320,69 @@ errors: No known data errors
         //dbg!(zpool.topology());
 
         assert_eq!(&topo, zpool.topology());
+    }
+
+    #[test]
+    fn test_degraded_mirror() {
+        let stdout = r#"  pool: test
+ state: DEGRADED
+status: One or more devices has been taken offline by the administrator.
+        Sufficient replicas exist for the pool to continue functioning in a
+        degraded state.
+action: Online the device using 'zpool online' or replace the device with
+        'zpool replace'.
+  scan: none requested
+config:
+
+        NAME                      STATE     READ WRITE CKSUM
+        test                      DEGRADED     0     0     0
+          mirror-0                DEGRADED     0     0     0
+            14808325297596192025  OFFLINE      0     0     0  was /vdevs/vdev0
+            /vdevs/vdev1          ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+        let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
+    }
+
+    #[test]
+    fn test_zpools_on_single_zpool() {
+        let stdout = r#"  pool: test
+ state: DEGRADED
+status: One or more devices has been taken offline by the administrator.
+        Sufficient replicas exist for the pool to continue functioning in a
+        degraded state.
+action: Online the device using 'zpool online' or replace the device with
+        'zpool replace'.
+  scan: none requested
+config:
+
+        NAME                      STATE     READ WRITE CKSUM
+        test                      DEGRADED     0     0     0
+          mirror-0                DEGRADED     0     0     0
+            14808325297596192025  OFFLINE      0     0     0  was /vdevs/vdev0
+            /vdevs/vdev1          ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+        let mut pairs = StdoutParser::parse(Rule::zpools, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
+    }
+
+    #[test]
+    fn test_tabs_instead_of_8_spaces() {
+        let stdout = "  pool: tests-5810578167377116542\n state: DEGRADED\nstatus: One or more devices has been taken offline by the administrator.\n\tSufficient replicas exist for the pool to continue functioning in a\n\tdegraded state.\naction: Online the device using \'zpool online\' or replace the device with\n\t\'zpool replace\'.\n  scan: none requested\nconfig:\n\n\tNAME                      STATE     READ WRITE CKSUM\n\ttests-5810578167377116542  DEGRADED     0     0     0\n\t  mirror-0                DEGRADED     0     0     0\n\t    15825580777360392022  OFFLINE      0     0     0  was /vdevs/vdev3\n\t    /vdevs/vdev4          ONLINE       0     0     0\n\nerrors: No known data errors\n";
+        let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
     }
 }

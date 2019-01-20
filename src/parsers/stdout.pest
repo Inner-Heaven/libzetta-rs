@@ -9,7 +9,7 @@ alpha_nums = _{ alpha_num+ }
 text = _{ (alpha_num | whitespace |symbol)+ }
 path = @{ !raid_enum ~ "/"? ~ (name ~ "/"?)+ }
 url = @{ ("http" | "https") ~ ":/" ~ path }
-state_enum = { "ONLINE" | "UNAVAIL"| "DEGRADED" | "FAULTED" }
+state_enum = { "ONLINE" | "OFFLINE" | "UNAVAIL" | "DEGRADED" | "FAULTED" }
 raid_enum = { "mirror" | "raidz1" | "raidz2" | "raidz3" }
 raid_name = ${ raid_enum ~ ("-" ~ digits)? }
 name = @{ ("_" | "-" | "."| alpha_num)+ }
@@ -40,5 +40,5 @@ zpool = { "\n"? ~ pool_name ~ pool_id? ~ state ~ status? ~ action? ~ scan_line? 
 zpools = _{ zpool*  ~ whitespace* }
 
 text_line = _{ text ~ "\n" }
-aligned_text_line = _{ whitespace{8} ~ text ~ "\n" }
+aligned_text_line = _{ (whitespace{8} | "\t") ~ text ~ "\n" }
 multi_line_text = { text_line ~ aligned_text_line{, 4} }

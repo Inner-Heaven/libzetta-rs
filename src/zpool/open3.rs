@@ -34,8 +34,8 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    Disk, OfflineMode, OnlineMode, PropPair, Topology, ZpoolEngine, ZpoolError,
-    ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
+    CreateMode, Disk, OfflineMode, OnlineMode, PropPair, Topology, ZpoolEngine,
+    ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
 };
 
 lazy_static! {
@@ -136,9 +136,13 @@ impl ZpoolEngine for ZpoolOpen3 {
         props: P,
         mount: M,
         alt_root: A,
+        create_mode: CreateMode,
     ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
+        if create_mode == CreateMode::Force {
+            z.arg("-f");
+        }
         if let Some(props) = props.into() {
             for arg in props.into_args() {
                 z.arg("-o");
