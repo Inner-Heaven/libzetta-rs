@@ -4,7 +4,8 @@ use pest::iterators::Pair;
 
 use parsers::Rule;
 use zpool::{Health, Topology, TopologyBuilder};
-use zpool::Vdev;
+use zpool::{Disk, Vdev};
+use zpool::vdev::VdevType;
 
 #[derive(Getters, Builder, Debug)]
 pub struct Zpool {
@@ -44,26 +45,57 @@ impl Zpool {
 }
 
 #[inline]
-fn get_topology_from_pair(pair: Pair<Rule>) -> Topology {
+fn get_vdev_type_from_pair(raid_line: Pair<Rule>) -> VdevType {
+    let raid_name = raid_line.into_inner().next().unwrap();
+    let raid_enum = raid_name.into_inner().next().unwrap();
+    VdevType::from_str(raid_enum.as_str())
+}
+
+fn get_disk_from_pair(disk_line: Pair<Rule>) -> Disk {
+    let path_pair = disk_line.into_inner().next().unwrap();
+    let path = PathBuf::from(path_pair.as_str());
+    // This sucks, but oh well
+    if path.is_relative() {
+        Disk::disk(path)
+    } else {
+        Disk::file(path)
+    }
+}
+
+#[inline]
+fn get_topology_from_pair(vdevs: Pair<Rule>) -> Topology {
     let mut topo = TopologyBuilder::default();
-    let vdevs = pair.into_inner().next().unwrap().into_inner();
-    for vdev in vdevs {
+    for vdev in vdevs.into_inner() {
         match vdev.as_rule() {
             Rule::naked_vdev => {
                 // This is very weird way to do it.
                 let mut line = vdev.into_inner();
                 let disk_line = line.next().unwrap();
-                let path_pair = disk_line.into_inner().next().unwrap();
-                let path = PathBuf::from(path_pair.as_str());
-                // This sucks, but oh well
-                if path.is_relative() {
-                    topo.vdev(Vdev::disk(path));
-                } else {
-                    topo.vdev(Vdev::file(path));
-                }
+                topo.vdev(Vdev::Naked(get_disk_from_pair(disk_line)));
             }
             Rule::raided_vdev => {
-                unimplemented!();
+                // Raid type is always first pair
+                let mut disks = Vec::with_capacity(5);
+                let mut raidtype = None;
+                for inner_pair in vdev.into_inner() {
+                    match inner_pair.as_rule() {
+                        Rule::raid_line => {
+                            raidtype = Some(get_vdev_type_from_pair(inner_pair));
+                        },
+                        Rule::disk_line => {
+                            let disk = get_disk_from_pair(inner_pair);
+                            disks.push(disk);
+                        },
+                        _ => unreachable!()
+                    }
+                }
+                match raidtype {
+                    Some(VdevType::Mirror) => topo.vdev(Vdev::Mirror(disks)),
+                    Some(VdevType::RaidZ) => topo.vdev(Vdev::RaidZ(disks)),
+                    Some(VdevType::RaidZ2) => topo.vdev(Vdev::RaidZ2(disks)),
+                    Some(VdevType::RaidZ3) => topo.vdev(Vdev::RaidZ3(disks)),
+                    _ => unreachable!()
+                };
             }
             _ => unreachable!(),
         }

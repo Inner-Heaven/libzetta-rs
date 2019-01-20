@@ -1,8 +1,8 @@
 /// Vdev data types
-use std::ffi::OsString;
-use std::path::PathBuf;
+use std::ffi::{OsStr, OsString};
+use std::path::{Path, PathBuf};
 
-/// Every vdev can be backed either by block device or sparse file.
+/// Every vdev can be backed either by a block device or a file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Disk {
     /// Sparse file based device.
@@ -18,7 +18,8 @@ impl Disk {
     /// same. Distinction exists to make sure it will work in the future.
     pub fn is_valid(&self) -> bool {
         match *self {
-            Disk::File(ref path) | Disk::Disk(ref path) => path.exists(),
+            Disk::File(ref path) => path.exists(),
+            Disk::Disk(ref path) => Path::new("/dev/").join(path).exists()
         }
     }
 
@@ -29,11 +30,48 @@ impl Disk {
         }
     }
 
+    /// Make Disk usable as arg for Command.
+    pub fn as_arg(&self) -> &OsStr {
+        match self {
+            Disk::File(path) | Disk::Disk(path) => path.as_os_str(),
+        }
+    }
+
     /// Make a reference to a block device.
     pub fn disk<O: Into<PathBuf>>(value: O) -> Disk { Disk::Disk(value.into()) }
 
     /// Make a reference to a sparse file.
     pub fn file<O: Into<PathBuf>>(value: O) -> Disk { Disk::File(value.into()) }
+}
+
+/// Basic building block of
+/// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum VdevType {
+    /// Just a single disk or file.
+    Naked,
+    /// A mirror of multiple vdevs
+    Mirror,
+    /// ZFS implements [RAID-Z](https://blogs.oracle.com/ahl/what-is-raid-z), a
+    /// variation on standard RAID-5 that offers better distribution of
+    /// parity and eliminates the “RAID-5 write hole”.
+    RaidZ,
+    /// The same as RAID-Z, but with 2 parity drives.
+    RaidZ2,
+    /// The same as RAID-Z, but with 3 parity drives.
+    RaidZ3,
+}
+
+impl VdevType {
+    pub fn from_str(source: &str) -> VdevType {
+        match source {
+            "mirror" => VdevType::Mirror,
+            "raidz1" => VdevType::RaidZ,
+            "raidz2" => VdevType::RaidZ2,
+            "raidz3" => VdevType::RaidZ3,
+            _ => VdevType::Naked
+        }
+    }
 }
 
 /// Basic building block of
@@ -111,10 +149,11 @@ impl Vdev {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use std::fs::File;
+
     use tempdir::TempDir;
+
+    use super::*;
 
     fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
         (0..num).map(|_| Disk::File(path.clone())).collect()

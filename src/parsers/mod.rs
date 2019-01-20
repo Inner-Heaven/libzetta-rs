@@ -7,8 +7,8 @@ mod test {
     use pest::Parser;
 
     use parsers::*;
+    use zpool::{Health, TopologyBuilder, Zpool};
     use zpool::vdev::{Disk, Vdev};
-    use zpool::Zpool;
 
     #[test]
     fn test_action_single_line() {
@@ -70,20 +70,16 @@ mod test {
                     config(134, 143),
                     pool_line(144, 182, [name(152, 162), state_enum(175, 181)]),
                     vdevs(182, 258, [
-                        vdev(182,220, [
-                            naked_vdev(182, 220, [
-                                disk_line(182, 220, [
-                                    path(192, 211),
-                                    state_enum(213, 219)
-                                ])
+                        naked_vdev(182, 220, [
+                            disk_line(182, 220, [
+                                path(192, 211),
+                                state_enum(213, 219)
                             ])
                         ]),
-                        vdev(220,258, [
-                            naked_vdev(220, 258, [
-                                disk_line(220, 258, [
-                                    path(230, 249),
-                                    state_enum(251, 257)
-                                ])
+                        naked_vdev(220, 258, [
+                            disk_line(220, 258, [
+                                path(230, 249),
+                                state_enum(251, 257)
                             ])
                         ])
                     ])
@@ -131,12 +127,10 @@ mod test {
                     config(252, 261),
                     pool_line(262, 317, [name(270, 280), state_enum(293, 300)]),
                     vdevs(317, 356, [
-                        vdev(317, 355, [
-                            naked_vdev(317, 355, [
-                                disk_line(317, 355, [
-                                    path(327, 346),
-                                    state_enum(348, 354)
-                                ])
+                        naked_vdev(317, 355, [
+                            disk_line(317, 355, [
+                                path(327, 346),
+                                state_enum(348, 354)
                             ])
                         ])
                     ])
@@ -263,5 +257,132 @@ errors: No known data errors
         let vdev = &first.topology().vdevs()[0];
         let vdev_expected = Vdev::Naked(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
         assert_eq!(&vdev_expected, vdev);
+    }
+
+    #[test]
+    fn test_raided_vdev_status() {
+        let stdout = r#"  pool: eden
+ state: ONLINE
+  scan: scrub repaired 0 in 0 days 07:28:14 with 0 errors on Thu Dec 20 07:28:14 2018
+config:
+
+        NAME                                            STATE     READ WRITE CKSUM
+        eden                                            ONLINE       0     0     0
+          mirror-0                                      ONLINE       0     0     0
+            gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+          raidz1-1                                      ONLINE       0     0     0
+            gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+          raidz2-2                                      ONLINE       0     0     0
+            gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+          raidz3-3                                      ONLINE       0     0     0
+            gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+            gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f  ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+        let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+
+        let mirror_drives = vec![
+            Disk::Disk("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f".into()),
+            Disk::Disk("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f".into()),
+        ];
+        let drives = vec![
+            Disk::Disk("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f".into()),
+            Disk::Disk("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f".into()),
+            Disk::Disk("gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f".into()),
+            Disk::Disk("gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f".into()),
+            Disk::Disk("gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f".into()),
+        ];
+        let topo = TopologyBuilder::default()
+            .vdevs(vec![
+                Vdev::Mirror(mirror_drives.clone()),
+                Vdev::RaidZ(drives.clone()),
+                Vdev::RaidZ2(drives.clone()),
+                Vdev::RaidZ3(drives.clone())
+            ])
+            .build()
+            .unwrap();
+        //dbg!(zpool.topology());
+
+        assert_eq!(&topo, zpool.topology());
+    }
+
+    #[test]
+    fn test_degraded_mirror() {
+        let stdout = r#"  pool: test
+ state: DEGRADED
+status: One or more devices has been taken offline by the administrator.
+        Sufficient replicas exist for the pool to continue functioning in a
+        degraded state.
+action: Online the device using 'zpool online' or replace the device with
+        'zpool replace'.
+  scan: none requested
+config:
+
+        NAME                      STATE     READ WRITE CKSUM
+        test                      DEGRADED     0     0     0
+          mirror-0                DEGRADED     0     0     0
+            14808325297596192025  OFFLINE      0     0     0  was /vdevs/vdev0
+            /vdevs/vdev1          ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+        let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
+    }
+
+    #[test]
+    fn test_zpools_on_single_zpool() {
+        let stdout = r#"  pool: test
+ state: DEGRADED
+status: One or more devices has been taken offline by the administrator.
+        Sufficient replicas exist for the pool to continue functioning in a
+        degraded state.
+action: Online the device using 'zpool online' or replace the device with
+        'zpool replace'.
+  scan: none requested
+config:
+
+        NAME                      STATE     READ WRITE CKSUM
+        test                      DEGRADED     0     0     0
+          mirror-0                DEGRADED     0     0     0
+            14808325297596192025  OFFLINE      0     0     0  was /vdevs/vdev0
+            /vdevs/vdev1          ONLINE       0     0     0
+
+errors: No known data errors
+"#;
+        let mut pairs = StdoutParser::parse(Rule::zpools, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
+    }
+
+    #[test]
+    fn test_tabs_instead_of_8_spaces() {
+        let stdout = "  pool: tests-5810578167377116542\n state: DEGRADED\nstatus: One or more devices has been taken offline by the administrator.\n\tSufficient replicas exist for the pool to continue functioning in a\n\tdegraded state.\naction: Online the device using \'zpool online\' or replace the device with\n\t\'zpool replace\'.\n  scan: none requested\nconfig:\n\n\tNAME                      STATE     READ WRITE CKSUM\n\ttests-5810578167377116542  DEGRADED     0     0     0\n\t  mirror-0                DEGRADED     0     0     0\n\t    15825580777360392022  OFFLINE      0     0     0  was /vdevs/vdev3\n\t    /vdevs/vdev4          ONLINE       0     0     0\n\nerrors: No known data errors\n";
+        let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
+            .unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        assert_eq!(&Health::Degraded, zpool.health());
     }
 }

@@ -34,7 +34,8 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    PropPair, Topology, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult,
+    CreateMode, Disk, OfflineMode, OnlineMode, PropPair, Topology, ZpoolEngine,
+    ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
 };
 
 lazy_static! {
@@ -135,9 +136,13 @@ impl ZpoolEngine for ZpoolOpen3 {
         props: P,
         mount: M,
         alt_root: A,
+        create_mode: CreateMode,
     ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("create");
+        if create_mode == CreateMode::Force {
+            z.arg("-f");
+        }
         if let Some(props) = props.into() {
             for arg in props.into_args() {
                 z.arg("-o");
@@ -309,6 +314,42 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg("scrub");
         z.arg("-s");
         z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
+    /// Takes the specified physical device offline. While the device is offline, no attempt is
+    /// made to read or write to the device.
+    fn take_offline<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OfflineMode) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("offline");
+        if mode == OfflineMode::UntilReboot {
+            z.arg("-t");
+        }
+        z.arg(name.as_ref());
+        z.arg(device.as_arg());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+    /// Brings the specified physical device online.
+    fn bring_online<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OnlineMode) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("online");
+        if mode == OnlineMode::Expand {
+            z.arg("-e");
+        }
+        z.arg(name.as_ref());
+        z.arg(device.as_arg());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

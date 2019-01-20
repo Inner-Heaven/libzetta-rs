@@ -25,10 +25,12 @@ pub mod description;
 lazy_static! {
     static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
     static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
+    static ref RE_REUSE_VDEV2: Regex = Regex::new(r"invalid vdev specification\nuse '-f' to override the following errors:\n(\S+) is part of potentially active pool '(\S+)'\n?").expect("failed to compile RE_VDEV_REUSE2)");
     static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
     static ref RE_PERMISSION_DENIED: Regex = Regex::new(r"cannot create \S+: permission denied\n").expect("failed to compile RE_PERMISSION_DENIED");
     static ref RE_NO_ACTIVE_SCRUBS: Regex = Regex::new(r"cannot (pause|cancel) scrubbing .+: there is no active scrub\n").expect("failed to compile RE_NO_ACTIVE_SCRUBS");
     static ref RE_NO_SUCH_POOL: Regex = Regex::new(r"cannot open '\S+': no such pool\n?").expect("failed to compile RE_NO_SUCH_POOL");
+    static ref RE_NO_VALID_REPLICAS: Regex = Regex::new(r"cannot offline \S+: no valid replicas\n?").expect("failed to compile RE_NO_VALID_REPLICAS");
 }
 
 quick_error! {
@@ -62,6 +64,8 @@ quick_error! {
         PermissionDenied {}
         /// Trying to pause/stop scrub thas either never stared or already completed
         NoActiveScrubs {}
+        /// Trying to take only device offline.
+        NoValidReplicas {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -79,6 +83,7 @@ impl ZpoolError {
             ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
             ZpoolError::NoActiveScrubs => ZpoolErrorKind::NoActiveScrubs,
+            ZpoolError::NoValidReplicas => ZpoolErrorKind::NoValidReplicas,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -111,8 +116,10 @@ pub enum ZpoolErrorKind {
     /// a) you running it as not root
     /// b) you running it inside jail that isn't allowed to operate zfs
     PermissionDenied,
-    /// Trying to pause/stop scrub thas either never stared or already completed
+    /// Trying to pause/stop scrub that either never stared or already completed
     NoActiveScrubs,
+    /// Trying to take only device offline.
+    NoValidReplicas,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -137,6 +144,12 @@ impl ZpoolError {
                 caps.get(1).unwrap().as_str().into(),
                 caps.get(2).unwrap().as_str().into(),
             )
+        } else if RE_REUSE_VDEV2.is_match(&stderr) {
+            let caps = RE_REUSE_VDEV2.captures(&stderr).unwrap();
+            ZpoolError::VdevReuse(
+                caps.get(1).unwrap().as_str().into(),
+                caps.get(2).unwrap().as_str().into(),
+            )
         } else if RE_REUSE_VDEV_ZOL.is_match(&stderr) {
             ZpoolError::VdevReuse(String::new(), String::new())
         } else if RE_TOO_SMALL.is_match(&stderr) {
@@ -147,6 +160,8 @@ impl ZpoolError {
             ZpoolError::NoActiveScrubs
         } else if RE_NO_SUCH_POOL.is_match(&stderr) {
             ZpoolError::PoolNotFound
+        } else if RE_NO_VALID_REPLICAS.is_match(&stderr) {
+            ZpoolError::NoValidReplicas
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -156,6 +171,32 @@ impl ZpoolError {
 /// Type alias to `Result<T, ZpoolError>`.
 pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum OfflineMode {
+    /// Device will be taken offline until operator manually bring it back online.
+    Permanent,
+    /// Upon reboot, the specified physical device reverts to its previous state.
+    UntilReboot,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum OnlineMode {
+    /// Bring device online as is.
+    Simple,
+    /// Expand the device to use all available space. If the device is part of a mirror or raidz
+    /// then all devices must be expanded before the new space will become available to the pool.
+    Expand,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum CreateMode {
+    /// Forces use of vdevs, even if they appear in use or specify a conflicting replication level.
+    ///  Not all devices can be overridden in this manner
+    Force,
+    Gentle,
+}
+
+/// Bring device online as is.
 /// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
 /// Using trait here, so I can mock it in unit tests.
 pub trait ZpoolEngine {
@@ -176,6 +217,7 @@ pub trait ZpoolEngine {
         props: P,
         mount: M,
         alt_root: A,
+        create_mode: CreateMode,
     ) -> ZpoolResult<()>;
     /// Create new zpool.
     fn create<
@@ -190,11 +232,12 @@ pub trait ZpoolEngine {
         props: P,
         mount: M,
         alt_root: A,
+        create_mode: CreateMode,
     ) -> ZpoolResult<()> {
         if !topology.is_suitable_for_create() {
             return Err(ZpoolError::InvalidTopology);
         }
-        self.create_unchecked(name, topology, props, mount, alt_root)
+        self.create_unchecked(name, topology, props, mount, alt_root, create_mode)
     }
     /// Version of destroy that doesn't verify if pool exists before removing
     /// it.
@@ -209,7 +252,7 @@ pub trait ZpoolEngine {
     }
     /// Read properties of the pool.
     fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
-    /// Ditto
+    /// Read properties of the pool.
     fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
@@ -310,6 +353,11 @@ pub trait ZpoolEngine {
     fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
     ///  Stop scrubbing.
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+    /// Takes the specified physical device offline. While the device is offline, no attempt is
+    /// made to read or write to the device.
+    fn take_offline<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OfflineMode) -> ZpoolResult<()>;
+    /// Brings the specified physical device online.
+    fn bring_online<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OnlineMode) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
@@ -336,6 +384,10 @@ mod test {
         }
 
         let vdev_reuse_text = b"cannot create \'tests-8804202574521870666\': one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n";
+        let err = ZpoolError::from_stderr(vdev_reuse_text);
+        assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
+
+        let vdev_reuse_text = b"invalid vdev specification\nuse '-f' to override the following errors:\n/vdevs/vdev0 is part of potentially active pool 'tests-9706865472708603696'\n";
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
     }
@@ -396,5 +448,12 @@ mod test {
         let text = b"cannot open 'hellasd': no such pool\n";
         let err = ZpoolError::from_stderr(text);
         assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
+    }
+
+    #[test]
+    fn no_valid_replicas() {
+        let text = b"cannot offline /vdevs/vdev0: no valid replicas\n";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::NoValidReplicas, err.kind());
     }
 }
