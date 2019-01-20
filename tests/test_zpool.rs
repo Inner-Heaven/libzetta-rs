@@ -18,6 +18,7 @@ use rand::Rng;
 use libzfs::slog::*;
 use libzfs::zpool::{Disk, TopologyBuilder, Vdev, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
+use libzfs::zpool::{Health, OfflineMode, OnlineMode};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -441,5 +442,25 @@ fn test_zpool_scrub() {
 
         let result = zpool.scrub(&name);
         assert!(result.is_ok());
+    });
+}
+
+#[test]
+fn test_zpool_take_single_device_offline() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let topo = TopologyBuilder::default()
+            .vdev(Vdev::Naked(Disk::File(vdev_path.clone())))
+            .build()
+            .unwrap();
+        zpool.create(&name, topo.clone(), None, None, None).unwrap();
+
+        let disk0 = Disk::File(vdev_path.clone());
+        let result = zpool.take_offline(&name, &disk0, OfflineMode::UntilReboot);
+        dbg!(&result);
+        assert!(result.is_err());
+
+        assert_eq!(result.unwrap_err().kind(), ZpoolErrorKind::NoValidReplicas);
     });
 }
