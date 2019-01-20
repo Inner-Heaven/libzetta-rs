@@ -4,20 +4,20 @@
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
-> Use ZFS from Rust. (very experimental)
+> libzfs-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
 Not yet. Won't be on crate.io until 0.2.0. Even then it will be very alpha. Wait for 1.0.1 which when it will have stable API, integrated into another libpandemonium project, properly documented, etc.
 
 ## Usage
-Public API for `zpool` interface is almost stable, but until I start work on `zfs` portion I don't want to call it stable.
+Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable. 
 
 ## How it works
 ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be it, but it really isn't. While `libzfs_core` is somewhat stable `libnvpair` used in it isn't and `libnv` isn't available on Linux. I might embed portable `libnv`. Now the tricky part — `libzfs_core` is just for zfs, there is not `libzpool_core` which means you either have to rely on unstable (in terms of API) `libzpool` or use `zpool(8)`. I decided to use `zpool(8)` because that's a recommended way of doing it.
 
+## Running tests
 
-## Usage
-Yeah, not today.
+Note that integration tests do a lot of zpool and zfs operations on live system. I recomend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file. 
 
 ## Current feature status
 
@@ -32,7 +32,7 @@ Yeah, not today.
 
 ### zfs
 
-Literally nothing
+Literally nothing works.
 
 ## LICENSE
 
