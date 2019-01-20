@@ -7,13 +7,10 @@ symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" | "\'" | "\"" | "(" | ")" | 
 alpha_num = _{ digit | alpha }
 alpha_nums = _{ alpha_num+ }
 text = _{ (alpha_num | whitespace |symbol)+ }
-file_path = _{ "/" ~ (name ~ "/"?)+ }
-device_name = _{ name }
-path = @{ (file_path | device_name ) }
+path = @{ !raid_enum ~ "/"? ~ (name ~ "/"?)+ }
 url = @{ ("http" | "https") ~ ":/" ~ path }
-
 state_enum = { "ONLINE" | "UNAVAIL"| "DEGRADED" | "FAULTED" }
-raid_enum = @{ "mirror" | "raidz1" | "raidz2" | "raidz2" }
+raid_enum = { "mirror" | "raidz1" | "raidz2" | "raidz3" }
 raid_name = ${ raid_enum ~ ("-" ~ digits)? }
 name = @{ ("_" | "-" | "."| alpha_num)+ }
 
@@ -26,7 +23,7 @@ see = { whitespace* ~ "see:" ~ whitespace ~ url ~ "\n" }
 config = { whitespace* ~ "config:" ~ "\n" }
 
 pool_line = { whitespace* ~ name ~ whitespace* ~ state_enum ~ text? ~ "\n"  }
-raid_line = { ("mirror" | "raidz1" | "raidz2" | "raidz2") ~ digits ~ state_enum ~ text ~ "\n" }
+raid_line = { whitespace* ~ raid_name ~ whitespace* ~ state_enum ~ text ~ "\n" }
 disk_line = { whitespace* ~ path ~ whitespace* ~ state_enum ~ text? ~ "\n"? }
 
 scan_line = { whitespace* ~ "scan:" ~ whitespace* ~ text_line }
@@ -35,7 +32,7 @@ no_errors = { "No known data errors" }
 errors = { whitespace* ~ "errors:" ~ whitespace* ~ (no_errors | multi_line_text) }
 naked_vdev = { disk_line }
 raided_vdev = { raid_line ~ disk_line+}
-vdev = { raided_vdev | naked_vdev }
+vdev = _{ raided_vdev | naked_vdev }
 vdev_line = _{ vdev ~ "\n"? }
 vdevs = { vdev_line+ }
 
