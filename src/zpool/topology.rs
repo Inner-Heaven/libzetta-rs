@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use zpool::CreateMode;
 use zpool::properties::ZpoolPropertiesWrite;
-use zpool::vdev::{CreateVdevRequest, Disk};
+use zpool::vdev::CreateVdevRequest;
 
 /// Structure representing what zpool consist of.
 /// This structure is used in zpool creation and when new drives are attached.
@@ -68,10 +68,17 @@ pub struct CreateZpoolRequest {
     /// Devices used to store data
     #[builder(default)]
     vdevs: Vec<CreateVdevRequest>,
-    /// Devices used to store cache
+    /// Adding a cache vdev to a pool will add the storage of the cache to the
+    /// [L2ARC](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-l2arc). Cache devices
+    /// cannot be mirrored. Since a cache device only stores additional copies of existing data,
+    /// there is no risk of data loss.
     #[builder(default)]
     caches: Vec<PathBuf>,
-    /// Device used as ZFS Intent Log
+    /// ZFS Log Devices, also known as ZFS Intent Log ([ZIL](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-zil)) move the intent log from the regular
+    /// pool devices to a dedicated device, typically an SSD. Having a dedicated log device can
+    /// significantly improve the performance of applications with a high volume of *synchronous*
+    /// writes, especially databases. Log devices can be mirrored, but RAID-Z is not supported.
+    /// If multiple log devices are used, writes will be load balanced across them
     #[builder(default)]
     zil: Option<CreateVdevRequest>,
 }

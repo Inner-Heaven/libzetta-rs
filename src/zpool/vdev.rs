@@ -2,7 +2,10 @@
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
-/// Every vdev can be backed either by a block device or a file.
+/// The most basic type of vdev is a standard block device. This can be an entire disk or a partition.
+/// In addition to disks, ZFS pools can be backed by regular files, this is especially useful for
+/// testing and experimentation. Use the full path to the file as the device path in zpool create.
+/// All vdevs must be at least 128 MB in size.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Disk {
     /// Sparse file based device.
@@ -78,9 +81,13 @@ impl VdevType {
 /// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CreateVdevRequest {
-    /// Just a single disk or file.
+    /// The most basic type of vdev is a standard block device. This can be an entire disk or a partition.
+    /// In addition to disks, ZFS pools can be backed by regular files, this is especially useful for
+    /// testing and experimentation. Use the full path to the file as the device path in zpool create.
+    /// All vdevs must be at least 64MB or 128 MB in size depending on implementation.
     SingleDisk(PathBuf),
-    /// A mirror of multiple vdevs
+    /// A mirror of multiple disks. A mirror vdev will only hold as much data as its smallest member.
+    /// A mirror vdev can withstand the failure of all but one of its members without losing any data.
     Mirror(Vec<PathBuf>),
     /// ZFS implements [RAID-Z](https://blogs.oracle.com/ahl/what-is-raid-z), a
     /// variation on standard RAID-5 that offers better distribution of
@@ -113,7 +120,7 @@ impl CreateVdevRequest {
     /// possible makes no sense.
     pub fn is_valid(&self) -> bool {
         match *self {
-            CreateVdevRequest::SingleDisk(ref disk) => true,
+            CreateVdevRequest::SingleDisk(ref _disk) => true,
             CreateVdevRequest::Mirror(ref disks) => CreateVdevRequest::is_valid_raid(disks, 2),
             CreateVdevRequest::RaidZ(ref disks) => CreateVdevRequest::is_valid_raid(disks, 3),
             CreateVdevRequest::RaidZ2(ref disks) => CreateVdevRequest::is_valid_raid(disks, 5),

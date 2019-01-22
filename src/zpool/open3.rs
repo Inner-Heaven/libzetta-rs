@@ -35,7 +35,7 @@ use zpool::description::Zpool;
 
 use super::{
     CreateMode, CreateZpoolRequest, Disk, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
-    ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
+    ZpoolError, ZpoolProperties, ZpoolResult
 };
 
 lazy_static! {
