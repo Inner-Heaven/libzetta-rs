@@ -4,6 +4,8 @@ pub struct StdoutParser;
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use pest::Parser;
 
     use parsers::*;
@@ -222,7 +224,7 @@ errors: Pretend this is actual error
         assert_eq!(first.name(), &String::from("bootpool"));
         assert!(first.errors().is_none());
         let vdev = &first.topology().vdevs()[0];
-        let vdev_expected = CreateVdevRequest::SingleDisk(Disk::Disk(std::path::PathBuf::from("nvd0p2")));
+        let vdev_expected = CreateVdevRequest::SingleDisk(std::path::PathBuf::from("nvd0p2"));
         assert_eq!(&vdev_expected, vdev);
 
         let second = zpools.next().unwrap();
@@ -255,7 +257,7 @@ errors: No known data errors
         assert_eq!(first.name(), &String::from("tests-12167169401705616934"));
 
         let vdev = &first.topology().vdevs()[0];
-        let vdev_expected = CreateVdevRequest::SingleDisk(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
+        let vdev_expected = CreateVdevRequest::SingleDisk(std::path::PathBuf::from("/vdevs/import/vdev0"));
         assert_eq!(&vdev_expected, vdev);
     }
 
@@ -298,15 +300,15 @@ errors: No known data errors
         let zpool = Zpool::from_pest_pair(pair);
 
         let mirror_drives = vec![
-            Disk::Disk("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f".into()),
-            Disk::Disk("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f".into()),
+            PathBuf::from("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f"),
+            PathBuf::from("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f"),
         ];
         let drives = vec![
-            Disk::Disk("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f".into()),
-            Disk::Disk("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f".into()),
-            Disk::Disk("gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f".into()),
-            Disk::Disk("gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f".into()),
-            Disk::Disk("gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f".into()),
+            PathBuf::from("gptid/d27f8063-d17d-11e4-9eed-10c37b9d936f"),
+            PathBuf::from("gptid/d2fd0492-d17d-11e4-9eed-10c37b9d936f"),
+            PathBuf::from("gptid/d37ba27f-d17d-11e4-9eed-10c37b9d936f"),
+            PathBuf::from("gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f"),
+            PathBuf::from("gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f"),
         ];
         let topo = CreateZpoolRequestBuilder::default()
             .vdevs(vec![

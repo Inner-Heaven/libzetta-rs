@@ -51,15 +51,10 @@ fn get_vdev_type_from_pair(raid_line: Pair<Rule>) -> VdevType {
     VdevType::from_str(raid_enum.as_str())
 }
 
-fn get_disk_from_pair(disk_line: Pair<Rule>) -> Disk {
+fn get_disk_from_pair(disk_line: Pair<Rule>) -> PathBuf {
     let path_pair = disk_line.into_inner().next().unwrap();
     let path = PathBuf::from(path_pair.as_str());
-    // This sucks, but oh well
-    if path.is_relative() {
-        Disk::disk(path)
-    } else {
-        Disk::file(path)
-    }
+    path
 }
 
 #[inline]

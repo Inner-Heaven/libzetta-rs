@@ -99,7 +99,7 @@ fn create_check_update_delete() {
 
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File("/vdevs/vdev0".into())))
+            .vdev(CreateVdevRequest::SingleDisk("/vdevs/vdev0".into()))
             .build()
             .unwrap();
 
@@ -159,7 +159,7 @@ fn cmd_not_found() {
 
         let topo = CreateZpoolRequestBuilder::default()
             .name(name)
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File("/vdevs/vdev0".into())))
+            .vdev(CreateVdevRequest::SingleDisk("/vdevs/vdev0".into()))
             .build()
             .unwrap();
 
@@ -182,12 +182,12 @@ fn reuse_vdev() {
         let topo1 = CreateZpoolRequestBuilder::default()
             .name(name_1.clone())
             .props(props.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_file.into())))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_file.into()))
             .build()
             .unwrap();
         let topo2 = CreateZpoolRequestBuilder::default()
             .name(name_2.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_file.into())))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_file.into()))
             .build()
             .unwrap();
 
@@ -212,7 +212,7 @@ fn create_invalid_topo() {
 
     let topo = CreateZpoolRequestBuilder::default()
         .name(name)
-        .cache(Disk::file("/vdevs/vdev0"))
+        .cache(PathBuf::from("/vdevs/vdev0"))
         .build()
         .unwrap();
 
@@ -250,7 +250,7 @@ fn read_args() {
         let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::file(vdev_path))
+            .vdev(CreateVdevRequest::disk(vdev_path))
             .build()
             .unwrap();
 
@@ -274,7 +274,7 @@ fn create_mount() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .mount(mount_point.clone())
-            .vdev(CreateVdevRequest::file(vdev_path))
+            .vdev(CreateVdevRequest::disk(vdev_path))
             .build()
             .unwrap();
 
@@ -303,7 +303,7 @@ fn create_mount_and_alt_root() {
             .name(name.clone())
             .mount(mount_point.clone())
             .altroot(alt_root.clone())
-            .vdev(CreateVdevRequest::file(vdev_path))
+            .vdev(CreateVdevRequest::disk(vdev_path))
             .build()
             .unwrap();
 
@@ -336,7 +336,7 @@ fn create_with_props() {
             .name(name.clone())
             .mount(alt_root.clone())
             .altroot(alt_root.clone())
-            .vdev(CreateVdevRequest::file(vdev_path))
+            .vdev(CreateVdevRequest::disk(vdev_path))
             .props(props.clone())
             .build()
             .unwrap();
@@ -362,7 +362,7 @@ fn test_export_import() {
 
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File("/vdevs/import/vdev0".into())))
+            .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
             .build()
             .unwrap();
         zpool.create(topo).expect("Failed to create pool for export");
@@ -390,7 +390,7 @@ fn test_status() {
 
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_path)))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_path))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
@@ -408,7 +408,7 @@ fn test_all() {
         let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_path)))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_path))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
@@ -446,7 +446,7 @@ fn test_zpool_scrub() {
         let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_path)))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_path))
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
@@ -469,7 +469,7 @@ fn test_zpool_take_single_device_offline() {
         let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(vdev_path.clone())))
+            .vdev(CreateVdevRequest::SingleDisk(vdev_path.clone()))
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
@@ -493,8 +493,8 @@ fn test_zpool_take_device_from_mirror_offline() {
             .name(name.clone())
             .create_mode(CreateMode::Force)
             .vdev(CreateVdevRequest::Mirror(vec![
-                Disk::File(vdev0_path.clone()),
-                Disk::File(vdev1_path.clone())
+                vdev0_path.clone(),
+                vdev1_path.clone()
             ]))
             .build()
             .unwrap();

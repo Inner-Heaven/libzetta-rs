@@ -70,7 +70,7 @@ pub struct CreateZpoolRequest {
     vdevs: Vec<CreateVdevRequest>,
     /// Devices used to store cache
     #[builder(default)]
-    caches: Vec<Disk>,
+    caches: Vec<PathBuf>,
     /// Device used as ZFS Intent Log
     #[builder(default)]
     zil: Option<CreateVdevRequest>,
@@ -82,13 +82,6 @@ impl CreateZpoolRequest {
         let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);
         if !valid_vdevs {
             return false;
-        }
-
-        if !self.caches.is_empty() {
-            let valid_caches = self.caches.iter().all(Disk::is_valid);
-            if !valid_caches {
-                return false;
-            }
         }
 
         match self.zil {
@@ -116,7 +109,7 @@ impl CreateZpoolRequest {
         ret.extend(vdevs);
 
         if !self.caches.is_empty() {
-            let caches = self.caches.into_iter().map(Disk::into_arg);
+            let caches = self.caches.into_iter().map(PathBuf::into_os_string);
             ret.push("cache".into());
             ret.extend(caches);
         }
@@ -142,7 +135,7 @@ impl CreateZpoolRequestBuilder {
         self
     }
 
-    pub fn cache(&mut self, disk: Disk) -> &mut CreateZpoolRequestBuilder {
+    pub fn cache(&mut self, disk: PathBuf) -> &mut CreateZpoolRequestBuilder {
         match self.caches {
             Some(ref mut vec) => vec.push(disk),
             None => {
@@ -163,8 +156,8 @@ mod test {
 
     use super::*;
 
-    fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
-        (0..num).map(|_| Disk::File(path.clone())).collect()
+    fn get_disks(num: usize, path: &PathBuf) -> Vec<PathBuf> {
+        (0..num).map(|_| path.clone()).collect()
     }
 
     fn args_from_slice(args: &[&str]) -> Vec<OsString> {
@@ -202,58 +195,14 @@ mod test {
 
         assert!(topo.is_suitable_for_create());
 
-        // Zpool with valid mirror, but invalid cache
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = CreateZpoolRequestBuilder::default()
-            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .cache(Disk::File(invalid_path.clone()))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
-        // Zpool with invalid zil
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = CreateZpoolRequestBuilder::default()
-            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .zil(CreateVdevRequest::SingleDisk(Disk::File(invalid_path)))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
-        // Zpool with invalid zil
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = CreateZpoolRequestBuilder::default()
-            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .zil(CreateVdevRequest::SingleDisk(Disk::File(invalid_path.clone())))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
         // Just add L2ARC to zpool
         let topo = CreateZpoolRequestBuilder::default()
-            .cache(Disk::File(file_path.clone()))
+            .cache(file_path)
             .build()
             .unwrap();
 
         assert!(topo.is_suitable_for_update());
         assert!(!topo.is_suitable_for_create());
-
-        // Add L2ARC and invalid vdev
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = CreateZpoolRequestBuilder::default()
-            .cache(Disk::File(file_path.clone()))
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(invalid_path)))
-            .vdev(CreateVdevRequest::SingleDisk(Disk::File(file_path.clone())))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_update());
     }
 
     #[test]
@@ -262,11 +211,11 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let path = file_path.to_str().unwrap();
         let _valid_file = File::create(file_path.clone()).unwrap();
-        let naked_vdev = CreateVdevRequest::SingleDisk(Disk::File(file_path.clone()));
+        let naked_vdev = CreateVdevRequest::SingleDisk(file_path.clone());
 
         // Just add L2ARC to zpool
         let topo = CreateZpoolRequestBuilder::default()
-            .cache(Disk::File(file_path.clone()))
+            .cache(file_path.clone())
             .build()
             .unwrap();
 

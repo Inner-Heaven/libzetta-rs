@@ -47,7 +47,7 @@ impl Disk {
 /// Basic building block of
 /// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum VdevType {
+pub enum VdevType {
     /// Just a single disk or file.
     SingleDisk,
     /// A mirror of multiple vdevs
@@ -79,26 +79,26 @@ impl VdevType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CreateVdevRequest {
     /// Just a single disk or file.
-    SingleDisk(Disk),
+    SingleDisk(PathBuf),
     /// A mirror of multiple vdevs
-    Mirror(Vec<Disk>),
+    Mirror(Vec<PathBuf>),
     /// ZFS implements [RAID-Z](https://blogs.oracle.com/ahl/what-is-raid-z), a
     /// variation on standard RAID-5 that offers better distribution of
     /// parity and eliminates the “RAID-5 write hole”.
-    RaidZ(Vec<Disk>),
+    RaidZ(Vec<PathBuf>),
     /// The same as RAID-Z, but with 2 parity drives.
-    RaidZ2(Vec<Disk>),
+    RaidZ2(Vec<PathBuf>),
     /// The same as RAID-Z, but with 3 parity drives.
-    RaidZ3(Vec<Disk>),
+    RaidZ3(Vec<PathBuf>),
 }
 
 impl CreateVdevRequest {
     #[inline]
-    fn is_valid_raid(disks: &[Disk], min_disks: usize) -> bool {
+    fn is_valid_raid(disks: &[PathBuf], min_disks: usize) -> bool {
         if disks.len() < min_disks {
             return false;
         }
-        disks.iter().all(Disk::is_valid)
+        return true;
     }
 
     /// Check if given CreateVdevRequest is valid.
@@ -113,7 +113,7 @@ impl CreateVdevRequest {
     /// possible makes no sense.
     pub fn is_valid(&self) -> bool {
         match *self {
-            CreateVdevRequest::SingleDisk(ref disk) => disk.is_valid(),
+            CreateVdevRequest::SingleDisk(ref disk) => true,
             CreateVdevRequest::Mirror(ref disks) => CreateVdevRequest::is_valid_raid(disks, 2),
             CreateVdevRequest::RaidZ(ref disks) => CreateVdevRequest::is_valid_raid(disks, 3),
             CreateVdevRequest::RaidZ2(ref disks) => CreateVdevRequest::is_valid_raid(disks, 5),
@@ -122,31 +122,35 @@ impl CreateVdevRequest {
     }
 
     #[inline]
-    fn conv_to_args<T: Into<OsString>>(vdev_type: T, disks: Vec<Disk>) -> Vec<OsString> {
+    fn conv_to_args<T: Into<OsString>>(vdev_type: T, disks: Vec<PathBuf>) -> Vec<OsString> {
         let mut ret = Vec::with_capacity(disks.len() + 1);
         ret.push(vdev_type.into());
         for disk in disks {
-            ret.push(disk.into_arg());
+            ret.push(disk.into_os_string());
         }
         ret
     }
     /// Make turn CreateVdevRequest into list of arguments.
     pub fn into_args(self) -> Vec<OsString> {
         match self {
-            CreateVdevRequest::SingleDisk(disk) => vec![disk.into_arg()],
+            CreateVdevRequest::SingleDisk(disk) => vec![disk.into_os_string()],
             CreateVdevRequest::Mirror(disks) => CreateVdevRequest::conv_to_args("mirror", disks),
             CreateVdevRequest::RaidZ(disks) => CreateVdevRequest::conv_to_args("raidz", disks),
             CreateVdevRequest::RaidZ2(disks) => CreateVdevRequest::conv_to_args("raidz2", disks),
             CreateVdevRequest::RaidZ3(disks) => CreateVdevRequest::conv_to_args("raidz3", disks),
         }
     }
-    /// Short-cut to CreateVdevRequest::SingleDisk(Disk::Disk(disk))
-    pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(Disk::Disk(value.into())) }
-
-    /// Short-cut to CreateVdevRequest::SingleDisk(Disk::File(disk))
-    pub fn file<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(Disk::File(value.into())) }
+    /// Short-cut to CreateVdevRequest::SingleDisk(disk)
+    pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(value.into()) }
 }
 
+/// A pool is made up of one or more vdevs, which themselves can be a single disk or a group
+/// of disks, in the case of a RAID transform. When multiple vdevs are used, ZFS spreads data
+/// across the vdevs to increase performance and maximize usable space.
+pub struct Vdev {
+    /// Type of Vdev
+    kind: VdevType,
+}
 #[cfg(test)]
 mod test {
     use std::fs::File;
@@ -155,8 +159,8 @@ mod test {
 
     use super::*;
 
-    fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
-        (0..num).map(|_| Disk::File(path.clone())).collect()
+    fn get_disks(num: usize, path: &PathBuf) -> Vec<PathBuf> {
+        (0..num).map(|_| path.clone()).collect()
     }
     #[test]
     fn test_disk_validation() {
@@ -183,8 +187,8 @@ mod test {
         let _valid_file = File::create(file_path.clone()).unwrap();
         let invalid_path = tmp_dir.path().join("fake");
 
-        let vdev = CreateVdevRequest::SingleDisk(Disk::File(file_path));
-        let invalid_vdev = CreateVdevRequest::SingleDisk(Disk::File(invalid_path));
+        let vdev = CreateVdevRequest::SingleDisk(file_path);
+        let invalid_vdev = CreateVdevRequest::SingleDisk(invalid_path);
         assert!(vdev.is_valid());
         assert!(!invalid_vdev.is_valid());
     }
@@ -268,7 +272,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = CreateVdevRequest::SingleDisk(Disk::File(file_path.clone()));
+        let vdev = CreateVdevRequest::SingleDisk(file_path.clone());
 
         let args = vdev.into_args();
         assert_eq!(vec![file_path], args);
@@ -332,23 +336,11 @@ mod test {
     fn short_versions_disk() {
         let name = "wat";
         let path = PathBuf::from(&name);
-        let disk = CreateVdevRequest::SingleDisk(Disk::disk(path.clone()));
-        let disk_left = CreateVdevRequest::SingleDisk(Disk::Disk(path.clone()));
+        let disk = CreateVdevRequest::SingleDisk(path.clone());
+        let disk_left = CreateVdevRequest::SingleDisk(path.clone());
 
         assert_eq!(disk_left, disk);
 
         assert_eq!(disk_left, CreateVdevRequest::disk(name.clone()));
-    }
-
-    #[test]
-    fn short_versions_file() {
-        let name = "wat";
-        let path = PathBuf::from(&name);
-        let file = CreateVdevRequest::SingleDisk(Disk::file(path.clone()));
-        let file_left = CreateVdevRequest::SingleDisk(Disk::File(path.clone()));
-
-        assert_eq!(file_left, file);
-
-        assert_eq!(file_left, CreateVdevRequest::file(name.clone()));
     }
 }
