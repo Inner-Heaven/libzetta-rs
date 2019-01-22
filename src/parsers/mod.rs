@@ -7,8 +7,8 @@ mod test {
     use pest::Parser;
 
     use parsers::*;
-    use zpool::{Health, TopologyBuilder, Zpool};
-    use zpool::vdev::{Disk, Vdev};
+    use zpool::{CreateZpoolRequestBuilder, Health, Zpool};
+    use zpool::vdev::{CreateVdevRequest, Disk};
 
     #[test]
     fn test_action_single_line() {
@@ -222,7 +222,7 @@ errors: Pretend this is actual error
         assert_eq!(first.name(), &String::from("bootpool"));
         assert!(first.errors().is_none());
         let vdev = &first.topology().vdevs()[0];
-        let vdev_expected = Vdev::Naked(Disk::Disk(std::path::PathBuf::from("nvd0p2")));
+        let vdev_expected = CreateVdevRequest::SingleDisk(Disk::Disk(std::path::PathBuf::from("nvd0p2")));
         assert_eq!(&vdev_expected, vdev);
 
         let second = zpools.next().unwrap();
@@ -255,7 +255,7 @@ errors: No known data errors
         assert_eq!(first.name(), &String::from("tests-12167169401705616934"));
 
         let vdev = &first.topology().vdevs()[0];
-        let vdev_expected = Vdev::Naked(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
+        let vdev_expected = CreateVdevRequest::SingleDisk(Disk::File(std::path::PathBuf::from("/vdevs/import/vdev0")));
         assert_eq!(&vdev_expected, vdev);
     }
 
@@ -308,12 +308,12 @@ errors: No known data errors
             Disk::Disk("gptid/d3fccc31-d17d-11e4-9eed-10c37b9d936f".into()),
             Disk::Disk("gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f".into()),
         ];
-        let topo = TopologyBuilder::default()
+        let topo = CreateZpoolRequestBuilder::default()
             .vdevs(vec![
-                Vdev::Mirror(mirror_drives.clone()),
-                Vdev::RaidZ(drives.clone()),
-                Vdev::RaidZ2(drives.clone()),
-                Vdev::RaidZ3(drives.clone())
+                CreateVdevRequest::Mirror(mirror_drives.clone()),
+                CreateVdevRequest::RaidZ(drives.clone()),
+                CreateVdevRequest::RaidZ2(drives.clone()),
+                CreateVdevRequest::RaidZ3(drives.clone())
             ])
             .build()
             .unwrap();

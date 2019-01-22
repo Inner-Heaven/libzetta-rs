@@ -1,4 +1,4 @@
-/// Vdev data types
+/// CreateVdevRequest data types
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
@@ -49,7 +49,7 @@ impl Disk {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum VdevType {
     /// Just a single disk or file.
-    Naked,
+    SingleDisk,
     /// A mirror of multiple vdevs
     Mirror,
     /// ZFS implements [RAID-Z](https://blogs.oracle.com/ahl/what-is-raid-z), a
@@ -69,7 +69,7 @@ impl VdevType {
             "raidz1" => VdevType::RaidZ,
             "raidz2" => VdevType::RaidZ2,
             "raidz3" => VdevType::RaidZ3,
-            _ => VdevType::Naked
+            _ => VdevType::SingleDisk
         }
     }
 }
@@ -77,9 +77,9 @@ impl VdevType {
 /// Basic building block of
 /// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Vdev {
+pub enum CreateVdevRequest {
     /// Just a single disk or file.
-    Naked(Disk),
+    SingleDisk(Disk),
     /// A mirror of multiple vdevs
     Mirror(Vec<Disk>),
     /// ZFS implements [RAID-Z](https://blogs.oracle.com/ahl/what-is-raid-z), a
@@ -92,7 +92,7 @@ pub enum Vdev {
     RaidZ3(Vec<Disk>),
 }
 
-impl Vdev {
+impl CreateVdevRequest {
     #[inline]
     fn is_valid_raid(disks: &[Disk], min_disks: usize) -> bool {
         if disks.len() < min_disks {
@@ -101,9 +101,9 @@ impl Vdev {
         disks.iter().all(Disk::is_valid)
     }
 
-    /// Check if given Vdev is valid.
+    /// Check if given CreateVdevRequest is valid.
     ///
-    /// For Naked it means that what ever it points to exists.
+    /// For SingleDisk it means that what ever it points to exists.
     ///
     /// For Mirror it checks that it's at least two valid disks.
     ///
@@ -113,11 +113,11 @@ impl Vdev {
     /// possible makes no sense.
     pub fn is_valid(&self) -> bool {
         match *self {
-            Vdev::Naked(ref disk) => disk.is_valid(),
-            Vdev::Mirror(ref disks) => Vdev::is_valid_raid(disks, 2),
-            Vdev::RaidZ(ref disks) => Vdev::is_valid_raid(disks, 3),
-            Vdev::RaidZ2(ref disks) => Vdev::is_valid_raid(disks, 5),
-            Vdev::RaidZ3(ref disks) => Vdev::is_valid_raid(disks, 8),
+            CreateVdevRequest::SingleDisk(ref disk) => disk.is_valid(),
+            CreateVdevRequest::Mirror(ref disks) => CreateVdevRequest::is_valid_raid(disks, 2),
+            CreateVdevRequest::RaidZ(ref disks) => CreateVdevRequest::is_valid_raid(disks, 3),
+            CreateVdevRequest::RaidZ2(ref disks) => CreateVdevRequest::is_valid_raid(disks, 5),
+            CreateVdevRequest::RaidZ3(ref disks) => CreateVdevRequest::is_valid_raid(disks, 8),
         }
     }
 
@@ -130,21 +130,21 @@ impl Vdev {
         }
         ret
     }
-    /// Make turn Vdev into list of arguments.
+    /// Make turn CreateVdevRequest into list of arguments.
     pub fn into_args(self) -> Vec<OsString> {
         match self {
-            Vdev::Naked(disk) => vec![disk.into_arg()],
-            Vdev::Mirror(disks) => Vdev::conv_to_args("mirror", disks),
-            Vdev::RaidZ(disks) => Vdev::conv_to_args("raidz", disks),
-            Vdev::RaidZ2(disks) => Vdev::conv_to_args("raidz2", disks),
-            Vdev::RaidZ3(disks) => Vdev::conv_to_args("raidz3", disks),
+            CreateVdevRequest::SingleDisk(disk) => vec![disk.into_arg()],
+            CreateVdevRequest::Mirror(disks) => CreateVdevRequest::conv_to_args("mirror", disks),
+            CreateVdevRequest::RaidZ(disks) => CreateVdevRequest::conv_to_args("raidz", disks),
+            CreateVdevRequest::RaidZ2(disks) => CreateVdevRequest::conv_to_args("raidz2", disks),
+            CreateVdevRequest::RaidZ3(disks) => CreateVdevRequest::conv_to_args("raidz3", disks),
         }
     }
-    /// Short-cut to Vdev::Naked(Disk::Disk(disk))
-    pub fn disk<O: Into<PathBuf>>(value: O) -> Vdev { Vdev::Naked(Disk::Disk(value.into())) }
+    /// Short-cut to CreateVdevRequest::SingleDisk(Disk::Disk(disk))
+    pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(Disk::Disk(value.into())) }
 
-    /// Short-cut to Vdev::Naked(Disk::File(disk))
-    pub fn file<O: Into<PathBuf>>(value: O) -> Vdev { Vdev::Naked(Disk::File(value.into())) }
+    /// Short-cut to CreateVdevRequest::SingleDisk(Disk::File(disk))
+    pub fn file<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(Disk::File(value.into())) }
 }
 
 #[cfg(test)]
@@ -183,8 +183,8 @@ mod test {
         let _valid_file = File::create(file_path.clone()).unwrap();
         let invalid_path = tmp_dir.path().join("fake");
 
-        let vdev = Vdev::Naked(Disk::File(file_path));
-        let invalid_vdev = Vdev::Naked(Disk::File(invalid_path));
+        let vdev = CreateVdevRequest::SingleDisk(Disk::File(file_path));
+        let invalid_vdev = CreateVdevRequest::SingleDisk(Disk::File(invalid_path));
         assert!(vdev.is_valid());
         assert!(!invalid_vdev.is_valid());
     }
@@ -195,13 +195,13 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::Mirror(get_disks(2, &file_path));
+        let vdev = CreateVdevRequest::Mirror(get_disks(2, &file_path));
         assert!(vdev.is_valid());
 
-        let bad = Vdev::Mirror(get_disks(1, &file_path));
+        let bad = CreateVdevRequest::Mirror(get_disks(1, &file_path));
         assert!(!bad.is_valid());
 
-        let also_bad = Vdev::Mirror(get_disks(0, &file_path));
+        let also_bad = CreateVdevRequest::Mirror(get_disks(0, &file_path));
         assert!(!also_bad.is_valid());
     }
 
@@ -211,16 +211,16 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ(get_disks(3, &file_path));
+        let vdev = CreateVdevRequest::RaidZ(get_disks(3, &file_path));
         assert!(vdev.is_valid());
 
-        let also_vdev = Vdev::RaidZ(get_disks(5, &file_path));
+        let also_vdev = CreateVdevRequest::RaidZ(get_disks(5, &file_path));
         assert!(also_vdev.is_valid());
 
-        let bad = Vdev::RaidZ(get_disks(2, &file_path));
+        let bad = CreateVdevRequest::RaidZ(get_disks(2, &file_path));
         assert!(!bad.is_valid());
 
-        let also_bad = Vdev::RaidZ(get_disks(1, &file_path));
+        let also_bad = CreateVdevRequest::RaidZ(get_disks(1, &file_path));
         assert!(!also_bad.is_valid());
     }
 
@@ -230,16 +230,16 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ2(get_disks(5, &file_path));
+        let vdev = CreateVdevRequest::RaidZ2(get_disks(5, &file_path));
         assert!(vdev.is_valid());
 
-        let also_vdev = Vdev::RaidZ2(get_disks(8, &file_path));
+        let also_vdev = CreateVdevRequest::RaidZ2(get_disks(8, &file_path));
         assert!(also_vdev.is_valid());
 
-        let bad = Vdev::RaidZ2(get_disks(3, &file_path));
+        let bad = CreateVdevRequest::RaidZ2(get_disks(3, &file_path));
         assert!(!bad.is_valid());
 
-        let also_bad = Vdev::RaidZ2(get_disks(1, &file_path));
+        let also_bad = CreateVdevRequest::RaidZ2(get_disks(1, &file_path));
         assert!(!also_bad.is_valid());
     }
 
@@ -249,16 +249,16 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ3(get_disks(8, &file_path));
+        let vdev = CreateVdevRequest::RaidZ3(get_disks(8, &file_path));
         assert!(vdev.is_valid());
 
-        let also_vdev = Vdev::RaidZ3(get_disks(10, &file_path));
+        let also_vdev = CreateVdevRequest::RaidZ3(get_disks(10, &file_path));
         assert!(also_vdev.is_valid());
 
-        let bad = Vdev::RaidZ3(get_disks(3, &file_path));
+        let bad = CreateVdevRequest::RaidZ3(get_disks(3, &file_path));
         assert!(!bad.is_valid());
 
-        let also_bad = Vdev::RaidZ3(get_disks(0, &file_path));
+        let also_bad = CreateVdevRequest::RaidZ3(get_disks(0, &file_path));
         assert!(!also_bad.is_valid());
     }
 
@@ -268,7 +268,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::Naked(Disk::File(file_path.clone()));
+        let vdev = CreateVdevRequest::SingleDisk(Disk::File(file_path.clone()));
 
         let args = vdev.into_args();
         assert_eq!(vec![file_path], args);
@@ -279,7 +279,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::Mirror(get_disks(2, &file_path));
+        let vdev = CreateVdevRequest::Mirror(get_disks(2, &file_path));
 
         let args = vdev.into_args();
         let expected: Vec<OsString> = vec![
@@ -296,7 +296,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ(get_disks(3, &file_path));
+        let vdev = CreateVdevRequest::RaidZ(get_disks(3, &file_path));
 
         let args = vdev.into_args();
         assert_eq!(4, args.len());
@@ -309,7 +309,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ2(get_disks(5, &file_path));
+        let vdev = CreateVdevRequest::RaidZ2(get_disks(5, &file_path));
 
         let args = vdev.into_args();
         assert_eq!(6, args.len());
@@ -321,7 +321,7 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let _valid_file = File::create(file_path.clone()).unwrap();
 
-        let vdev = Vdev::RaidZ3(get_disks(8, &file_path));
+        let vdev = CreateVdevRequest::RaidZ3(get_disks(8, &file_path));
 
         let args = vdev.into_args();
         assert_eq!(9, args.len());
@@ -332,23 +332,23 @@ mod test {
     fn short_versions_disk() {
         let name = "wat";
         let path = PathBuf::from(&name);
-        let disk = Vdev::Naked(Disk::disk(path.clone()));
-        let disk_left = Vdev::Naked(Disk::Disk(path.clone()));
+        let disk = CreateVdevRequest::SingleDisk(Disk::disk(path.clone()));
+        let disk_left = CreateVdevRequest::SingleDisk(Disk::Disk(path.clone()));
 
         assert_eq!(disk_left, disk);
 
-        assert_eq!(disk_left, Vdev::disk(name.clone()));
+        assert_eq!(disk_left, CreateVdevRequest::disk(name.clone()));
     }
 
     #[test]
     fn short_versions_file() {
         let name = "wat";
         let path = PathBuf::from(&name);
-        let file = Vdev::Naked(Disk::file(path.clone()));
-        let file_left = Vdev::Naked(Disk::File(path.clone()));
+        let file = CreateVdevRequest::SingleDisk(Disk::file(path.clone()));
+        let file_left = CreateVdevRequest::SingleDisk(Disk::File(path.clone()));
 
         assert_eq!(file_left, file);
 
-        assert_eq!(file_left, Vdev::file(name.clone()));
+        assert_eq!(file_left, CreateVdevRequest::file(name.clone()));
     }
 }

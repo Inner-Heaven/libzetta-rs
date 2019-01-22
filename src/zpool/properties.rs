@@ -1,7 +1,8 @@
-use super::{ZpoolError, ZpoolResult};
 /// Property related stuff.
 use std::ffi::OsString;
 use std::path::PathBuf;
+
+use super::{ZpoolError, ZpoolResult};
 
 pub trait PropPair {
     fn to_pair(&self, key: &str) -> String;
@@ -147,7 +148,7 @@ impl CacheType {
 /// let props = ZpoolPropertiesWriteBuilder::default().build();
 /// assert!(props.is_ok());
 /// ```
-#[derive(Getters, Builder, Debug, Clone, PartialEq)]
+#[derive(Getters, Builder, Debug, Clone, PartialEq, Eq)]
 pub struct ZpoolPropertiesWrite {
     /// Make zpool readonly. This can only be changed during import.
     #[builder(default = "false")]
@@ -430,6 +431,7 @@ impl ZpoolProperties {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
     fn test_defaults() {
         let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();

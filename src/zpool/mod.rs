@@ -1,3 +1,4 @@
+use std::default::Default;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
@@ -13,8 +14,8 @@ pub use self::properties::{
     CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
     ZpoolPropertiesWriteBuilder,
 };
-pub use self::topology::{Topology, TopologyBuilder};
-pub use self::vdev::{Disk, Vdev};
+pub use self::topology::{CreateZpoolRequest, CreateZpoolRequestBuilder};
+pub use self::vdev::{CreateVdevRequest, Disk};
 
 pub mod vdev;
 pub mod topology;
@@ -56,7 +57,7 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
-        /// Device used in Topology is smaller than 64M
+        /// Device used in CreateZpoolRequest is smaller than 64M
         DeviceTooSmall {}
         /// Permission denied to create zpool. This might happened because:
         /// a) you running it as not root
@@ -110,7 +111,7 @@ pub enum ZpoolErrorKind {
     /// Failed to parse value. Ideally you never see it, if you see it - it's a
     /// bug.
     ParseError,
-    /// Device used in Topology is smaller than 64M
+    /// Device used in CreateZpoolRequest is smaller than 64M
     DeviceTooSmall,
     /// Permission denied to create zpool. This might happened because:
     /// a) you running it as not root
@@ -196,6 +197,12 @@ pub enum CreateMode {
     Gentle,
 }
 
+impl Default for CreateMode {
+    fn default() -> CreateMode {
+        CreateMode::Gentle
+    }
+}
+
 /// Bring device online as is.
 /// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
 /// Using trait here, so I can mock it in unit tests.
@@ -204,41 +211,8 @@ pub trait ZpoolEngine {
     /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html) error, instead
     /// it should return `Ok(false)`.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
-    /// Version of create that doesn't check validness of topology or options.
-    fn create_unchecked<
-        N: AsRef<str>,
-        P: Into<Option<ZpoolPropertiesWrite>>,
-        M: Into<Option<PathBuf>>,
-        A: Into<Option<PathBuf>>,
-    >(
-        &self,
-        name: N,
-        topology: Topology,
-        props: P,
-        mount: M,
-        alt_root: A,
-        create_mode: CreateMode,
-    ) -> ZpoolResult<()>;
     /// Create new zpool.
-    fn create<
-        N: AsRef<str>,
-        P: Into<Option<ZpoolPropertiesWrite>>,
-        M: Into<Option<PathBuf>>,
-        A: Into<Option<PathBuf>>,
-    >(
-        &self,
-        name: N,
-        topology: Topology,
-        props: P,
-        mount: M,
-        alt_root: A,
-        create_mode: CreateMode,
-    ) -> ZpoolResult<()> {
-        if !topology.is_suitable_for_create() {
-            return Err(ZpoolError::InvalidTopology);
-        }
-        self.create_unchecked(name, topology, props, mount, alt_root, create_mode)
-    }
+    fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()>;
     /// Version of destroy that doesn't verify if pool exists before removing
     /// it.
     fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
@@ -390,6 +364,11 @@ mod test {
         let vdev_reuse_text = b"invalid vdev specification\nuse '-f' to override the following errors:\n/vdevs/vdev0 is part of potentially active pool 'tests-9706865472708603696'\n";
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
+
+        // TODO: add regexp for this too
+        //let vdev_reuse_text = b"invalid vdev specification\nuse \'-f\' to override the following errors:\n/vdevs/vdev0 is part of exported pool \'test\'\n";
+        //let err = ZpoolError::from_stderr(vdev_reuse_text);
+        //assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
     }
 
     #[test]

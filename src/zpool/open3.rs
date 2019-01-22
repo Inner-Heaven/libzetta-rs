@@ -34,7 +34,7 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    CreateMode, Disk, OfflineMode, OnlineMode, PropPair, Topology, ZpoolEngine,
+    CreateMode, CreateZpoolRequest, Disk, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
     ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
 };
 
@@ -124,41 +124,31 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn create_unchecked<
-        N: AsRef<str>,
-        P: Into<Option<ZpoolPropertiesWrite>>,
-        M: Into<Option<PathBuf>>,
-        A: Into<Option<PathBuf>>,
-    >(
-        &self,
-        name: N,
-        topology: Topology,
-        props: P,
-        mount: M,
-        alt_root: A,
-        create_mode: CreateMode,
-    ) -> ZpoolResult<()> {
+    fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()> {
+        if !request.is_suitable_for_create() {
+            return Err(ZpoolError::InvalidTopology);
+        }
         let mut z = self.zpool();
         z.arg("create");
-        if create_mode == CreateMode::Force {
+        if request.create_mode() == &CreateMode::Force {
             z.arg("-f");
         }
-        if let Some(props) = props.into() {
+        if let Some(props) = request.props().clone() {
             for arg in props.into_args() {
                 z.arg("-o");
                 z.arg(arg);
             }
         }
-        if let Some(mount) = mount.into() {
+        if let Some(mount) = request.mount().clone() {
             z.arg("-m");
             z.arg(mount);
         }
-        if let Some(alt_root) = alt_root.into() {
+        if let Some(altroot) = request.altroot().clone() {
             z.arg("-R");
-            z.arg(alt_root);
+            z.arg(altroot);
         }
-        z.arg(name.as_ref());
-        z.args(topology.into_args());
+        z.arg(request.name());
+        z.args(request.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

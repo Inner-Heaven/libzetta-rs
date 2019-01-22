@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use pest::iterators::Pair;
 
 use parsers::Rule;
-use zpool::{Health, Topology, TopologyBuilder};
-use zpool::{Disk, Vdev};
+use zpool::{CreateZpoolRequest, CreateZpoolRequestBuilder, Health};
+use zpool::{CreateVdevRequest, Disk};
 use zpool::vdev::VdevType;
 
 #[derive(Getters, Builder, Debug)]
@@ -14,7 +14,7 @@ pub struct Zpool {
     #[builder(default)]
     id: Option<u64>,
     health: Health,
-    topology: Topology,
+    topology: CreateZpoolRequest,
     #[builder(default)]
     action: Option<String>,
     #[builder(default)]
@@ -63,15 +63,15 @@ fn get_disk_from_pair(disk_line: Pair<Rule>) -> Disk {
 }
 
 #[inline]
-fn get_topology_from_pair(vdevs: Pair<Rule>) -> Topology {
-    let mut topo = TopologyBuilder::default();
+fn get_topology_from_pair(vdevs: Pair<Rule>) -> CreateZpoolRequest {
+    let mut topo = CreateZpoolRequestBuilder::default();
     for vdev in vdevs.into_inner() {
         match vdev.as_rule() {
             Rule::naked_vdev => {
                 // This is very weird way to do it.
                 let mut line = vdev.into_inner();
                 let disk_line = line.next().unwrap();
-                topo.vdev(Vdev::Naked(get_disk_from_pair(disk_line)));
+                topo.vdev(CreateVdevRequest::SingleDisk(get_disk_from_pair(disk_line)));
             }
             Rule::raided_vdev => {
                 // Raid type is always first pair
@@ -90,10 +90,10 @@ fn get_topology_from_pair(vdevs: Pair<Rule>) -> Topology {
                     }
                 }
                 match raidtype {
-                    Some(VdevType::Mirror) => topo.vdev(Vdev::Mirror(disks)),
-                    Some(VdevType::RaidZ) => topo.vdev(Vdev::RaidZ(disks)),
-                    Some(VdevType::RaidZ2) => topo.vdev(Vdev::RaidZ2(disks)),
-                    Some(VdevType::RaidZ3) => topo.vdev(Vdev::RaidZ3(disks)),
+                    Some(VdevType::Mirror) => topo.vdev(CreateVdevRequest::Mirror(disks)),
+                    Some(VdevType::RaidZ) => topo.vdev(CreateVdevRequest::RaidZ(disks)),
+                    Some(VdevType::RaidZ2) => topo.vdev(CreateVdevRequest::RaidZ2(disks)),
+                    Some(VdevType::RaidZ3) => topo.vdev(CreateVdevRequest::RaidZ3(disks)),
                     _ => unreachable!()
                 };
             }
