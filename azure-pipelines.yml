@@ -45,4 +45,9 @@ jobs:
         CARGO=$HOME/.cargo/bin/cargo
         sudo $CARGO test
       displayName: Run Tests
+    - script: |
+        CARGO=$HOME/.cargo/bin/cargo
+        sudo $CARGO test
+      displayName: Run Coverage
+      condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
 
