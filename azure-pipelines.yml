@@ -1,0 +1,59 @@
+trigger:
+- master
+pr:
+- master
+jobs:
+- job: check_formatting
+  displayName: Check formatting
+  pool:
+    vmImage: ubuntu-16.04
+  steps:
+    - script: |
+        curl https://sh.rustup.rs -sSf | sh -s -- -y
+        $HOME/.cargo/bin/rustup component add rustfmt
+      displayName: Install stable Rust
+    - script: |
+        $HOME/.cargo/bin/cargo fmt -- --check
+      displayName: Run rustfmt
+- job: run_tests
+  displayName: Run Unit Tests
+  variables:
+    zol-verison: "0.7.12"
+  pool:
+    vmImage: ubuntu-16.04
+  strategy:
+    matrix:
+      stable:
+        rustup_toolchain: stable
+      beta:
+        rustup_toolchain: beta
+      nightly:
+        rustup_toolchain: nightly
+  steps:
+    - script: |
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+        echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+      displayName: Install rust
+    - script: |
+        apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
+      displayName: Install dependencies
+    - scripts: |
+        ls /etc/apt/sources.list.d/
+        MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
+        sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
+        cd /tmp
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
+        (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        sudo modprobe zfs
+        cd $TRAVIS_BUILD_DIR
+        sudo mkdir /vdevs && sudo chmod 777 /vdevs
+      displayName: Install ZFS on Linux
+    - script: |
+        cargo check --tests
+      displayName: cargo check
+    - scripts: |
+          cargo test
+      displayName: Run Tests
+
