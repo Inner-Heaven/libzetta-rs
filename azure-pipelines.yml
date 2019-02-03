@@ -53,7 +53,7 @@ jobs:
     - script: |
         cargo check --tests
       displayName: cargo check
-    - scripts: |
+    - script: |
           cargo test
       displayName: Run Tests
 
