@@ -1,6 +1,6 @@
 ![RsFreeBSD](libzfs.png)
 
-[![Build Status](https://travis-ci.org/Inner-Heaven/libzfs-rs.svg?branch=master)](https://travis-ci.org/Inner-Heaven/libzfs-rs)
+[![Build Status](https://dev.azure.com/andoriyu/libpandemonium/_apis/build/status/Inner-Heaven.libzfs-rs?branchName=master)](https://dev.azure.com/andoriyu/libpandemonium/_build/latest?definitionId=1&branchName=master)
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
