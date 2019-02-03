@@ -42,6 +42,6 @@ jobs:
         cargo check --tests
       displayName: cargo check
     - script: |
-        cargo test
+        sudo cargo test
       displayName: Run Tests
 
