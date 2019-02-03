@@ -18,7 +18,7 @@ jobs:
 - job: run_tests
   displayName: Run Unit Tests
   variables:
-    zol-verison: "0.7.12"
+    zol_verison: "0.7.12"
   pool:
     vmImage: ubuntu-16.04
   strategy:
@@ -37,15 +37,15 @@ jobs:
     - script: |
         apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
-    - scripts: |
+    - script: |
         ls /etc/apt/sources.list.d/
         MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
         sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
         cd /tmp
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
-        (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
-        (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_VERSION/spl-$ZOL_VERSION.tar.gz | tar xz
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_VERSION/zfs-$ZOL_VERSION.tar.gz | tar xz
+        (cd spl-$ZOL_VERSION && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        (cd zfs-$ZOL_VERSION && ./configure --prefix=/usr && make && sudo make install) > /dev/null
         sudo modprobe zfs
         cd $TRAVIS_BUILD_DIR
         sudo mkdir /vdevs && sudo chmod 777 /vdevs
