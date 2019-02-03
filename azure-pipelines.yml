@@ -40,8 +40,7 @@ jobs:
       displayName: Install ZFS on Linux
     - script: |
         CARGO=$HOME/.cargo/bin/cargo
-        $CARGO install cargo-junit
-        sudo RUSTFLAGS="-C link-dead-code" $CARGO junit --name output.xml
+        sudo RUSTFLAGS="-C link-dead-code" $CARGO test
       displayName: Run Tests
     - script: |
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
