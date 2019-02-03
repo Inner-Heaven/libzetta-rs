@@ -22,7 +22,7 @@
 //! It's called open 3 because it opens stdin, stdout, stder.
 
 use std::env;
-use std::ffi::OsString;
+use std::ffi::{OsString, OsStr};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
@@ -315,14 +315,14 @@ impl ZpoolEngine for ZpoolOpen3 {
 
     /// Takes the specified physical device offline. While the device is offline, no attempt is
     /// made to read or write to the device.
-    fn take_offline<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OfflineMode) -> ZpoolResult<()> {
+    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OfflineMode) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("offline");
         if mode == OfflineMode::UntilReboot {
             z.arg("-t");
         }
         z.arg(name.as_ref());
-        z.arg(device.as_arg());
+        z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
@@ -332,14 +332,14 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
     /// Brings the specified physical device online.
-    fn bring_online<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OnlineMode) -> ZpoolResult<()> {
+    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OnlineMode) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("online");
         if mode == OnlineMode::Expand {
             z.arg("-e");
         }
         z.arg(name.as_ref());
-        z.arg(device.as_arg());
+        z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

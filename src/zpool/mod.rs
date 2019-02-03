@@ -5,6 +5,7 @@ use std::default::Default;
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
+use std::ffi::OsStr;
 
 use regex::Regex;
 
@@ -329,9 +330,9 @@ pub trait ZpoolEngine {
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
     /// Takes the specified physical device offline. While the device is offline, no attempt is
     /// made to read or write to the device.
-    fn take_offline<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OfflineMode) -> ZpoolResult<()>;
+    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OfflineMode) -> ZpoolResult<()>;
     /// Brings the specified physical device online.
-    fn bring_online<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OnlineMode) -> ZpoolResult<()>;
+    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OnlineMode) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]

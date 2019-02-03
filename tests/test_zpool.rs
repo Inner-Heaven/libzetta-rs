@@ -474,8 +474,7 @@ fn test_zpool_take_single_device_offline() {
             .unwrap();
         zpool.create(topo).unwrap();
 
-        let disk0 = Disk::File(vdev_path.clone());
-        let result = zpool.take_offline(&name, &disk0, OfflineMode::UntilReboot);
+        let result = zpool.take_offline(&name, &vdev_path, OfflineMode::UntilReboot);
         dbg!(&result);
         assert!(result.is_err());
 
@@ -499,14 +498,13 @@ fn test_zpool_take_device_from_mirror_offline() {
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
-        let disk0 = Disk::File(vdev0_path.clone());
-        let result = zpool.take_offline(&name, &disk0, OfflineMode::UntilReboot);
+        let result = zpool.take_offline(&name, &vdev0_path, OfflineMode::UntilReboot);
         assert!(result.is_ok());
 
         let z = zpool.status(&name).unwrap();
         assert_eq!(&Health::Degraded, z.health());
 
-        let result = zpool.bring_online(&name, &disk0, OnlineMode::Simple);
+        let result = zpool.bring_online(&name, &vdev0_path, OnlineMode::Simple);
         assert!(result.is_ok());
 
         let z = zpool.status(&name).unwrap();

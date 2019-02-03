@@ -1,50 +1,67 @@
 /// CreateVdevRequest data types
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+use std::default::Default;
+use zpool::Health;
 
-/// The most basic type of vdev is a standard block device. This can be an entire disk or a partition.
-/// In addition to disks, ZFS pools can be backed by regular files, this is especially useful for
-/// testing and experimentation. Use the full path to the file as the device path in zpool create.
-/// All vdevs must be at least 128 MB in size.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Disk {
-    /// Sparse file based device.
-    File(PathBuf),
-    /// Block device.
-    Disk(PathBuf),
+/// Error statistics.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ErrorStatistics {
+    /// I/O errors that occurred while issuing a read request
+    pub read: u64,
+    /// I/O errors that occurred while issuing a write request
+    pub write: u64,
+    /// Checksum errors, meaning that the device returned corrupted data as the result of a read request
+    pub checksum: u64
 }
 
-impl Disk {
-    /// Verify that disk is valid. Just because it valid doesn't mean zpool can
-    /// use it.
-    /// all it does it verifies that path exists. For now they both look the
-    /// same. Distinction exists to make sure it will work in the future.
-    pub fn is_valid(&self) -> bool {
-        match *self {
-            Disk::File(ref path) => path.exists(),
-            Disk::Disk(ref path) => Path::new("/dev/").join(path).exists()
+impl Default for ErrorStatistics {
+    fn default() -> ErrorStatistics {
+        ErrorStatistics {
+            read: 0,
+            write: 0,
+            checksum: 0
         }
     }
+}
+/// This is the most basic building block of vdev. It can be backed by a entire block device,
+/// a partition or a file. This particular structure represents backing of existing vdev. If disk is
+/// part of active zpool then it will also have error counts.
+#[derive(Debug, Clone, Getters, Eq)]
+pub struct  Disk {
+    /// Path to a backing device or file. If path is relative, then it's relative to `/dev/`.
+    path: PathBuf,
+    /// Current health of this specific device.
+    health: Health,
+    /// Reason why device is in this state.
+    reason: Option<String>,
+    /// Error statistics.
+    error_statistics: ErrorStatistics
+}
 
-    /// Make Disk usable as arg for Command.
-    pub fn into_arg(self) -> OsString {
-        match self {
-            Disk::File(path) | Disk::Disk(path) => path.into_os_string(),
-        }
+/// Equal if path is the same.
+impl PartialEq for Disk {
+    fn eq(&self, other: &Disk) -> bool {
+        self.path == other.path
     }
+}
 
-    /// Make Disk usable as arg for Command.
-    pub fn as_arg(&self) -> &OsStr {
-        match self {
-            Disk::File(path) | Disk::Disk(path) => path.as_os_str(),
-        }
+impl PartialEq<Path> for Disk {
+    fn eq(&self, other: &Path) -> bool {
+        self.path.as_path() == other
     }
+}
 
-    /// Make a reference to a block device.
-    pub fn disk<O: Into<PathBuf>>(value: O) -> Disk { Disk::Disk(value.into()) }
+impl PartialEq<PathBuf> for Disk {
+    fn eq(&self, other: &PathBuf) -> bool {
+        &self.path == other
+    }
+}
 
-    /// Make a reference to a sparse file.
-    pub fn file<O: Into<PathBuf>>(value: O) -> Disk { Disk::File(value.into()) }
+impl std::convert::AsRef<OsStr> for Disk {
+    fn as_ref(&self) -> &OsStr {
+        self.path.as_os_str()
+    }
 }
 
 /// Basic building block of
@@ -149,14 +166,55 @@ impl CreateVdevRequest {
     }
     /// Short-cut to CreateVdevRequest::SingleDisk(disk)
     pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(value.into()) }
+
+    /// Get kind
+    pub fn kind(&self) -> VdevType {
+        match self {
+            CreateVdevRequest::SingleDisk(_) => VdevType::SingleDisk,
+            CreateVdevRequest::Mirror(_) => VdevType::Mirror,
+            CreateVdevRequest::RaidZ(_) => VdevType::RaidZ,
+            CreateVdevRequest::RaidZ2(_) => VdevType::RaidZ2,
+            CreateVdevRequest::RaidZ3(_) => VdevType::RaidZ3,
+        }
+    }
 }
 
 /// A pool is made up of one or more vdevs, which themselves can be a single disk or a group
 /// of disks, in the case of a RAID transform. When multiple vdevs are used, ZFS spreads data
 /// across the vdevs to increase performance and maximize usable space.
+#[derive(Debug, Clone, Getters)]
 pub struct Vdev {
     /// Type of Vdev
     kind: VdevType,
+    /// Current Health of Vdev
+    health: Health,
+    /// Reason why vdev is in this state
+    reason: Option<String>,
+    /// Backing devices for this vdev
+    disks: Vec<Disk>
+}
+
+/// Vdevs are equal of their type and backing disks are equal.
+impl PartialEq for Vdev {
+    fn eq(&self, other: &Vdev) -> bool {
+        self.kind() == other.kind() &&
+            self.disks() == other.disks()
+    }
+}
+
+impl PartialEq<CreateVdevRequest> for Vdev {
+    fn eq(&self, other: &CreateVdevRequest) -> bool {
+        self.kind() == &other.kind() && {
+            match other {
+                CreateVdevRequest::SingleDisk(ref d) => &self.disks()[0] == d,
+                CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ3(ref disks) => self.disks() == disks,
+                _ => false
+            }
+        }
+    }
 }
 #[cfg(test)]
 mod test {
@@ -168,23 +226,6 @@ mod test {
 
     fn get_disks(num: usize, path: &PathBuf) -> Vec<PathBuf> {
         (0..num).map(|_| path.clone()).collect()
-    }
-    #[test]
-    fn test_disk_validation() {
-        let tmp_dir = TempDir::new("zpool-tests").unwrap();
-        let file_path = tmp_dir.path().join("block-device");
-        let _valid_file = File::create(file_path.clone()).unwrap();
-        let invalid_path = tmp_dir.path().join("fake");
-
-        let valid_disk_file = Disk::File(file_path.clone());
-        let invalid_disk_file = Disk::File(invalid_path.clone());
-        assert!(valid_disk_file.is_valid());
-        assert!(!invalid_disk_file.is_valid());
-
-        let valid_disk = Disk::Disk(file_path.clone());
-        let invalid_disk = Disk::Disk(invalid_path.clone());
-        assert!(valid_disk.is_valid());
-        assert!(!invalid_disk.is_valid());
     }
 
     #[test]
