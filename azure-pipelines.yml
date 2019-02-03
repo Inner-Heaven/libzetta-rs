@@ -43,11 +43,12 @@ jobs:
       displayName: cargo check
     - script: |
         CARGO=$HOME/.cargo/bin/cargo
-        sudo $CARGO test
+        sudo RUSTFLAGS="-C link-dead-code" $CARGO test
       displayName: Run Tests
     - script: |
-        CARGO=$HOME/.cargo/bin/cargo
-        sudo $CARGO test
+        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
+        sudo RUSTFLAGS="-C link-dead-code" $(which cargo) tarpaulin --out Xml
+        bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
 
