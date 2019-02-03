@@ -18,7 +18,7 @@ jobs:
 - job: run_tests
   displayName: Run Unit Tests
   variables:
-    zol_verison: "0.7.12"
+    zol_rel: "0.7.12"
   pool:
     vmImage: ubuntu-16.04
   strategy:
@@ -42,10 +42,10 @@ jobs:
         MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
         sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
         cd /tmp
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_VERSION/spl-$ZOL_VERSION.tar.gz | tar xz
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_VERSION/zfs-$ZOL_VERSION.tar.gz | tar xz
-        (cd spl-$ZOL_VERSION && ./configure --prefix=/usr && make && sudo make install) > /dev/null
-        (cd zfs-$ZOL_VERSION && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_REL/spl-$ZOL_REL.tar.gz | tar xz
+        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_REL/zfs-$ZOL_REL.tar.gz | tar xz
+        (cd spl-$ZOL_REL && ./configure --prefix=/usr && make && sudo make install) > /dev/null
+        (cd zfs-$ZOL_REL && ./configure --prefix=/usr && make && sudo make install) > /dev/null
         sudo modprobe zfs
         cd $TRAVIS_BUILD_DIR
         sudo mkdir /vdevs && sudo chmod 777 /vdevs
@@ -54,6 +54,6 @@ jobs:
         cargo check --tests
       displayName: cargo check
     - script: |
-          cargo test
+        cargo test
       displayName: Run Tests
 
