@@ -42,6 +42,7 @@ jobs:
         cargo check --tests
       displayName: cargo check
     - script: |
-        sudo cargo test
+        CARGO=$HOME/.cargo/bin/cargo
+        sudo $CARGO test
       displayName: Run Tests
 
