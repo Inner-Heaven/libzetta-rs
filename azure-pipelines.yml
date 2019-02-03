@@ -39,10 +39,8 @@ jobs:
         sudo mkdir /vdevs && sudo chmod 777 /vdevs
       displayName: Install ZFS on Linux
     - script: |
-        cargo check --tests
-      displayName: cargo check
-    - script: |
         CARGO=$HOME/.cargo/bin/cargo
+        $CARGO install cargo-junit --name output.xml
         sudo RUSTFLAGS="-C link-dead-code" $CARGO test
       displayName: Run Tests
     - script: |
@@ -51,4 +49,9 @@ jobs:
         bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
+    - task: PublishTestResults@2
+      inputs:
+        testRunner: JUnit
+        testResultsFiles: 'output.xml'
+        failTaskOnFailedTests: true
 
