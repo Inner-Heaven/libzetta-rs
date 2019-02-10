@@ -40,7 +40,9 @@ jobs:
       displayName: Install ZFS on Linux
     - script: |
         CARGO=$HOME/.cargo/bin/cargo
-        sudo RUSTFLAGS="-C link-dead-code" $CARGO test
+        RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
+        cargo install cargo-suity
+        RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
     - script: |
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
@@ -51,6 +53,6 @@ jobs:
     - task: PublishTestResults@2
       inputs:
         testRunner: JUnit
-        testResultsFiles: 'output.xml'
+        testResultsFiles: 'test-results/default.xml'
         failTaskOnFailedTests: true
 
