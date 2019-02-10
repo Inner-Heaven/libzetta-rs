@@ -43,6 +43,7 @@ jobs:
         CARGO=$HOME/.cargo/bin/cargo
         RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
         cargo install cargo-suity
+        mkdir test-results
         RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
     - script: |
