@@ -1,0 +1,20 @@
+# markdown-spellcheck spelling configuration file
+# Format - lines beginning # are comments
+# global dictionary is at the start, file overrides afterwards
+# one word per line, to define a file override use ' - filename'
+# where filename is relative to this configuration file
+libzfs-rs
+zfs
+crate.io
+libpandemonium
+zol
+zpool
+vdev
+api
+BSD-2-Clause
+ - README.md
+0.2.0.
+1.0.1
+9.2.
+64mb
+open3
