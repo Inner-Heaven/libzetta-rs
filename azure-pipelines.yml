@@ -44,7 +44,7 @@ jobs:
         RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
         cargo install cargo-suity
         mkdir test-results
-        RUSTFLAGS="-C link-dead-code" sudo $CARGO test
+        sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
     - script: |
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
