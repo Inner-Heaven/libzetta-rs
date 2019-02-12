@@ -23,6 +23,7 @@ jobs:
         echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
       displayName: Install rust
     - script: |
+        sudo apt-get update
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
     - script: |
@@ -40,7 +41,10 @@ jobs:
       displayName: Install ZFS on Linux
     - script: |
         CARGO=$HOME/.cargo/bin/cargo
-        sudo RUSTFLAGS="-C link-dead-code" $CARGO test
+        RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
+        cargo install cargo-suity
+        mkdir test-results
+        sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
     - script: |
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
@@ -51,6 +55,6 @@ jobs:
     - task: PublishTestResults@2
       inputs:
         testRunner: JUnit
-        testResultsFiles: 'output.xml'
+        testResultsFiles: 'test-results/default.xml'
         failTaskOnFailedTests: true
 
