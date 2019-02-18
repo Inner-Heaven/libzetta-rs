@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
@@ -91,6 +92,7 @@ impl PartialEq<Zpool> for CreateZpoolRequest {
     }
 }
 
+#[inline]
 fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
@@ -101,6 +103,7 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     }
 }
 
+#[inline]
 fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolBuilder) {
     debug_assert_eq!(pool_line.as_rule(), Rule::pool_line);
 
@@ -113,24 +116,28 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
     }
 }
 
+#[inline]
 fn get_vdev_type(raid_name: Pair<Rule>) -> VdevType {
     let raid_enum = raid_name.into_inner().next().expect("Failed to parse raid_enum");
     debug_assert!(raid_enum.as_rule() == Rule::raid_enum);
-    VdevType::from_str(raid_enum.as_str())
+    VdevType::from_str(raid_enum.as_str()).expect("Failed to parse raid type")
 }
 
+#[inline]
 fn get_path_from_path(path: Option<Pair<Rule>>) -> PathBuf {
     let path = path.expect("Missing path from disk line");
     debug_assert!(path.as_rule() == Rule::path);
     PathBuf::from(path.into_span().as_str())
 }
 
+#[inline]
 fn get_health_from_health(health: Option<Pair<Rule>>) -> Health {
     let health = health.expect("Missing health from disk line");
     debug_assert!(health.as_rule() == Rule::state_enum);
     Health::try_from_str(Some(health.into_span().as_str())).expect("Failed to parse Health")
 }
 
+#[inline]
 fn get_disk_from_disk_line(disk_line: Pair<Rule>) -> Disk {
     debug_assert!(disk_line.as_rule() == Rule::disk_line);
 
@@ -150,6 +157,7 @@ fn get_disk_from_disk_line(disk_line: Pair<Rule>) -> Disk {
         .expect("Failed to build disk")
 }
 
+#[inline]
 fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Option<Reason>) {
     let mut stats = None;
     let mut reason = None;
@@ -160,13 +168,14 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Opti
             _ => { unreachable!(); },
         }
     }
-    (stats.unwrap_or(ErrorStatistics::default()), reason)
+    (stats.unwrap_or_default(), reason)
 }
 
+#[inline]
 fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
     debug_assert!(pair.as_rule() == Rule::vdevs);
 
-    pair.into_inner().into_iter()
+    pair.into_inner()
         .map(|vdev| {
             match vdev.as_rule() {
                 Rule::naked_vdev => {
@@ -207,48 +216,7 @@ fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
         })
         .collect()
 }
-/*
-#[inline]
-fn get_topology_from_pair(vdevs: Pair<Rule>) -> CreateZpoolRequest {
-    let mut topo = CreateZpoolRequestBuilder::default();
-    for vdev in vdevs.into_inner() {
-        match vdev.as_rule() {
-            Rule::naked_vdev => {
-                // This is very weird way to do it.
-                let mut line = vdev.into_inner();
-                let disk_line = line.next().unwrap();
-                topo.vdev(CreateVdevRequest::SingleDisk(get_disk_from_pair(disk_line)));
-            }
-            Rule::raided_vdev => {
-                // Raid type is always first pair
-                let mut disks = Vec::with_capacity(5);
-                let mut raidtype = None;
-                for inner_pair in vdev.into_inner() {
-                    match inner_pair.as_rule() {
-                        Rule::raid_line => {
-                            raidtype = Some(get_vdev_type_from_pair(inner_pair));
-                        },
-                        Rule::disk_line => {
-                            let disk = get_disk_from_pair(inner_pair);
-                            disks.push(disk);
-                        },
-                        _ => unreachable!()
-                    }
-                }
-                match raidtype {
-                    Some(VdevType::Mirror) => topo.vdev(CreateVdevRequest::Mirror(disks)),
-                    Some(VdevType::RaidZ) => topo.vdev(CreateVdevRequest::RaidZ(disks)),
-                    Some(VdevType::RaidZ2) => topo.vdev(CreateVdevRequest::RaidZ2(disks)),
-                    Some(VdevType::RaidZ3) => topo.vdev(CreateVdevRequest::RaidZ3(disks)),
-                    _ => unreachable!()
-                };
-            }
-            _ => unreachable!(),
-        }
-    }
-    topo.build().unwrap()
-}
-*/
+
 #[inline]
 fn get_health_from_pair(pair: Pair<Rule>) -> Health {
     let health = get_string_from_pair(pair);

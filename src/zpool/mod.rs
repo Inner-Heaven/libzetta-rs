@@ -68,6 +68,8 @@ quick_error! {
         NoActiveScrubs {}
         /// Trying to take only device offline.
         NoValidReplicas {}
+        /// Couldn't parse string to raid type.
+        UnknownRaidType(source: String) {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -86,6 +88,7 @@ impl ZpoolError {
             ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
             ZpoolError::NoActiveScrubs => ZpoolErrorKind::NoActiveScrubs,
             ZpoolError::NoValidReplicas => ZpoolErrorKind::NoValidReplicas,
+            ZpoolError::UnknownRaidType(_) => ZpoolErrorKind::UnknownRaidType,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -122,6 +125,8 @@ pub enum ZpoolErrorKind {
     NoActiveScrubs,
     /// Trying to take only device offline.
     NoValidReplicas,
+    /// Couldn't parse string to raid type.
+    UnknownRaidType,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,

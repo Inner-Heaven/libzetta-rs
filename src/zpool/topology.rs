@@ -15,12 +15,12 @@ use zpool::vdev::CreateVdevRequest;
 /// Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
 ///
 /// ```rust
-/// use libzfs::zpool::CreateZpoolRequestBuilder;
-/// use libzfs::zpool::{Disk, CreateVdevRequest};
+/// use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+/// use std::path::PathBuf;
 ///
-/// let drives = vec![Disk::disk("hd0"), Disk::disk("hd1")];
-/// let topo = CreateZpoolRequestBuilder::default()
-///     .name("tank")
+/// let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
+/// let topo = CreateZpoolRequest::builder()
+///     .name(String::from("tank"))
 ///     .vdevs(vec![CreateVdevRequest::Mirror(drives)])
 ///     .build()
 ///     .unwrap();
@@ -28,22 +28,22 @@ use zpool::vdev::CreateVdevRequest;
 /// Overkill example: 2 drives in mirror and a single drive, zil on double
 /// mirror and 2 l2rc.
 ///
-/// ```rust
-/// use libzfs::zpool::CreateZpoolRequestBuilder;
-/// use libzfs::zpool::{Disk, CreateVdevRequest};
+/// ```rust, norun
+/// use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+/// use std::path::PathBuf;
 ///
-/// let zil_drives = vec![Disk::Disk("hd0".into()), Disk::Disk("hd1".into())];
-/// let mirror_drives = vec![Disk::Disk("hd2".into()), Disk::Disk("hd3".into())];
-/// let cache_drives = vec![Disk::Disk("hd4".into()), Disk::Disk("hd5".into())];
-/// let topo = CreateZpoolRequestBuilder::default()
+/// let zil_drives = vec![PathBuf::from("hd0"), PathBuf::from("hd1")];
+/// let mirror_drives = vec![PathBuf::from("hd2"), PathBuf::from("hd3")];
+/// let cache_drives = vec![PathBuf::from("hd4"), PathBuf::from("hd5")];
+/// let topo = CreateZpoolRequest::builder()
 ///     .name("tank")
 ///     .vdevs(vec![CreateVdevRequest::Mirror(mirror_drives)])
-///     .cache(Disk::File("/tmp/sparse.file".into()))
-///     .vdev(CreateVdevRequest::SingleDisk(Disk::Disk("sd0".into())))
+///     .cache("/tmp/sparse.file".into())
+///     .vdev(CreateVdevRequest::SingleDisk(PathBuf::from("hd6")))
 ///     .caches(cache_drives)
 ///     .zil(CreateVdevRequest::Mirror(zil_drives))
-///     .altroot(std::path::PathBuf::new("/mnt")
-///     .mount(std::path::PathBuf::new("/mnt")
+///     .altroot(PathBuf::from("/mnt"))
+///     .mount(PathBuf::from("/mnt"))
 ///     .build()
 ///     .unwrap();
 /// ```
@@ -84,6 +84,10 @@ pub struct CreateZpoolRequest {
 }
 
 impl CreateZpoolRequest {
+    /// Create builder
+    pub fn builder() -> CreateZpoolRequestBuilder {
+        CreateZpoolRequestBuilder::default()
+    }
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);

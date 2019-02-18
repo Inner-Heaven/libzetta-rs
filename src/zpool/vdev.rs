@@ -1,10 +1,9 @@
 use std::default::Default;
-/// CreateVdevRequest data types
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
-use zpool::Health;
-use zpool::Reason;
+use zpool::{Health, Reason, ZpoolError};
 
 /// Error statistics.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -98,14 +97,15 @@ pub enum VdevType {
     RaidZ3,
 }
 
-impl VdevType {
-    pub fn from_str(source: &str) -> VdevType {
+impl FromStr for VdevType {
+    type Err = ZpoolError;
+    fn from_str(source: &str) -> Result<VdevType, ZpoolError> {
         match source {
-            "mirror" => VdevType::Mirror,
-            "raidz1" => VdevType::RaidZ,
-            "raidz2" => VdevType::RaidZ2,
-            "raidz3" => VdevType::RaidZ3,
-            _ => VdevType::SingleDisk,
+            "mirror" => Ok(VdevType::Mirror),
+            "raidz1" => Ok(VdevType::RaidZ),
+            "raidz2" => Ok(VdevType::RaidZ2),
+            "raidz3" => Ok(VdevType::RaidZ3),
+            n => Err(ZpoolError::UnknownRaidType(String::from(n)))
         }
     }
 }
@@ -138,7 +138,7 @@ impl CreateVdevRequest {
         if disks.len() < min_disks {
             return false;
         }
-        return true;
+        true
     }
 
     /// Check if given CreateVdevRequest is valid.
@@ -246,21 +246,6 @@ impl PartialEq<CreateVdevRequest> for Vdev {
         }
     }
 }
-/*
-impl PartialEq<&CreateVdevRequest> for Vdev {
-    fn eq(&self, other: &&CreateVdevRequest) -> bool {
-        self.kind() == &other.kind() && {
-            match other {
-                CreateVdevRequest::SingleDisk(ref d) => &self.disks()[0] == d,
-                CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
-                CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
-                CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,
-                CreateVdevRequest::RaidZ3(ref disks) => self.disks() == disks,
-                _ => false
-            }
-        }
-    }
-}*/
 
 #[cfg(test)]
 mod test {
