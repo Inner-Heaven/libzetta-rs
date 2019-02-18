@@ -20,8 +20,8 @@ pub struct ErrorStatistics {
 impl Default for ErrorStatistics {
     fn default() -> ErrorStatistics {
         ErrorStatistics {
-            read: 0,
-            write: 0,
+            read:     0,
+            write:    0,
             checksum: 0,
         }
     }

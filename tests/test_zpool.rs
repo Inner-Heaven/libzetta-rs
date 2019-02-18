@@ -12,7 +12,7 @@ use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use cavity::{Bytes, fill, WriteMode};
+use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzfs::slog::*;
@@ -61,7 +61,7 @@ fn setup() {
     setup_vdev(vdev_dir.join("vdev3"), &Bytes::MegaBytes(1));
 }
 fn run_test<T>(test: T)
-    where
+where
     T: FnOnce(String) -> () + panic::UnwindSafe,
 {
     let lock = SHARED.lock().unwrap();

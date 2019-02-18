@@ -3,9 +3,9 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use zpool::CreateMode;
 use zpool::properties::ZpoolPropertiesWrite;
 use zpool::vdev::CreateVdevRequest;
+use zpool::CreateMode;
 
 /// Structure representing what zpool consist of.
 /// This structure is used in zpool creation and when new drives are attached.

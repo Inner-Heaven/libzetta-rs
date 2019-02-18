@@ -8,12 +8,12 @@ pub struct StdoutParser;
 mod test {
     use std::path::PathBuf;
 
-    use pest::{consumes_to, parses_to};
     use pest::Parser;
+    use pest::{consumes_to, parses_to};
 
     use parsers::*;
-    use zpool::{CreateZpoolRequestBuilder, Health, Reason, Zpool};
     use zpool::vdev::{CreateVdevRequest, ErrorStatistics};
+    use zpool::{CreateZpoolRequestBuilder, Health, Reason, Zpool};
 
     #[test]
     fn test_action_single_line() {
@@ -345,8 +345,8 @@ config:
 errors: No known data errors
 "#;
         let expected_errors = ErrorStatistics {
-            read: 1,
-            write: 2,
+            read:     1,
+            write:    2,
             checksum: 3,
         };
         let mut pairs =

@@ -5,8 +5,8 @@ use pest::iterators::Pair;
 use pest::iterators::Pairs;
 
 use parsers::Rule;
-use zpool::{CreateZpoolRequest, Disk, Health};
 use zpool::vdev::{ErrorStatistics, Vdev, VdevType};
+use zpool::{CreateZpoolRequest, Disk, Health};
 
 /// Reason why zpool in this state.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -111,8 +111,8 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read: inner.next().unwrap().into_span().as_str().parse().unwrap(),
-        write: inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        read:     inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        write:    inner.next().unwrap().into_span().as_str().parse().unwrap(),
         checksum: inner.next().unwrap().into_span().as_str().parse().unwrap(),
     }
 }

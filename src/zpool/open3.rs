@@ -55,7 +55,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger: Logger,
+    logger:   Logger,
 }
 
 impl Default for ZpoolOpen3 {
