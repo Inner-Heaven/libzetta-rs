@@ -1,3 +1,5 @@
+use pest_derive::Parser;
+
 #[derive(Parser)]
 #[grammar = "parsers/stdout.pest"] // relative to src
 pub struct StdoutParser;
@@ -6,6 +8,7 @@ pub struct StdoutParser;
 mod test {
     use std::path::PathBuf;
 
+    use pest::{consumes_to, parses_to};
     use pest::Parser;
 
     use parsers::*;
