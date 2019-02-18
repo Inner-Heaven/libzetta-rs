@@ -22,7 +22,7 @@
 //! It's called open 3 because it opens stdin, stdout, stder.
 
 use std::env;
-use std::ffi::{OsString, OsStr};
+use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
@@ -34,7 +34,7 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    CreateMode, CreateZpoolRequest, Disk, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
+    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
     ZpoolError, ZpoolProperties, ZpoolResult
 };
 

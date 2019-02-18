@@ -1,8 +1,10 @@
+use std::default::Default;
 /// CreateVdevRequest data types
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
-use std::default::Default;
+
 use zpool::Health;
+use zpool::Reason;
 
 /// Error statistics.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -12,7 +14,7 @@ pub struct ErrorStatistics {
     /// I/O errors that occurred while issuing a write request
     pub write: u64,
     /// Checksum errors, meaning that the device returned corrupted data as the result of a read request
-    pub checksum: u64
+    pub checksum: u64,
 }
 
 impl Default for ErrorStatistics {
@@ -20,23 +22,31 @@ impl Default for ErrorStatistics {
         ErrorStatistics {
             read: 0,
             write: 0,
-            checksum: 0
+            checksum: 0,
         }
     }
 }
 /// This is the most basic building block of vdev. It can be backed by a entire block device,
 /// a partition or a file. This particular structure represents backing of existing vdev. If disk is
 /// part of active zpool then it will also have error counts.
-#[derive(Debug, Clone, Getters, Eq)]
-pub struct  Disk {
+#[derive(Debug, Clone, Getters, Eq, Builder)]
+pub struct Disk {
     /// Path to a backing device or file. If path is relative, then it's relative to `/dev/`.
     path: PathBuf,
     /// Current health of this specific device.
     health: Health,
     /// Reason why device is in this state.
-    reason: Option<String>,
-    /// Error statistics.
-    error_statistics: ErrorStatistics
+    #[builder(default)]
+    reason: Option<Reason>,
+    /// How many read, write and checksum errors device encountered since last reset.
+    #[builder(default)]
+    error_statistics: ErrorStatistics,
+}
+
+impl Disk {
+    pub fn builder() -> DiskBuilder {
+        DiskBuilder::default()
+    }
 }
 
 /// Equal if path is the same.
@@ -55,6 +65,12 @@ impl PartialEq<Path> for Disk {
 impl PartialEq<PathBuf> for Disk {
     fn eq(&self, other: &PathBuf) -> bool {
         &self.path == other
+    }
+}
+
+impl PartialEq<Disk> for PathBuf {
+    fn eq(&self, other: &Disk) -> bool {
+        other == self
     }
 }
 
@@ -89,7 +105,7 @@ impl VdevType {
             "raidz1" => VdevType::RaidZ,
             "raidz2" => VdevType::RaidZ2,
             "raidz3" => VdevType::RaidZ3,
-            _ => VdevType::SingleDisk
+            _ => VdevType::SingleDisk,
         }
     }
 }
@@ -165,7 +181,9 @@ impl CreateVdevRequest {
         }
     }
     /// Short-cut to CreateVdevRequest::SingleDisk(disk)
-    pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest { CreateVdevRequest::SingleDisk(value.into()) }
+    pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest {
+        CreateVdevRequest::SingleDisk(value.into())
+    }
 
     /// Get kind
     pub fn kind(&self) -> VdevType {
@@ -179,26 +197,39 @@ impl CreateVdevRequest {
     }
 }
 
+impl PartialEq<Vdev> for CreateVdevRequest {
+    fn eq(&self, other: &Vdev) -> bool {
+        other == self
+    }
+}
 /// A pool is made up of one or more vdevs, which themselves can be a single disk or a group
 /// of disks, in the case of a RAID transform. When multiple vdevs are used, ZFS spreads data
 /// across the vdevs to increase performance and maximize usable space.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Getters, Builder, Eq)]
 pub struct Vdev {
     /// Type of Vdev
     kind: VdevType,
     /// Current Health of Vdev
     health: Health,
     /// Reason why vdev is in this state
-    reason: Option<String>,
+    #[builder(default)]
+    reason: Option<Reason>,
     /// Backing devices for this vdev
-    disks: Vec<Disk>
+    disks: Vec<Disk>,
+    /// How many read, write and checksum errors device encountered since last reset.
+    #[builder(default)]
+    error_statistics: ErrorStatistics,
 }
 
+impl Vdev {
+    pub fn builder() -> VdevBuilder {
+        VdevBuilder::default()
+    }
+}
 /// Vdevs are equal of their type and backing disks are equal.
 impl PartialEq for Vdev {
     fn eq(&self, other: &Vdev) -> bool {
-        self.kind() == other.kind() &&
-            self.disks() == other.disks()
+        self.kind() == other.kind() && self.disks() == other.disks()
     }
 }
 
@@ -211,11 +242,26 @@ impl PartialEq<CreateVdevRequest> for Vdev {
                 CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ3(ref disks) => self.disks() == disks,
-                _ => false
             }
         }
     }
 }
+/*
+impl PartialEq<&CreateVdevRequest> for Vdev {
+    fn eq(&self, other: &&CreateVdevRequest) -> bool {
+        self.kind() == &other.kind() && {
+            match other {
+                CreateVdevRequest::SingleDisk(ref d) => &self.disks()[0] == d,
+                CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,
+                CreateVdevRequest::RaidZ3(ref disks) => self.disks() == disks,
+                _ => false
+            }
+        }
+    }
+}*/
+
 #[cfg(test)]
 mod test {
     use std::fs::File;
@@ -232,13 +278,9 @@ mod test {
     fn test_raid_validation_naked() {
         let tmp_dir = TempDir::new("zpool-tests").unwrap();
         let file_path = tmp_dir.path().join("block-device");
-        let _valid_file = File::create(file_path.clone()).unwrap();
-        let invalid_path = tmp_dir.path().join("fake");
 
         let vdev = CreateVdevRequest::SingleDisk(file_path);
-        let invalid_vdev = CreateVdevRequest::SingleDisk(invalid_path);
         assert!(vdev.is_valid());
-        assert!(!invalid_vdev.is_valid());
     }
 
     #[test]

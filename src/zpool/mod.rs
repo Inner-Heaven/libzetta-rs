@@ -1,15 +1,15 @@
 use std::default::Default;
+use std::ffi::OsStr;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
 use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
-use std::ffi::OsStr;
 
 use regex::Regex;
 
-pub use self::description::Zpool;
+pub use self::description::{Reason, Zpool};
 pub use self::open3::ZpoolOpen3;
 pub use self::properties::{
     CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,

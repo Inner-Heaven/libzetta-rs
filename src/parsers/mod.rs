@@ -9,8 +9,8 @@ mod test {
     use pest::Parser;
 
     use parsers::*;
-    use zpool::{CreateZpoolRequestBuilder, Health, Zpool};
-    use zpool::vdev::{CreateVdevRequest, Disk};
+    use zpool::{CreateZpoolRequestBuilder, Health, Reason, Zpool};
+    use zpool::vdev::{CreateVdevRequest, ErrorStatistics};
 
     #[test]
     fn test_action_single_line() {
@@ -111,39 +111,26 @@ mod test {
         Additional devices are known to be part of this pool, though their
         exact configuration cannot be determined.
         "#;
-        // let pairs = StdoutParser::parse(Rule::zpool_import,
-        // stdout_invalid_two_disks).unwrap_or_else(|e| panic!("{}", e));
-        // println!("{:#?}", pairs);
-        parses_to! {
-            parser: StdoutParser,
-            input: stdout_invalid_two_disks,
-            rule: Rule::zpool,
-            tokens: [
-                zpool(0, 356, [
-                    pool_name(0, 17, [name(6,16)]),
-                    pool_id(17, 46, [digits(26,45)]),
-                    state(46, 63, [state_enum(55, 62)]),
-                    status(63, 121, [multi_line_text(71, 121)]),
-                    action(121, 209, [multi_line_text(130, 209)]),
-                    see(209, 252, [url(217, 251)]),
-                    config(252, 261),
-                    pool_line(262, 317, [name(270, 280), state_enum(293, 300)]),
-                    vdevs(317, 356, [
-                        naked_vdev(317, 355, [
-                            disk_line(317, 355, [
-                                path(327, 346),
-                                state_enum(348, 354)
-                            ])
-                        ])
-                    ])
-                ])
-            ]
-        }
 
         let mut pairs = StdoutParser::parse(Rule::zpool, stdout_invalid_two_disks)
             .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
-        Zpool::from_pest_pair(pair);
+        let zpool = Zpool::from_pest_pair(pair);
+
+        assert_eq!(&Health::Unavailable, zpool.health());
+
+        assert_eq!(&Some(String::from("The pool cannot be imported. Attach the missing
+        devices and try again.\n")), zpool.action());
+
+        assert_eq!(&Some(Reason::Other(String::from("missing device"))), zpool.reason());
+
+        let vdev = &zpool.vdevs()[0];
+
+        let disk = &vdev.disks()[0];
+        assert_eq!(&Health::Online, vdev.health());
+        assert_eq!(&PathBuf::from("/vdevs/import/vdev0"), disk);
+        assert!(disk.reason().is_none());
+        assert_eq!(&ErrorStatistics::default(), disk.error_statistics());
     }
 
     #[test]
@@ -223,9 +210,9 @@ errors: Pretend this is actual error
         let first = zpools.next().unwrap();
         assert_eq!(first.name(), &String::from("bootpool"));
         assert!(first.errors().is_none());
-        let vdev = &first.topology().vdevs()[0];
+        let vdev = &first.vdevs()[0];
         let vdev_expected = CreateVdevRequest::SingleDisk(std::path::PathBuf::from("nvd0p2"));
-        assert_eq!(&vdev_expected, vdev);
+        assert_eq!(vdev, &vdev_expected);
 
         let second = zpools.next().unwrap();
         assert_eq!(second.name(), &String::from("z"));
@@ -256,7 +243,7 @@ errors: No known data errors
         let first = zpools.next().unwrap();
         assert_eq!(first.name(), &String::from("tests-12167169401705616934"));
 
-        let vdev = &first.topology().vdevs()[0];
+        let vdev = &first.vdevs()[0];
         let vdev_expected = CreateVdevRequest::SingleDisk(std::path::PathBuf::from("/vdevs/import/vdev0"));
         assert_eq!(&vdev_expected, vdev);
     }
@@ -311,6 +298,7 @@ errors: No known data errors
             PathBuf::from("gptid/d47c7a14-d17d-11e4-9eed-10c37b9d936f"),
         ];
         let topo = CreateZpoolRequestBuilder::default()
+            .name("eden")
             .vdevs(vec![
                 CreateVdevRequest::Mirror(mirror_drives.clone()),
                 CreateVdevRequest::RaidZ(drives.clone()),
@@ -321,7 +309,7 @@ errors: No known data errors
             .unwrap();
         //dbg!(zpool.topology());
 
-        assert_eq!(&topo, zpool.topology());
+        assert_eq!(&topo, &zpool);
     }
 
     #[test]
@@ -337,18 +325,35 @@ action: Online the device using 'zpool online' or replace the device with
 config:
 
         NAME                      STATE     READ WRITE CKSUM
-        test                      DEGRADED     0     0     0
-          mirror-0                DEGRADED     0     0     0
+        test                      DEGRADED     1     2     3
+          mirror-0                DEGRADED     1     2     3
             14808325297596192025  OFFLINE      0     0     0  was /vdevs/vdev0
-            /vdevs/vdev1          ONLINE       0     0     0
+            /vdevs/vdev1          ONLINE       1     2     3
 
 errors: No known data errors
 "#;
+        let expected_errors = ErrorStatistics { read: 1, write: 2, checksum: 3 };
         let mut pairs = StdoutParser::parse(Rule::zpool, stdout)
             .unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
         let zpool = Zpool::from_pest_pair(pair);
         assert_eq!(&Health::Degraded, zpool.health());
+        assert_eq!(&expected_errors, zpool.error_statistics());
+
+        let mirror = &zpool.vdevs()[0];
+        assert_eq!(&Health::Degraded, mirror.health());
+        assert_eq!(&expected_errors, mirror.error_statistics());
+
+        let first_disk = &mirror.disks()[0];
+
+        assert_eq!(&Health::Offline, first_disk.health());
+        assert_eq!(&ErrorStatistics::default(), first_disk.error_statistics());
+        assert_eq!(&Some(Reason::Other(String::from("was /vdevs/vdev0"))), first_disk.reason());
+
+        let second_disk = &mirror.disks()[1];
+        assert_eq!(&Health::Online, second_disk.health());
+        assert_eq!(&expected_errors, second_disk.error_statistics());
+
     }
 
     #[test]

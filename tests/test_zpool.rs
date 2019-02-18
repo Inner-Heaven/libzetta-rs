@@ -16,7 +16,7 @@ use cavity::{Bytes, fill, WriteMode};
 use rand::Rng;
 
 use libzfs::slog::*;
-use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequestBuilder, Disk, ZpoolEngine, ZpoolOpen3};
+use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequestBuilder, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
 use libzfs::zpool::{CreateMode, Health, OfflineMode, OnlineMode};
 
@@ -398,7 +398,7 @@ fn test_status() {
 
         let result = zpool.status(&name).unwrap();
         assert_eq!(&name, result.name());
-        assert_eq!(&topo, result.topology());
+        assert_eq!(&result, &topo);
     });
 }
 #[test]
@@ -418,7 +418,7 @@ fn test_all() {
         assert_eq!(1, result.len());
         let result = result.into_iter().next().unwrap();
         assert_eq!(&name, result.name());
-        assert_eq!(&topo, result.topology());
+        assert_eq!(&result, &topo);
     });
 }
 
