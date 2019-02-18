@@ -16,7 +16,7 @@ pub use self::properties::{
     ZpoolPropertiesWriteBuilder,
 };
 pub use self::topology::{CreateZpoolRequest, CreateZpoolRequestBuilder};
-pub use self::vdev::{CreateVdevRequest, Disk};
+pub use self::vdev::{CreateVdevRequest, Disk, Vdev, VdevType};
 
 pub mod open3;
 pub mod properties;
@@ -180,9 +180,11 @@ pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OfflineMode {
-    /// Device will be taken offline until operator manually bring it back online.
+    /// Device will be taken offline until operator manually bring it back
+    /// online.
     Permanent,
-    /// Upon reboot, the specified physical device reverts to its previous state.
+    /// Upon reboot, the specified physical device reverts to its previous
+    /// state.
     UntilReboot,
 }
 
@@ -190,23 +192,22 @@ pub enum OfflineMode {
 pub enum OnlineMode {
     /// Bring device online as is.
     Simple,
-    /// Expand the device to use all available space. If the device is part of a mirror or raidz
-    /// then all devices must be expanded before the new space will become available to the pool.
+    /// Expand the device to use all available space. If the device is part of a
+    /// mirror or raidz then all devices must be expanded before the new
+    /// space will become available to the pool.
     Expand,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum CreateMode {
-    /// Forces use of vdevs, even if they appear in use or specify a conflicting replication level.
-    ///  Not all devices can be overridden in this manner
+    /// Forces use of vdevs, even if they appear in use or specify a conflicting
+    /// replication level.  Not all devices can be overridden in this manner
     Force,
     Gentle,
 }
 
 impl Default for CreateMode {
-    fn default() -> CreateMode {
-        CreateMode::Gentle
-    }
+    fn default() -> CreateMode { CreateMode::Gentle }
 }
 
 /// Bring device online as is.
@@ -322,19 +323,21 @@ pub trait ZpoolEngine {
     /// Get a status of each pool active in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>>;
 
-    ///  Begins a scrub or resumes a paused scrub.  The scrub examines all data in the specified
-    ///  pools to verify that it checksums correctly. For replicated (mirror or raidz) devices, ZFS
-    ///  automatically repairs any damage discovered during the scrub.
+    ///  Begins a scrub or resumes a paused scrub.  The scrub examines all data
+    /// in the specified  pools to verify that it checksums correctly. For
+    /// replicated (mirror or raidz) devices, ZFS  automatically repairs any
+    /// damage discovered during the scrub.
     fn scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
-    ///  Pause scrubbing. Scrub pause state and progress are periodically synced to disk. If the
-    ///  system is restarted or pool is exported during a paused scrub, even after import, scrub
-    ///  will remain paused until it is resumed.  Once resumed the scrub will pick up from the
+    ///  Pause scrubbing. Scrub pause state and progress are periodically synced
+    /// to disk. If the  system is restarted or pool is exported during a
+    /// paused scrub, even after import, scrub  will remain paused until it
+    /// is resumed.  Once resumed the scrub will pick up from the
     ///  place where it was last checkpointed to disk.
     fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
     ///  Stop scrubbing.
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
-    /// Takes the specified physical device offline. While the device is offline, no attempt is
-    /// made to read or write to the device.
+    /// Takes the specified physical device offline. While the device is
+    /// offline, no attempt is made to read or write to the device.
     fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
@@ -382,8 +385,9 @@ mod test {
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
 
         // TODO: add regexp for this too
-        //let vdev_reuse_text = b"invalid vdev specification\nuse \'-f\' to override the following errors:\n/vdevs/vdev0 is part of exported pool \'test\'\n";
-        //let err = ZpoolError::from_stderr(vdev_reuse_text);
+        //let vdev_reuse_text = b"invalid vdev specification\nuse \'-f\' to override
+        // the following errors:\n/vdevs/vdev0 is part of exported pool \'test\'\n";
+        // let err = ZpoolError::from_stderr(vdev_reuse_text);
         //assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
     }
 
@@ -450,5 +454,12 @@ mod test {
         let text = b"cannot offline /vdevs/vdev0: no valid replicas\n";
         let err = ZpoolError::from_stderr(text);
         assert_eq!(ZpoolErrorKind::NoValidReplicas, err.kind());
+    }
+
+    #[test]
+    fn test_unknown_raid_type() {
+        use std::str::FromStr;
+        let kind = crate::zpool::VdevType::from_str("notzraid");
+        assert_eq!(ZpoolErrorKind::UnknownRaidType, kind.unwrap_err().kind())
     }
 }

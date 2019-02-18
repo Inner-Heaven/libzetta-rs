@@ -9,9 +9,7 @@ pub trait PropPair {
 }
 
 impl PropPair for FailMode {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, self.as_str())
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
 }
 
 impl PropPair for bool {
@@ -22,15 +20,11 @@ impl PropPair for bool {
 }
 
 impl PropPair for CacheType {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, self.as_str())
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
 }
 
 impl PropPair for String {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, &self)
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, &self) }
 }
 
 /// Represent state of zpool or vdev. Read

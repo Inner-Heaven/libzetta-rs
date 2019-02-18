@@ -16,6 +16,7 @@ pub enum Reason {
 }
 
 #[derive(Getters, Builder, Debug, Eq, PartialEq)]
+#[builder(setter(into))]
 pub struct Zpool {
     /// Name of the pool
     name: String,
@@ -47,6 +48,7 @@ pub struct Zpool {
 }
 
 impl Zpool {
+    pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -101,9 +103,7 @@ impl PartialEq<CreateZpoolRequest> for Zpool {
 }
 
 impl PartialEq<Zpool> for CreateZpoolRequest {
-    fn eq(&self, other: &Zpool) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Zpool) -> bool { other == self }
 }
 
 #[inline]
@@ -129,7 +129,7 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
             Rule::error_statistics => {
                 zpool.error_statistics(get_error_statistics_from_pair(pair));
             }
-            _ => {}
+            _ => { /* no-op */ }
         };
     }
 }
@@ -271,5 +271,59 @@ fn get_error_from_pair(pair: Pair<Rule>) -> Option<String> {
     match error_pair.as_rule() {
         Rule::no_errors => None,
         _ => Some(String::from(error_pair.as_str())),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+
+    use crate::zpool::{CreateVdevRequest, Disk, Health, Vdev, VdevType};
+
+    use super::{CreateZpoolRequest, Zpool};
+
+    #[test]
+    fn test_eq_zpool() {
+        let request = CreateZpoolRequest::builder()
+            .name("wat")
+            .zil(CreateVdevRequest::SingleDisk(PathBuf::from("hd0")))
+            .build()
+            .unwrap();
+        let zpool = Zpool::builder()
+            .name("wat")
+            .health(Health::Online)
+            .zil(
+                Vdev::builder()
+                    .kind(VdevType::SingleDisk)
+                    .health(Health::Online)
+                    .disks(vec![Disk::builder()
+                        .path("hd0")
+                        .health(Health::Online)
+                        .build()
+                        .unwrap()])
+                    .build()
+                    .unwrap(),
+            )
+            .vdevs(vec![])
+            .build()
+            .unwrap();
+
+        assert_eq!(request, zpool);
+    }
+
+    #[test]
+    fn test_ne_zpool() {
+        let request = CreateZpoolRequest::builder()
+            .name("wat")
+            .zil(CreateVdevRequest::SingleDisk(PathBuf::from("hd0")))
+            .build()
+            .unwrap();
+        let zpool = Zpool::builder()
+            .name("wat")
+            .health(Health::Online)
+            .vdevs(vec![])
+            .build()
+            .unwrap();
+        assert_ne!(request, zpool);
     }
 }

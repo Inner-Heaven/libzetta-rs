@@ -383,6 +383,38 @@ fn test_export_import() {
 }
 
 #[test]
+fn test_export_import_force() {
+    run_test(|name| {
+        let vdev_dir = Path::new("/vdevs/import");
+        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::default();
+        //let zpool = ZpoolOpen3::with_logger(get_logger());
+
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
+            .build()
+            .unwrap();
+        zpool
+            .create(topo)
+            .expect("Failed to create pool for export");
+
+        let result = zpool.export(&name, true);
+        assert!(result.is_ok());
+        let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
+        assert_eq!(list.len(), 1);
+
+        let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
+        assert!(result.is_ok());
+
+        zpool.destroy(&name, true).unwrap();
+
+        let result = zpool.available().unwrap();
+        assert!(result.is_empty());
+    });
+}
+
+#[test]
 fn test_status() {
     run_test(|name| {
         let vdev_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
@@ -421,9 +453,17 @@ fn test_all() {
 }
 
 #[test]
-fn test_zpool_with_logger() {
-    let _zpool = ZpoolOpen3::with_logger(get_logger());
+fn test_all_empty() {
+    run_test(|_name| {
+        let zpool = ZpoolOpen3::default();
+
+        let result = zpool.all().unwrap();
+        assert!(result.is_empty());
+    });
 }
+
+#[test]
+fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
 
 #[test]
 fn test_zpool_scrub_not_found() {
@@ -503,6 +543,36 @@ fn test_zpool_take_device_from_mirror_offline() {
         assert_eq!(&Health::Degraded, z.health());
 
         let result = zpool.bring_online(&name, &vdev0_path, OnlineMode::Simple);
+        assert!(result.is_ok());
+
+        let z = zpool.status(&name).unwrap();
+        assert_eq!(&Health::Online, z.health());
+    });
+}
+
+#[test]
+fn test_zpool_take_device_from_mirror_offline_expand() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev0_path = setup_vdev("/vdevs/vdev3", &Bytes::MegaBytes(64 + 10));
+        let vdev1_path = setup_vdev("/vdevs/vdev4", &Bytes::MegaBytes(64 + 10));
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
+            .build()
+            .unwrap();
+        zpool.create(topo).unwrap();
+        let result = zpool.take_offline(&name, &vdev0_path, OfflineMode::UntilReboot);
+        assert!(result.is_ok());
+
+        let z = zpool.status(&name).unwrap();
+        assert_eq!(&Health::Degraded, z.health());
+
+        let result = zpool.bring_online(&name, &vdev0_path, OnlineMode::Expand);
         assert!(result.is_ok());
 
         let z = zpool.status(&name).unwrap();

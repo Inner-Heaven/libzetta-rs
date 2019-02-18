@@ -88,9 +88,7 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command {
-        Command::new(&self.cmd_name)
-    }
+    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
 
     #[allow(dead_code)]
     fn zpool_mute(&self) -> Command {
@@ -262,8 +260,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
         let zpool = zpools.into_iter().next().unwrap();
         if zpool.name().as_str() != name.as_ref() {
-            error!(self.logger, "Somehow got wrong zpool?"; "wanted" => name.as_ref(), "got" => zpool.name().as_str());
-            return Err(ZpoolError::PoolNotFound);
+            unreachable!();
         }
         Ok(zpool)
     }
@@ -315,8 +312,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    /// Takes the specified physical device offline. While the device is offline, no attempt is
-    /// made to read or write to the device.
+    /// Takes the specified physical device offline. While the device is
+    /// offline, no attempt is made to read or write to the device.
     fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,

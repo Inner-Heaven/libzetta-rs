@@ -15,7 +15,7 @@ use zpool::vdev::CreateVdevRequest;
 /// Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
 ///
 /// ```rust
-/// use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+/// use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequest};
 /// use std::path::PathBuf;
 ///
 /// let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
@@ -51,7 +51,6 @@ use zpool::vdev::CreateVdevRequest;
 #[builder(setter(into))]
 pub struct CreateZpoolRequest {
     /// Name to give new zpool
-    #[builder(default = "String::from(\"tank\")")]
     name: String,
     /// Properties if new zpool
     #[builder(default)]
@@ -70,24 +69,24 @@ pub struct CreateZpoolRequest {
     vdevs: Vec<CreateVdevRequest>,
     /// Adding a cache vdev to a pool will add the storage of the cache to the
     /// [L2ARC](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-l2arc). Cache devices
-    /// cannot be mirrored. Since a cache device only stores additional copies of existing data,
-    /// there is no risk of data loss.
+    /// cannot be mirrored. Since a cache device only stores additional copies
+    /// of existing data, there is no risk of data loss.
     #[builder(default)]
     caches: Vec<PathBuf>,
     /// ZFS Log Devices, also known as ZFS Intent Log ([ZIL](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-zil)) move the intent log from the regular
-    /// pool devices to a dedicated device, typically an SSD. Having a dedicated log device can
-    /// significantly improve the performance of applications with a high volume of *synchronous*
-    /// writes, especially databases. Log devices can be mirrored, but RAID-Z is not supported.
-    /// If multiple log devices are used, writes will be load balanced across them
+    /// pool devices to a dedicated device, typically an SSD. Having a dedicated
+    /// log device can significantly improve the performance of applications
+    /// with a high volume of *synchronous* writes, especially databases.
+    /// Log devices can be mirrored, but RAID-Z is not supported.
+    /// If multiple log devices are used, writes will be load balanced across
+    /// them
     #[builder(default)]
     zil: Option<CreateVdevRequest>,
 }
 
 impl CreateZpoolRequest {
     /// Create builder
-    pub fn builder() -> CreateZpoolRequestBuilder {
-        CreateZpoolRequestBuilder::default()
-    }
+    pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);
@@ -186,6 +185,7 @@ mod test {
 
         // Zpool with one valid mirror
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
             .build()
             .unwrap();
@@ -194,6 +194,7 @@ mod test {
 
         // Zpool with invalid mirror
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdevs(vec![CreateVdevRequest::Mirror(get_disks(1, &file_path))])
             .build()
             .unwrap();
@@ -202,6 +203,7 @@ mod test {
 
         // Zpool with valid cache and valid vdev
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
             .caches(get_disks(2, &file_path))
             .build()
@@ -211,12 +213,19 @@ mod test {
 
         // Just add L2ARC to zpool
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .cache(file_path)
             .build()
             .unwrap();
 
         assert!(topo.is_suitable_for_update());
         assert!(!topo.is_suitable_for_create());
+    }
+
+    #[test]
+    fn test_builder() {
+        let result = CreateZpoolRequest::builder().build();
+        assert!(result.is_err());
     }
 
     #[test]
@@ -229,6 +238,7 @@ mod test {
 
         // Just add L2ARC to zpool
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .cache(file_path.clone())
             .build()
             .unwrap();
@@ -240,6 +250,7 @@ mod test {
 
         // Zpool with mirror as ZIL and two vdevs
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdev(naked_vdev.clone())
             .vdev(naked_vdev.clone())
             .zil(CreateVdevRequest::Mirror(get_disks(2, &file_path)))
@@ -252,6 +263,7 @@ mod test {
 
         // Zraid
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdev(CreateVdevRequest::RaidZ(get_disks(3, &file_path)))
             .build()
             .unwrap();
@@ -262,6 +274,7 @@ mod test {
 
         // Zraid 2
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdev(CreateVdevRequest::RaidZ2(get_disks(5, &file_path)))
             .build()
             .unwrap();
@@ -272,6 +285,7 @@ mod test {
 
         // Zraid 3
         let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdev(CreateVdevRequest::RaidZ3(get_disks(8, &file_path)))
             .build()
             .unwrap();
