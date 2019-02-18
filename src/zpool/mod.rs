@@ -18,10 +18,10 @@ pub use self::properties::{
 pub use self::topology::{CreateZpoolRequest, CreateZpoolRequestBuilder};
 pub use self::vdev::{CreateVdevRequest, Disk};
 
-pub mod vdev;
-pub mod topology;
 pub mod open3;
 pub mod properties;
+pub mod topology;
+pub mod vdev;
 
 pub mod description;
 lazy_static! {
@@ -335,9 +335,19 @@ pub trait ZpoolEngine {
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
     /// Takes the specified physical device offline. While the device is offline, no attempt is
     /// made to read or write to the device.
-    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OfflineMode) -> ZpoolResult<()>;
+    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OfflineMode,
+    ) -> ZpoolResult<()>;
     /// Brings the specified physical device online.
-    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OnlineMode) -> ZpoolResult<()>;
+    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OnlineMode,
+    ) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]

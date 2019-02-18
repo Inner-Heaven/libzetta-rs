@@ -115,7 +115,10 @@ impl CreateZpoolRequest {
     pub fn into_args(self) -> Vec<OsString> {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
-        let vdevs = self.vdevs.into_iter().flat_map(CreateVdevRequest::into_args);
+        let vdevs = self
+            .vdevs
+            .into_iter()
+            .flat_map(CreateVdevRequest::into_args);
         let zil = self.zil.map(CreateVdevRequest::into_args);
         ret.extend(vdevs);
 

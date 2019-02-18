@@ -105,7 +105,7 @@ impl FromStr for VdevType {
             "raidz1" => Ok(VdevType::RaidZ),
             "raidz2" => Ok(VdevType::RaidZ2),
             "raidz3" => Ok(VdevType::RaidZ3),
-            n => Err(ZpoolError::UnknownRaidType(String::from(n)))
+            n => Err(ZpoolError::UnknownRaidType(String::from(n))),
         }
     }
 }

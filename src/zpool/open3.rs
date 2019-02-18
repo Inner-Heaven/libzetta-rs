@@ -34,8 +34,8 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
-    ZpoolError, ZpoolProperties, ZpoolResult
+    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError,
+    ZpoolProperties, ZpoolResult,
 };
 
 lazy_static! {
@@ -88,7 +88,9 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
+    fn zpool(&self) -> Command {
+        Command::new(&self.cmd_name)
+    }
 
     #[allow(dead_code)]
     fn zpool_mute(&self) -> Command {
@@ -103,9 +105,7 @@ impl ZpoolOpen3 {
             let stdout: String = String::from_utf8_lossy(&out.stdout).into();
             StdoutParser::parse(Rule::zpools, stdout.as_ref())
                 .map_err(|_| ZpoolError::ParseError)
-                .map(|pairs| {
-                    pairs.map(Zpool::from_pest_pair).collect()
-                })
+                .map(|pairs| pairs.map(Zpool::from_pest_pair).collect())
         } else {
             if out.stderr.is_empty() && out.stdout.is_empty() {
                 return Ok(Vec::new());
@@ -254,7 +254,9 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        let zpools = self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
+        let zpools = self
+            .zpools_from_import(out)
+            .expect("Failed to unwrap zpool from status check");
         if zpools.is_empty() {
             return Err(ZpoolError::PoolNotFound);
         }
@@ -315,7 +317,12 @@ impl ZpoolEngine for ZpoolOpen3 {
 
     /// Takes the specified physical device offline. While the device is offline, no attempt is
     /// made to read or write to the device.
-    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OfflineMode) -> ZpoolResult<()> {
+    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OfflineMode,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("offline");
         if mode == OfflineMode::UntilReboot {
@@ -332,7 +339,12 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
     /// Brings the specified physical device online.
-    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D, mode: OnlineMode) -> ZpoolResult<()> {
+    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OnlineMode,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("online");
         if mode == OnlineMode::Expand {

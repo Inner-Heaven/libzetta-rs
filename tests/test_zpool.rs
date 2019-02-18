@@ -16,9 +16,9 @@ use cavity::{Bytes, fill, WriteMode};
 use rand::Rng;
 
 use libzfs::slog::*;
+use libzfs::zpool::{CreateMode, Health, OfflineMode, OnlineMode};
 use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequestBuilder, ZpoolEngine, ZpoolOpen3};
 use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
-use libzfs::zpool::{CreateMode, Health, OfflineMode, OnlineMode};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -191,7 +191,6 @@ fn reuse_vdev() {
             .build()
             .unwrap();
 
-
         let result = zpool.create(topo1);
         result.unwrap();
         let result = zpool.create(topo2);
@@ -341,7 +340,6 @@ fn create_with_props() {
             .build()
             .unwrap();
 
-
         zpool.create(topo).unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
@@ -365,7 +363,9 @@ fn test_export_import() {
             .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
             .build()
             .unwrap();
-        zpool.create(topo).expect("Failed to create pool for export");
+        zpool
+            .create(topo)
+            .expect("Failed to create pool for export");
 
         let result = zpool.export(&name, false);
         assert!(result.is_ok());
@@ -395,7 +395,6 @@ fn test_status() {
             .unwrap();
         zpool.create(topo.clone()).unwrap();
 
-
         let result = zpool.status(&name).unwrap();
         assert_eq!(&name, result.name());
         assert_eq!(&result, &topo);
@@ -412,7 +411,6 @@ fn test_all() {
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
-
 
         let result = zpool.all().unwrap();
         assert_eq!(1, result.len());
@@ -493,7 +491,7 @@ fn test_zpool_take_device_from_mirror_offline() {
             .create_mode(CreateMode::Force)
             .vdev(CreateVdevRequest::Mirror(vec![
                 vdev0_path.clone(),
-                vdev1_path.clone()
+                vdev1_path.clone(),
             ]))
             .build()
             .unwrap();
