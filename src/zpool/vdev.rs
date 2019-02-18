@@ -1,5 +1,5 @@
 use std::default::Default;
-use std::ffi::{OsStr, OsString};
+use std::ffi::{OsString};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -71,10 +71,6 @@ impl PartialEq<Disk> for PathBuf {
 
 impl PartialEq<Disk> for Path {
     fn eq(&self, other: &Disk) -> bool { other == self }
-}
-
-impl std::convert::AsRef<OsStr> for Disk {
-    fn as_ref(&self) -> &OsStr { self.path.as_os_str() }
 }
 
 /// Basic building block of
