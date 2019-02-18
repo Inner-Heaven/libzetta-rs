@@ -22,7 +22,7 @@
 //! It's called open 3 because it opens stdin, stdout, stder.
 
 use std::env;
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
@@ -34,8 +34,8 @@ use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
 use super::{
-    CreateMode, Disk, OfflineMode, OnlineMode, PropPair, Topology, ZpoolEngine,
-    ZpoolError, ZpoolProperties, ZpoolPropertiesWrite, ZpoolResult
+    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError,
+    ZpoolProperties, ZpoolResult,
 };
 
 lazy_static! {
@@ -55,7 +55,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger: Logger,
+    logger:   Logger,
 }
 
 impl Default for ZpoolOpen3 {
@@ -103,9 +103,7 @@ impl ZpoolOpen3 {
             let stdout: String = String::from_utf8_lossy(&out.stdout).into();
             StdoutParser::parse(Rule::zpools, stdout.as_ref())
                 .map_err(|_| ZpoolError::ParseError)
-                .map(|pairs| {
-                    pairs.map(Zpool::from_pest_pair).collect()
-                })
+                .map(|pairs| pairs.map(Zpool::from_pest_pair).collect())
         } else {
             if out.stderr.is_empty() && out.stdout.is_empty() {
                 return Ok(Vec::new());
@@ -124,41 +122,31 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(status.success())
     }
 
-    fn create_unchecked<
-        N: AsRef<str>,
-        P: Into<Option<ZpoolPropertiesWrite>>,
-        M: Into<Option<PathBuf>>,
-        A: Into<Option<PathBuf>>,
-    >(
-        &self,
-        name: N,
-        topology: Topology,
-        props: P,
-        mount: M,
-        alt_root: A,
-        create_mode: CreateMode,
-    ) -> ZpoolResult<()> {
+    fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()> {
+        if !request.is_suitable_for_create() {
+            return Err(ZpoolError::InvalidTopology);
+        }
         let mut z = self.zpool();
         z.arg("create");
-        if create_mode == CreateMode::Force {
+        if request.create_mode() == &CreateMode::Force {
             z.arg("-f");
         }
-        if let Some(props) = props.into() {
+        if let Some(props) = request.props().clone() {
             for arg in props.into_args() {
                 z.arg("-o");
                 z.arg(arg);
             }
         }
-        if let Some(mount) = mount.into() {
+        if let Some(mount) = request.mount().clone() {
             z.arg("-m");
             z.arg(mount);
         }
-        if let Some(alt_root) = alt_root.into() {
+        if let Some(altroot) = request.altroot().clone() {
             z.arg("-R");
-            z.arg(alt_root);
+            z.arg(altroot);
         }
-        z.arg(name.as_ref());
-        z.args(topology.into_args());
+        z.arg(request.name());
+        z.args(request.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
@@ -264,14 +252,15 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        let zpools = self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
+        let zpools = self
+            .zpools_from_import(out)
+            .expect("Failed to unwrap zpool from status check");
         if zpools.is_empty() {
             return Err(ZpoolError::PoolNotFound);
         }
         let zpool = zpools.into_iter().next().unwrap();
         if zpool.name().as_str() != name.as_ref() {
-            error!(self.logger, "Somehow got wrong zpool?"; "wanted" => name.as_ref(), "got" => zpool.name().as_str());
-            return Err(ZpoolError::PoolNotFound);
+            unreachable!();
         }
         Ok(zpool)
     }
@@ -323,16 +312,21 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    /// Takes the specified physical device offline. While the device is offline, no attempt is
-    /// made to read or write to the device.
-    fn take_offline<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OfflineMode) -> ZpoolResult<()> {
+    /// Takes the specified physical device offline. While the device is
+    /// offline, no attempt is made to read or write to the device.
+    fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OfflineMode,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("offline");
         if mode == OfflineMode::UntilReboot {
             z.arg("-t");
         }
         z.arg(name.as_ref());
-        z.arg(device.as_arg());
+        z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
@@ -342,14 +336,19 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
     /// Brings the specified physical device online.
-    fn bring_online<N: AsRef<str>>(&self, name: N, device: &Disk, mode: OnlineMode) -> ZpoolResult<()> {
+    fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        mode: OnlineMode,
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("online");
         if mode == OnlineMode::Expand {
             z.arg("-e");
         }
         z.arg(name.as_ref());
-        z.arg(device.as_arg());
+        z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

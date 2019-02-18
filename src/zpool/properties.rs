@@ -1,7 +1,8 @@
-use super::{ZpoolError, ZpoolResult};
 /// Property related stuff.
 use std::ffi::OsString;
 use std::path::PathBuf;
+
+use super::{ZpoolError, ZpoolResult};
 
 pub trait PropPair {
     fn to_pair(&self, key: &str) -> String;
@@ -147,7 +148,7 @@ impl CacheType {
 /// let props = ZpoolPropertiesWriteBuilder::default().build();
 /// assert!(props.is_ok());
 /// ```
-#[derive(Getters, Builder, Debug, Clone, PartialEq)]
+#[derive(Getters, Builder, Debug, Clone, PartialEq, Eq)]
 pub struct ZpoolPropertiesWrite {
     /// Make zpool readonly. This can only be changed during import.
     #[builder(default = "false")]
@@ -430,18 +431,19 @@ impl ZpoolProperties {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
     fn test_defaults() {
         let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();
         let handmade = ZpoolPropertiesWrite {
-            read_only: false,
-            auto_expand: false,
+            read_only:    false,
+            auto_expand:  false,
             auto_replace: false,
-            boot_fs: None,
-            cache_file: CacheType::Default,
-            comment: String::new(),
-            delegation: false,
-            fail_mode: FailMode::Wait,
+            boot_fs:      None,
+            cache_file:   CacheType::Default,
+            comment:      String::new(),
+            delegation:   false,
+            fail_mode:    FailMode::Wait,
         };
 
         assert_eq!(handmade, built);
@@ -581,9 +583,9 @@ mod test {
             "delegation=off",
             "failmode=wait",
         ]
-            .into_iter()
-            .map(OsString::from)
-            .collect();
+        .into_iter()
+        .map(OsString::from)
+        .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
 
@@ -601,9 +603,9 @@ mod test {
             "delegation=off",
             "failmode=panic",
         ]
-            .into_iter()
-            .map(OsString::from)
-            .collect();
+        .into_iter()
+        .map(OsString::from)
+        .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
 
@@ -620,9 +622,9 @@ mod test {
             "delegation=off",
             "failmode=continue",
         ]
-            .into_iter()
-            .map(OsString::from)
-            .collect();
+        .into_iter()
+        .map(OsString::from)
+        .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
 
@@ -639,9 +641,9 @@ mod test {
             "delegation=off",
             "failmode=wait",
         ]
-            .into_iter()
-            .map(OsString::from)
-            .collect();
+        .into_iter()
+        .map(OsString::from)
+        .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
     }

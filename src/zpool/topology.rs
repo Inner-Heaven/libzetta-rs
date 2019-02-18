@@ -1,7 +1,11 @@
-/// Topology is a structure that describes zpool vdev structure.
+/// CreateZpoolRequest is a structure that describes zpool vdev structure.
 /// Use to create and updated zpool
 use std::ffi::OsString;
-use zpool::vdev::{Disk, Vdev};
+use std::path::PathBuf;
+
+use zpool::properties::ZpoolPropertiesWrite;
+use zpool::vdev::CreateVdevRequest;
+use zpool::CreateMode;
 
 /// Structure representing what zpool consist of.
 /// This structure is used in zpool creation and when new drives are attached.
@@ -11,61 +15,83 @@ use zpool::vdev::{Disk, Vdev};
 /// Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
 ///
 /// ```rust
-/// use libzfs::zpool::TopologyBuilder;
-/// use libzfs::zpool::{Disk, Vdev};
+/// use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequest};
+/// use std::path::PathBuf;
 ///
-/// let drives = vec![Disk::disk("hd0"), Disk::disk("hd1")];
-/// let topo = TopologyBuilder::default()
-///     .vdevs(vec![Vdev::Mirror(drives)])
+/// let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
+/// let topo = CreateZpoolRequest::builder()
+///     .name(String::from("tank"))
+///     .vdevs(vec![CreateVdevRequest::Mirror(drives)])
 ///     .build()
 ///     .unwrap();
 /// ```
 /// Overkill example: 2 drives in mirror and a single drive, zil on double
 /// mirror and 2 l2rc.
 ///
-/// ```rust
-/// use libzfs::zpool::TopologyBuilder;
-/// use libzfs::zpool::{Disk, Vdev};
+/// ```rust, norun
+/// use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+/// use std::path::PathBuf;
 ///
-/// let zil_drives = vec![Disk::Disk("hd0".into()), Disk::Disk("hd1".into())];
-/// let mirror_drives = vec![Disk::Disk("hd2".into()), Disk::Disk("hd3".into())];
-/// let cache_drives = vec![Disk::Disk("hd4".into()), Disk::Disk("hd5".into())];
-/// let topo = TopologyBuilder::default()
-///     .vdevs(vec![Vdev::Mirror(mirror_drives)])
-///     .cache(Disk::File("/tmp/sparse.file".into()))
-///     .vdev(Vdev::Naked(Disk::Disk("sd0".into())))
+/// let zil_drives = vec![PathBuf::from("hd0"), PathBuf::from("hd1")];
+/// let mirror_drives = vec![PathBuf::from("hd2"), PathBuf::from("hd3")];
+/// let cache_drives = vec![PathBuf::from("hd4"), PathBuf::from("hd5")];
+/// let topo = CreateZpoolRequest::builder()
+///     .name("tank")
+///     .vdevs(vec![CreateVdevRequest::Mirror(mirror_drives)])
+///     .cache("/tmp/sparse.file".into())
+///     .vdev(CreateVdevRequest::SingleDisk(PathBuf::from("hd6")))
 ///     .caches(cache_drives)
-///     .zil(Vdev::Mirror(zil_drives))
+///     .zil(CreateVdevRequest::Mirror(zil_drives))
+///     .altroot(PathBuf::from("/mnt"))
+///     .mount(PathBuf::from("/mnt"))
 ///     .build()
 ///     .unwrap();
 /// ```
 #[derive(Default, Builder, Debug, Clone, Getters, PartialEq, Eq)]
 #[builder(setter(into))]
-pub struct Topology {
+pub struct CreateZpoolRequest {
+    /// Name to give new zpool
+    name: String,
+    /// Properties if new zpool
+    #[builder(default)]
+    props: Option<ZpoolPropertiesWrite>,
+    /// Altroot for zpool
+    #[builder(default)]
+    altroot: Option<PathBuf>,
+    /// Mount mount point for zpool
+    #[builder(default)]
+    mount: Option<PathBuf>,
+    /// Use `-f` or not;
+    #[builder(default)]
+    create_mode: CreateMode,
     /// Devices used to store data
     #[builder(default)]
-    vdevs: Vec<Vdev>,
-    /// Devices used to store cache
+    vdevs: Vec<CreateVdevRequest>,
+    /// Adding a cache vdev to a pool will add the storage of the cache to the
+    /// [L2ARC](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-l2arc). Cache devices
+    /// cannot be mirrored. Since a cache device only stores additional copies
+    /// of existing data, there is no risk of data loss.
     #[builder(default)]
-    caches: Vec<Disk>,
-    /// Device used as ZFS Intent Log
+    caches: Vec<PathBuf>,
+    /// ZFS Log Devices, also known as ZFS Intent Log ([ZIL](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-zil)) move the intent log from the regular
+    /// pool devices to a dedicated device, typically an SSD. Having a dedicated
+    /// log device can significantly improve the performance of applications
+    /// with a high volume of *synchronous* writes, especially databases.
+    /// Log devices can be mirrored, but RAID-Z is not supported.
+    /// If multiple log devices are used, writes will be load balanced across
+    /// them
     #[builder(default)]
-    zil: Option<Vdev>,
+    zil: Option<CreateVdevRequest>,
 }
 
-impl Topology {
+impl CreateZpoolRequest {
+    /// Create builder
+    pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
-        let valid_vdevs = self.vdevs.iter().all(Vdev::is_valid);
+        let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);
         if !valid_vdevs {
             return false;
-        }
-
-        if !self.caches.is_empty() {
-            let valid_caches = self.caches.iter().all(Disk::is_valid);
-            if !valid_caches {
-                return false;
-            }
         }
 
         match self.zil {
@@ -84,16 +110,19 @@ impl Topology {
         self.is_suitable_for_update()
     }
 
-    /// Make Topology usable as arg for Command
+    /// Make CreateZpoolRequest usable as arg for Command
     pub fn into_args(self) -> Vec<OsString> {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
-        let vdevs = self.vdevs.into_iter().flat_map(Vdev::into_args);
-        let zil = self.zil.map(Vdev::into_args);
+        let vdevs = self
+            .vdevs
+            .into_iter()
+            .flat_map(CreateVdevRequest::into_args);
+        let zil = self.zil.map(CreateVdevRequest::into_args);
         ret.extend(vdevs);
 
         if !self.caches.is_empty() {
-            let caches = self.caches.into_iter().map(Disk::into_arg);
+            let caches = self.caches.into_iter().map(PathBuf::into_os_string);
             ret.push("cache".into());
             ret.extend(caches);
         }
@@ -107,8 +136,8 @@ impl Topology {
     }
 }
 
-impl TopologyBuilder {
-    pub fn vdev(&mut self, vdev: Vdev) -> &mut TopologyBuilder {
+impl CreateZpoolRequestBuilder {
+    pub fn vdev(&mut self, vdev: CreateVdevRequest) -> &mut CreateZpoolRequestBuilder {
         match self.vdevs {
             Some(ref mut vec) => vec.push(vdev),
             None => {
@@ -119,7 +148,7 @@ impl TopologyBuilder {
         self
     }
 
-    pub fn cache(&mut self, disk: Disk) -> &mut TopologyBuilder {
+    pub fn cache(&mut self, disk: PathBuf) -> &mut CreateZpoolRequestBuilder {
         match self.caches {
             Some(ref mut vec) => vec.push(disk),
             None => {
@@ -133,14 +162,15 @@ impl TopologyBuilder {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use std::fs::File;
     use std::path::PathBuf;
+
     use tempdir::TempDir;
 
-    fn get_disks(num: usize, path: &PathBuf) -> Vec<Disk> {
-        (0..num).map(|_| Disk::File(path.clone())).collect()
+    use super::*;
+
+    fn get_disks(num: usize, path: &PathBuf) -> Vec<PathBuf> {
+        (0..num).map(|_| path.clone()).collect()
     }
 
     fn args_from_slice(args: &[&str]) -> Vec<OsString> {
@@ -154,82 +184,48 @@ mod test {
         let _valid_file = File::create(file_path.clone()).unwrap();
 
         // Zpool with one valid mirror
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
             .build()
             .unwrap();
 
         assert!(topo.is_suitable_for_create());
 
         // Zpool with invalid mirror
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(1, &file_path))])
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(1, &file_path))])
             .build()
             .unwrap();
 
         assert!(!topo.is_suitable_for_create());
 
         // Zpool with valid cache and valid vdev
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdevs(vec![CreateVdevRequest::Mirror(get_disks(2, &file_path))])
             .caches(get_disks(2, &file_path))
             .build()
             .unwrap();
 
         assert!(topo.is_suitable_for_create());
 
-        // Zpool with valid mirror, but invalid cache
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .cache(Disk::File(invalid_path.clone()))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
-        // Zpool with invalid zil
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .zil(Vdev::Naked(Disk::File(invalid_path)))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
-        // Zpool with invalid zil
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = TopologyBuilder::default()
-            .vdevs(vec![Vdev::Mirror(get_disks(2, &file_path))])
-            .caches(get_disks(2, &file_path))
-            .zil(Vdev::Naked(Disk::File(invalid_path.clone())))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_create());
-
         // Just add L2ARC to zpool
-        let topo = TopologyBuilder::default()
-            .cache(Disk::File(file_path.clone()))
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .cache(file_path)
             .build()
             .unwrap();
 
         assert!(topo.is_suitable_for_update());
         assert!(!topo.is_suitable_for_create());
+    }
 
-        // Add L2ARC and invalid vdev
-        let invalid_path = tmp_dir.path().join("fake");
-        let topo = TopologyBuilder::default()
-            .cache(Disk::File(file_path.clone()))
-            .vdev(Vdev::Naked(Disk::File(invalid_path)))
-            .vdev(Vdev::Naked(Disk::File(file_path.clone())))
-            .build()
-            .unwrap();
-
-        assert!(!topo.is_suitable_for_update());
+    #[test]
+    fn test_builder() {
+        let result = CreateZpoolRequest::builder().build();
+        assert!(result.is_err());
     }
 
     #[test]
@@ -238,11 +234,12 @@ mod test {
         let file_path = tmp_dir.path().join("block-device");
         let path = file_path.to_str().unwrap();
         let _valid_file = File::create(file_path.clone()).unwrap();
-        let naked_vdev = Vdev::Naked(Disk::File(file_path.clone()));
+        let naked_vdev = CreateVdevRequest::SingleDisk(file_path.clone());
 
         // Just add L2ARC to zpool
-        let topo = TopologyBuilder::default()
-            .cache(Disk::File(file_path.clone()))
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .cache(file_path.clone())
             .build()
             .unwrap();
 
@@ -252,10 +249,11 @@ mod test {
         assert_eq!(expected, result);
 
         // Zpool with mirror as ZIL and two vdevs
-        let topo = TopologyBuilder::default()
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
             .vdev(naked_vdev.clone())
             .vdev(naked_vdev.clone())
-            .zil(Vdev::Mirror(get_disks(2, &file_path)))
+            .zil(CreateVdevRequest::Mirror(get_disks(2, &file_path)))
             .build()
             .unwrap();
 
@@ -264,8 +262,9 @@ mod test {
         assert_eq!(expected, result);
 
         // Zraid
-        let topo = TopologyBuilder::default()
-            .vdev(Vdev::RaidZ(get_disks(3, &file_path)))
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdev(CreateVdevRequest::RaidZ(get_disks(3, &file_path)))
             .build()
             .unwrap();
 
@@ -274,8 +273,9 @@ mod test {
         assert_eq!(expected, result);
 
         // Zraid 2
-        let topo = TopologyBuilder::default()
-            .vdev(Vdev::RaidZ2(get_disks(5, &file_path)))
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdev(CreateVdevRequest::RaidZ2(get_disks(5, &file_path)))
             .build()
             .unwrap();
 
@@ -284,8 +284,9 @@ mod test {
         assert_eq!(expected, result);
 
         // Zraid 3
-        let topo = TopologyBuilder::default()
-            .vdev(Vdev::RaidZ3(get_disks(8, &file_path)))
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .vdev(CreateVdevRequest::RaidZ3(get_disks(8, &file_path)))
             .build()
             .unwrap();
 

@@ -22,9 +22,12 @@ action = { whitespace* ~ "action: " ~ multi_line_text }
 see = { whitespace* ~ "see:" ~ whitespace ~ url ~ "\n" }
 config = { whitespace* ~ "config:" ~ "\n" }
 
-pool_line = { whitespace* ~ name ~ whitespace* ~ state_enum ~ text? ~ "\n"  }
-raid_line = { whitespace* ~ raid_name ~ whitespace* ~ state_enum ~ text ~ "\n" }
-disk_line = { whitespace* ~ path ~ whitespace* ~ state_enum ~ text? ~ "\n"? }
+reason = { text }
+error_statistics = { whitespace* ~ digits ~ whitespace* ~ digits ~ whitespace* ~ digits }
+
+pool_line = { whitespace* ~ name ~ whitespace* ~ state_enum ~ whitespace? ~ error_statistics? ~ whitespace* ~ reason? ~ "\n"? }
+raid_line = { whitespace* ~ raid_name ~ whitespace* ~ state_enum ~ whitespace? ~ error_statistics? ~ whitespace* ~ reason? ~ "\n"? }
+disk_line = { whitespace* ~ path ~ whitespace* ~ state_enum ~ whitespace? ~ error_statistics? ~ whitespace* ~ reason? ~ "\n"? }
 
 scan_line = { whitespace* ~ "scan:" ~ whitespace* ~ text_line }
 pool_headers = _{ whitespace* ~ "NAME" ~ whitespace* ~ "STATE"  ~ whitespace* ~ "READ" ~ whitespace* ~ "WRITE" ~ whitespace* ~ "CKSUM" ~ "\n" }
