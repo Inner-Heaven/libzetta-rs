@@ -463,7 +463,9 @@ fn test_all_empty() {
 }
 
 #[test]
-fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
+fn test_zpool_with_logger() {
+    let _zpool = ZpoolOpen3::with_logger(get_logger());
+}
 
 #[test]
 fn test_zpool_scrub_not_found() {
@@ -577,5 +579,42 @@ fn test_zpool_take_device_from_mirror_offline_expand() {
 
         let z = zpool.status(&name).unwrap();
         assert_eq!(&Health::Online, z.health());
+    });
+}
+
+#[test]
+fn test_zpool_attach_then_detach_single() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev0_path = setup_vdev("/vdevs/vdev1", &Bytes::MegaBytes(64 + 10));
+        let vdev1_path = setup_vdev("/vdevs/vdev2", &Bytes::MegaBytes(64 + 10));
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::SingleDisk(vdev0_path.clone()))
+            .build()
+            .unwrap();
+        zpool.create(topo.clone()).unwrap();
+
+        zpool.attach(&name, &vdev0_path, &vdev1_path).unwrap();
+
+        let z = zpool.status(&name).unwrap();
+        let topo_actual = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
+            .build()
+            .unwrap();
+        assert_eq!(&z, &topo_actual);
+
+        zpool.detach(&name, &vdev1_path).unwrap();
+        let z = zpool.status(&name).unwrap();
+        assert_eq!(&z, &topo);
+
+        let err = zpool.detach(&name, &vdev0_path).unwrap_err();
+        assert_eq!(ZpoolErrorKind::OnlyDevice, err.kind());
     });
 }
