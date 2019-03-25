@@ -1,12 +1,12 @@
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
-use pest::iterators::Pair;
-use pest::iterators::Pairs;
+use pest::iterators::{Pair, Pairs};
 
 use parsers::Rule;
-use zpool::vdev::{ErrorStatistics, Vdev, VdevType};
-use zpool::{CreateZpoolRequest, Disk, Health};
+use zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
+            CreateZpoolRequest,
+            Disk,
+            Health};
 
 /// Reason why zpool in this state.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,9 +48,8 @@ pub struct Zpool {
 }
 
 impl Zpool {
-    pub fn builder() -> ZpoolBuilder {
-        ZpoolBuilder::default()
-    }
+    pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
+
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -59,31 +58,31 @@ impl Zpool {
             match pair.as_rule() {
                 Rule::pool_name => {
                     zpool.name(get_string_from_pair(pair));
-                }
+                },
                 Rule::pool_id => {
                     zpool.id(Some(get_u64_from_pair(pair)));
-                }
+                },
                 Rule::state => {
                     zpool.health(get_health_from_pair(pair));
-                }
+                },
                 Rule::action => {
                     zpool.action(Some(get_string_from_pair(pair)));
-                }
+                },
                 Rule::errors => {
                     zpool.errors(get_error_from_pair(pair));
-                }
+                },
                 Rule::vdevs => {
                     zpool.vdevs(get_vdevs_from_pair(pair));
-                }
+                },
                 Rule::pool_line => {
                     set_stats_and_reason_from_pool_line(pair, &mut zpool);
-                }
-                Rule::config | Rule::status | Rule::see | Rule::pool_headers => {}
-                Rule::scan_line => {}
+                },
+                Rule::config | Rule::status | Rule::see | Rule::pool_headers => {},
+                Rule::scan_line => {},
                 _ => {
                     dbg!(pair);
                     unreachable!()
-                }
+                },
             }
         }
         zpool.build().unwrap()
@@ -105,9 +104,7 @@ impl PartialEq<CreateZpoolRequest> for Zpool {
 }
 
 impl PartialEq<Zpool> for CreateZpoolRequest {
-    fn eq(&self, other: &Zpool) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Zpool) -> bool { other == self }
 }
 
 #[inline]
@@ -115,8 +112,8 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read: inner.next().unwrap().into_span().as_str().parse().unwrap(),
-        write: inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        read:     inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        write:    inner.next().unwrap().into_span().as_str().parse().unwrap(),
         checksum: inner.next().unwrap().into_span().as_str().parse().unwrap(),
     }
 }
@@ -129,11 +126,11 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
         match pair.as_rule() {
             Rule::reason => {
                 zpool.reason(Some(Reason::Other(String::from(pair.into_span().as_str()))));
-            }
+            },
             Rule::error_statistics => {
                 zpool.error_statistics(get_error_statistics_from_pair(pair));
-            }
-            _ => { /* no-op */ }
+            },
+            _ => { /* no-op */ },
         };
     }
 }
@@ -191,7 +188,7 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Opti
             Rule::reason => reason = Some(Reason::Other(String::from(pair.into_span().as_str()))),
             _ => {
                 unreachable!();
-            }
+            },
         }
     }
     (stats.unwrap_or_default(), reason)
@@ -215,7 +212,7 @@ fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
                     .disks(vec![disk])
                     .build()
                     .expect("Failed to build Vdev")
-            }
+            },
             Rule::raided_vdev => {
                 let mut inner = vdev.into_inner();
                 let raid_line = inner.next().unwrap();
@@ -235,10 +232,10 @@ fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
                     .reason(reason)
                     .build()
                     .expect("Failed to build vdev")
-            }
+            },
             _ => {
                 unreachable!();
-            }
+            },
         })
         .collect()
 }

@@ -6,19 +6,27 @@ extern crate rand;
 extern crate slog_term;
 extern crate tempdir;
 
-use std::fs;
-use std::fs::DirBuilder;
-use std::panic;
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::{fs::{self, DirBuilder},
+          panic,
+          path::{Path, PathBuf},
+          sync::Mutex};
 
 use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
-use libzfs::slog::*;
-use libzfs::zpool::{CreateMode, Health, OfflineMode, OnlineMode};
-use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequestBuilder, ZpoolEngine, ZpoolOpen3};
-use libzfs::zpool::{FailMode, ZpoolError, ZpoolErrorKind, ZpoolPropertiesWriteBuilder};
+use libzfs::{slog::*,
+             zpool::{CreateMode,
+                     CreateVdevRequest,
+                     CreateZpoolRequestBuilder,
+                     FailMode,
+                     Health,
+                     OfflineMode,
+                     OnlineMode,
+                     ZpoolEngine,
+                     ZpoolError,
+                     ZpoolErrorKind,
+                     ZpoolOpen3,
+                     ZpoolPropertiesWriteBuilder}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -61,9 +69,7 @@ fn setup() {
     setup_vdev(vdev_dir.join("vdev3"), &Bytes::MegaBytes(1));
 }
 fn run_test<T>(test: T)
-where
-    T: FnOnce(String) -> () + panic::UnwindSafe,
-{
+where T: FnOnce(String) -> () + panic::UnwindSafe {
     let lock = SHARED.lock().unwrap();
     setup();
 
@@ -463,9 +469,7 @@ fn test_all_empty() {
 }
 
 #[test]
-fn test_zpool_with_logger() {
-    let _zpool = ZpoolOpen3::with_logger(get_logger());
-}
+fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
 
 #[test]
 fn test_zpool_scrub_not_found() {
