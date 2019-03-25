@@ -55,7 +55,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger:   Logger,
+    logger: Logger,
 }
 
 impl Default for ZpoolOpen3 {
@@ -88,7 +88,9 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
+    fn zpool(&self) -> Command {
+        Command::new(&self.cmd_name)
+    }
 
     #[allow(dead_code)]
     fn zpool_mute(&self) -> Command {
@@ -347,6 +349,39 @@ impl ZpoolEngine for ZpoolOpen3 {
         if mode == OnlineMode::Expand {
             z.arg("-e");
         }
+        z.arg(name.as_ref());
+        z.arg(device.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
+    fn attach<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        new_device: D,
+    ) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("attach");
+        z.arg(name.as_ref());
+        z.arg(device.as_ref());
+        z.arg(new_device.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+    fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("detach");
         z.arg(name.as_ref());
         z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));

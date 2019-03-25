@@ -33,6 +33,9 @@ lazy_static! {
     static ref RE_NO_ACTIVE_SCRUBS: Regex = Regex::new(r"cannot (pause|cancel) scrubbing .+: there is no active scrub\n").expect("failed to compile RE_NO_ACTIVE_SCRUBS");
     static ref RE_NO_SUCH_POOL: Regex = Regex::new(r"cannot open '\S+': no such pool\n?").expect("failed to compile RE_NO_SUCH_POOL");
     static ref RE_NO_VALID_REPLICAS: Regex = Regex::new(r"cannot offline \S+: no valid replicas\n?").expect("failed to compile RE_NO_VALID_REPLICAS");
+    static ref RE_CANNOT_ATTACH: Regex = Regex::new(r"cannot attach \S+ to \S+ can only attach to mirrors and top-level disks").expect("failed to compile RE_CANNOT_ATTACH");
+    static ref RE_NO_SUCH_DEVICE: Regex = Regex::new(r"cannot attach \S+ to \S+: no such device in pool").expect("failed to compile RE_NO_SUCH_DEVICE");
+    static ref RE_ONLY_DEVICE: Regex = Regex::new(r"cannot detach \S+ only applicable to mirror and replacing vdevs").expect("failed to compile RE_ONLY_DEVICE");
 }
 
 quick_error! {
@@ -70,6 +73,12 @@ quick_error! {
         NoValidReplicas {}
         /// Couldn't parse string to raid type.
         UnknownRaidType(source: String) {}
+        /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors and top-level disks.
+        CannotAttach {}
+        /// Operation on device that was not found in the pool.
+        NoSuchDevice {}
+        /// Trying to detach a device from vdev without any valid replicas left.
+        OnlyDevice {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -89,6 +98,9 @@ impl ZpoolError {
             ZpoolError::NoActiveScrubs => ZpoolErrorKind::NoActiveScrubs,
             ZpoolError::NoValidReplicas => ZpoolErrorKind::NoValidReplicas,
             ZpoolError::UnknownRaidType(_) => ZpoolErrorKind::UnknownRaidType,
+            ZpoolError::CannotAttach => ZpoolErrorKind::CannotAttach,
+            ZpoolError::NoSuchDevice => ZpoolErrorKind::NoSuchDevice,
+            ZpoolError::OnlyDevice => ZpoolErrorKind::OnlyDevice,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -127,6 +139,12 @@ pub enum ZpoolErrorKind {
     NoValidReplicas,
     /// Couldn't parse string to raid type.
     UnknownRaidType,
+    /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors and top-level disks.
+    CannotAttach,
+    /// Operation on device that was not found in the pool.
+    NoSuchDevice,
+    /// Trying to detach a device from vdev without any valid replicas left.
+    OnlyDevice,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -169,6 +187,12 @@ impl ZpoolError {
             ZpoolError::PoolNotFound
         } else if RE_NO_VALID_REPLICAS.is_match(&stderr) {
             ZpoolError::NoValidReplicas
+        } else if RE_CANNOT_ATTACH.is_match(&stderr) {
+            ZpoolError::CannotAttach
+        } else if RE_NO_SUCH_DEVICE.is_match(&stderr) {
+            ZpoolError::NoSuchDevice
+        } else if RE_ONLY_DEVICE.is_match(&stderr) {
+            ZpoolError::OnlyDevice
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -207,7 +231,9 @@ pub enum CreateMode {
 }
 
 impl Default for CreateMode {
-    fn default() -> CreateMode { CreateMode::Gentle }
+    fn default() -> CreateMode {
+        CreateMode::Gentle
+    }
 }
 
 /// Bring device online as is.
@@ -351,6 +377,18 @@ pub trait ZpoolEngine {
         device: D,
         mode: OnlineMode,
     ) -> ZpoolResult<()>;
+
+    /// Attaches new_device to an existing zpool device. The existing device cannot be part of
+    /// a raidz configuration. If device is not currently part of a mirrored configuration,
+    /// device automatically transforms into a two-way mirror of device and new_device.
+    fn attach<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        device: D,
+        new_device: D,
+    ) -> ZpoolResult<()>;
+    ///Detaches device from a mirror. The operation is refused if there are no other valid replicas of the data.
+    fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
@@ -460,6 +498,27 @@ mod test {
     fn test_unknown_raid_type() {
         use std::str::FromStr;
         let kind = crate::zpool::VdevType::from_str("notzraid");
-        assert_eq!(ZpoolErrorKind::UnknownRaidType, kind.unwrap_err().kind())
+        assert_eq!(ZpoolErrorKind::UnknownRaidType, kind.unwrap_err().kind());
+    }
+
+    #[test]
+    fn test_cannot_attach() {
+        let text = b"cannot attach /vdevs/vdev3 to /vdevs/vdev0: can only attach to mirrors and top-level disks";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::CannotAttach, err.kind());
+    }
+
+    #[test]
+    fn test_no_such_device() {
+        let text = b"cannot attach /vdevs/vdev3 to /vdevs/vdev6: no such device in pool";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::NoSuchDevice, err.kind());
+    }
+
+    #[test]
+    fn test_only_device() {
+        let text = b"cannot detach /vdevs/vdev0: only applicable to mirror and replacing vdevs";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::OnlyDevice, err.kind());
     }
 }

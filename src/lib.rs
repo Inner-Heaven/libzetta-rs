@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[cfg(test)]
 extern crate cavity;
 #[macro_use]

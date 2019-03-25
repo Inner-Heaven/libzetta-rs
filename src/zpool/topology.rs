@@ -86,7 +86,9 @@ pub struct CreateZpoolRequest {
 
 impl CreateZpoolRequest {
     /// Create builder
-    pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
+    pub fn builder() -> CreateZpoolRequestBuilder {
+        CreateZpoolRequestBuilder::default()
+    }
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);
