@@ -1,7 +1,7 @@
-use std::default::Default;
-use std::ffi::OsString;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{default::Default,
+          ffi::OsString,
+          path::{Path, PathBuf},
+          str::FromStr};
 
 use zpool::{Health, Reason, ZpoolError};
 
@@ -20,8 +20,8 @@ pub struct ErrorStatistics {
 impl Default for ErrorStatistics {
     fn default() -> ErrorStatistics {
         ErrorStatistics {
-            read: 0,
-            write: 0,
+            read:     0,
+            write:    0,
             checksum: 0,
         }
     }
@@ -49,40 +49,28 @@ pub struct Disk {
 }
 
 impl Disk {
-    pub fn builder() -> DiskBuilder {
-        DiskBuilder::default()
-    }
+    pub fn builder() -> DiskBuilder { DiskBuilder::default() }
 }
 
 /// Equal if path is the same.
 impl PartialEq for Disk {
-    fn eq(&self, other: &Disk) -> bool {
-        self.path == other.path
-    }
+    fn eq(&self, other: &Disk) -> bool { self.path == other.path }
 }
 
 impl PartialEq<Path> for Disk {
-    fn eq(&self, other: &Path) -> bool {
-        self.path.as_path() == other
-    }
+    fn eq(&self, other: &Path) -> bool { self.path.as_path() == other }
 }
 
 impl PartialEq<PathBuf> for Disk {
-    fn eq(&self, other: &PathBuf) -> bool {
-        &self.path == other
-    }
+    fn eq(&self, other: &PathBuf) -> bool { &self.path == other }
 }
 
 impl PartialEq<Disk> for PathBuf {
-    fn eq(&self, other: &Disk) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Disk) -> bool { other == self }
 }
 
 impl PartialEq<Disk> for Path {
-    fn eq(&self, other: &Disk) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Disk) -> bool { other == self }
 }
 
 /// Basic building block of
@@ -105,6 +93,7 @@ pub enum VdevType {
 
 impl FromStr for VdevType {
     type Err = ZpoolError;
+
     fn from_str(source: &str) -> Result<VdevType, ZpoolError> {
         match source {
             "mirror" => Ok(VdevType::Mirror),
@@ -179,6 +168,7 @@ impl CreateVdevRequest {
         }
         ret
     }
+
     /// Make turn CreateVdevRequest into list of arguments.
     pub fn into_args(self) -> Vec<OsString> {
         match self {
@@ -189,6 +179,7 @@ impl CreateVdevRequest {
             CreateVdevRequest::RaidZ3(disks) => CreateVdevRequest::conv_to_args("raidz3", disks),
         }
     }
+
     /// Short-cut to CreateVdevRequest::SingleDisk(disk)
     pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest {
         CreateVdevRequest::SingleDisk(value.into())
@@ -207,9 +198,7 @@ impl CreateVdevRequest {
 }
 
 impl PartialEq<Vdev> for CreateVdevRequest {
-    fn eq(&self, other: &Vdev) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Vdev) -> bool { other == self }
 }
 
 /// A pool is made up of one or more vdevs, which themselves can be a single
@@ -234,9 +223,7 @@ pub struct Vdev {
 }
 
 impl Vdev {
-    pub fn builder() -> VdevBuilder {
-        VdevBuilder::default()
-    }
+    pub fn builder() -> VdevBuilder { VdevBuilder::default() }
 }
 /// Vdevs are equal of their type and backing disks are equal.
 impl PartialEq for Vdev {

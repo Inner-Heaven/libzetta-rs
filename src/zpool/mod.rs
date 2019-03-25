@@ -1,22 +1,25 @@
-use std::default::Default;
-use std::ffi::OsStr;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
-use std::num::{ParseFloatError, ParseIntError};
-use std::path::PathBuf;
+use std::{default::Default,
+          ffi::OsStr,
+          num::{ParseFloatError, ParseIntError},
+          path::PathBuf};
 
 use regex::Regex;
 
-pub use self::description::{Reason, Zpool};
-pub use self::open3::ZpoolOpen3;
-pub use self::properties::{
-    CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
-    ZpoolPropertiesWriteBuilder,
-};
-pub use self::topology::{CreateZpoolRequest, CreateZpoolRequestBuilder};
-pub use self::vdev::{CreateVdevRequest, Disk, Vdev, VdevType};
+pub use self::{description::{Reason, Zpool},
+               open3::ZpoolOpen3,
+               properties::{CacheType,
+                            FailMode,
+                            Health,
+                            PropPair,
+                            ZpoolProperties,
+                            ZpoolPropertiesWrite,
+                            ZpoolPropertiesWriteBuilder},
+               topology::{CreateZpoolRequest, CreateZpoolRequestBuilder},
+               vdev::{CreateVdevRequest, Disk, Vdev, VdevType}};
 
 pub mod open3;
 pub mod properties;
@@ -91,7 +94,7 @@ impl ZpoolError {
             ZpoolError::Io(_) => ZpoolErrorKind::Io,
             ZpoolError::PoolNotFound => ZpoolErrorKind::PoolNotFound,
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
-            ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
+            ZpoolError::VdevReuse(..) => ZpoolErrorKind::VdevReuse,
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
             ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
@@ -139,7 +142,8 @@ pub enum ZpoolErrorKind {
     NoValidReplicas,
     /// Couldn't parse string to raid type.
     UnknownRaidType,
-    /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors and top-level disks.
+    /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors
+    /// and top-level disks.
     CannotAttach,
     /// Operation on device that was not found in the pool.
     NoSuchDevice,
@@ -231,9 +235,7 @@ pub enum CreateMode {
 }
 
 impl Default for CreateMode {
-    fn default() -> CreateMode {
-        CreateMode::Gentle
-    }
+    fn default() -> CreateMode { CreateMode::Gentle }
 }
 
 /// Bring device online as is.
@@ -272,7 +274,8 @@ pub trait ZpoolEngine {
         &self,
         name: N,
         props: ZpoolPropertiesWrite,
-    ) -> ZpoolResult<ZpoolProperties> {
+    ) -> ZpoolResult<ZpoolProperties>
+    {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
         }
@@ -387,7 +390,8 @@ pub trait ZpoolEngine {
         device: D,
         new_device: D,
     ) -> ZpoolResult<()>;
-    ///Detaches device from a mirror. The operation is refused if there are no other valid replicas of the data.
+    ///Detaches device from a mirror. The operation is refused if there are no other valid replicas
+    /// of the data.
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 }
 

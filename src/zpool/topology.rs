@@ -3,9 +3,7 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use zpool::properties::ZpoolPropertiesWrite;
-use zpool::vdev::CreateVdevRequest;
-use zpool::CreateMode;
+use zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, CreateMode};
 
 /// Structure representing what zpool consist of.
 /// This structure is used in zpool creation and when new drives are attached.
@@ -86,9 +84,8 @@ pub struct CreateZpoolRequest {
 
 impl CreateZpoolRequest {
     /// Create builder
-    pub fn builder() -> CreateZpoolRequestBuilder {
-        CreateZpoolRequestBuilder::default()
-    }
+    pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
+
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
         let valid_vdevs = self.vdevs.iter().all(CreateVdevRequest::is_valid);
@@ -101,6 +98,7 @@ impl CreateZpoolRequest {
             None => true,
         }
     }
+
     /// Verify that given topology can be used to create new zpool.
     ///
     /// That means it as at least one valid vdev and all optional devices are
@@ -145,7 +143,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.vdevs = Some(Vec::new());
                 return self.vdev(vdev);
-            }
+            },
         }
         self
     }
@@ -156,7 +154,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.caches = Some(Vec::new());
                 return self.cache(disk);
-            }
+            },
         }
         self
     }
@@ -164,8 +162,7 @@ impl CreateZpoolRequestBuilder {
 
 #[cfg(test)]
 mod test {
-    use std::fs::File;
-    use std::path::PathBuf;
+    use std::{fs::File, path::PathBuf};
 
     use tempdir::TempDir;
 
