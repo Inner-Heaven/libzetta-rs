@@ -90,6 +90,7 @@ impl FailMode {
             _ => Err(ZpoolError::ParseError),
         }
     }
+
     #[doc(hidden)]
     pub fn as_str(&self) -> &str {
         match *self {
@@ -121,6 +122,7 @@ impl CacheType {
             n => Ok(CacheType::Custom(String::from(n))),
         }
     }
+
     #[doc(hidden)]
     pub fn as_str(&self) -> &str {
         match *self {
@@ -136,8 +138,7 @@ impl CacheType {
 /// only during creation/import of zpool. See `zpool(8)` for more information.
 ///
 /// ```rust
-/// use libzfs::zpool::CacheType;
-/// use libzfs::zpool::ZpoolPropertiesWriteBuilder;
+/// use libzfs::zpool::{CacheType, ZpoolPropertiesWriteBuilder};
 ///
 /// let props = ZpoolPropertiesWriteBuilder::default().build().unwrap();
 ///

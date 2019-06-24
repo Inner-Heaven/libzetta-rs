@@ -1,7 +1,7 @@
-use std::default::Default;
-use std::ffi::OsString;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{default::Default,
+          ffi::OsString,
+          path::{Path, PathBuf},
+          str::FromStr};
 
 use zpool::{Health, Reason, ZpoolError};
 
@@ -93,6 +93,7 @@ pub enum VdevType {
 
 impl FromStr for VdevType {
     type Err = ZpoolError;
+
     fn from_str(source: &str) -> Result<VdevType, ZpoolError> {
         match source {
             "mirror" => Ok(VdevType::Mirror),
@@ -167,6 +168,7 @@ impl CreateVdevRequest {
         }
         ret
     }
+
     /// Make turn CreateVdevRequest into list of arguments.
     pub fn into_args(self) -> Vec<OsString> {
         match self {
@@ -177,6 +179,7 @@ impl CreateVdevRequest {
             CreateVdevRequest::RaidZ3(disks) => CreateVdevRequest::conv_to_args("raidz3", disks),
         }
     }
+
     /// Short-cut to CreateVdevRequest::SingleDisk(disk)
     pub fn disk<O: Into<PathBuf>>(value: O) -> CreateVdevRequest {
         CreateVdevRequest::SingleDisk(value.into())
