@@ -12,10 +12,7 @@ mod test {
 
     use parsers::*;
     use zpool::{vdev::{CreateVdevRequest, ErrorStatistics},
-                CreateZpoolRequestBuilder,
-                Health,
-                Reason,
-                Zpool};
+                CreateZpoolRequestBuilder, Health, Reason, Zpool};
 
     #[test]
     fn test_action_single_line() {
@@ -132,10 +129,7 @@ mod test {
             zpool.action()
         );
 
-        assert_eq!(
-            &Some(Reason::Other(String::from("missing device"))),
-            zpool.reason()
-        );
+        assert_eq!(&Some(Reason::Other(String::from("missing device"))), zpool.reason());
 
         let vdev = &zpool.vdevs()[0];
 
@@ -346,11 +340,7 @@ config:
 
 errors: No known data errors
 "#;
-        let expected_errors = ErrorStatistics {
-            read:     1,
-            write:    2,
-            checksum: 3,
-        };
+        let expected_errors = ErrorStatistics { read: 1, write: 2, checksum: 3 };
         let mut pairs =
             StdoutParser::parse(Rule::zpool, stdout).unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
@@ -366,10 +356,7 @@ errors: No known data errors
 
         assert_eq!(&Health::Offline, first_disk.health());
         assert_eq!(&ErrorStatistics::default(), first_disk.error_statistics());
-        assert_eq!(
-            &Some(Reason::Other(String::from("was /vdevs/vdev0"))),
-            first_disk.reason()
-        );
+        assert_eq!(&Some(Reason::Other(String::from("was /vdevs/vdev0"))), first_disk.reason());
 
         let second_disk = &mirror.disks()[1];
         assert_eq!(&Health::Online, second_disk.health());

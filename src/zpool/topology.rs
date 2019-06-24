@@ -114,10 +114,7 @@ impl CreateZpoolRequest {
     pub fn into_args(self) -> Vec<OsString> {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
-        let vdevs = self
-            .vdevs
-            .into_iter()
-            .flat_map(CreateVdevRequest::into_args);
+        let vdevs = self.vdevs.into_iter().flat_map(CreateVdevRequest::into_args);
         let zil = self.zil.map(CreateVdevRequest::into_args);
         ret.extend(vdevs);
 
@@ -211,11 +208,8 @@ mod test {
         assert!(topo.is_suitable_for_create());
 
         // Just add L2ARC to zpool
-        let topo = CreateZpoolRequestBuilder::default()
-            .name("tank")
-            .cache(file_path)
-            .build()
-            .unwrap();
+        let topo =
+            CreateZpoolRequestBuilder::default().name("tank").cache(file_path).build().unwrap();
 
         assert!(topo.is_suitable_for_update());
         assert!(!topo.is_suitable_for_create());

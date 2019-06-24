@@ -11,13 +11,8 @@ use regex::Regex;
 
 pub use self::{description::{Reason, Zpool},
                open3::ZpoolOpen3,
-               properties::{CacheType,
-                            FailMode,
-                            Health,
-                            PropPair,
-                            ZpoolProperties,
-                            ZpoolPropertiesWrite,
-                            ZpoolPropertiesWriteBuilder},
+               properties::{CacheType, FailMode, Health, PropPair, ZpoolProperties,
+                            ZpoolPropertiesWrite, ZpoolPropertiesWriteBuilder},
                topology::{CreateZpoolRequest, CreateZpoolRequestBuilder},
                vdev::{CreateVdevRequest, Disk, Vdev, VdevType}};
 
@@ -284,8 +279,7 @@ pub trait ZpoolEngine {
         &self,
         name: N,
         props: ZpoolPropertiesWrite,
-    ) -> ZpoolResult<ZpoolProperties>
-    {
+    ) -> ZpoolResult<ZpoolProperties> {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
         }
@@ -305,11 +299,7 @@ pub trait ZpoolEngine {
         }
 
         // remove comment
-        let desired = if props.comment().is_empty() {
-            None
-        } else {
-            Some(props.comment().clone())
-        };
+        let desired = if props.comment().is_empty() { None } else { Some(props.comment().clone()) };
         if current.comment != desired {
             self.set_unchecked(&name, "comment", props.comment())?;
         }
@@ -446,7 +436,7 @@ mod test {
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
 
-        // TODO: add regexp for this too
+        // TODO(#49): add regexp for this too
         //let vdev_reuse_text = b"invalid vdev specification\nuse \'-f\' to override
         // the following errors:\n/vdevs/vdev0 is part of exported pool \'test\'\n";
         // let err = ZpoolError::from_stderr(vdev_reuse_text);

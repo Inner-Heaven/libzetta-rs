@@ -341,10 +341,7 @@ impl ZpoolProperties {
             c => Some(String::from(c)),
         };
 
-        let mut dedup_ratio_string = cols
-            .next()
-            .ok_or(ZpoolError::ParseError)
-            .map(String::from)?;
+        let mut dedup_ratio_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
 
         // remove 'x'
         let last_char = {
@@ -363,10 +360,7 @@ impl ZpoolProperties {
         };
 
         // remove '%'
-        let mut frag_string = cols
-            .next()
-            .ok_or(ZpoolError::ParseError)
-            .map(String::from)?;
+        let mut frag_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
         let last_char = {
             let chars = frag_string.chars();
             chars.last()
@@ -474,10 +468,7 @@ mod test {
         assert_eq!(Health::Degraded, Health::try_from_str(degraded).unwrap());
         assert_eq!(Health::Faulted, Health::try_from_str(faulted).unwrap());
         assert_eq!(Health::Offline, Health::try_from_str(offline).unwrap());
-        assert_eq!(
-            Health::Unavailable,
-            Health::try_from_str(unavailable).unwrap()
-        );
+        assert_eq!(Health::Unavailable, Health::try_from_str(unavailable).unwrap());
         assert_eq!(Health::Removed, Health::try_from_str(removed).unwrap());
 
         let err = Health::try_from_str(bad);
@@ -508,18 +499,9 @@ mod test {
 
     #[test]
     fn parsing_cache_file() {
-        assert_eq!(
-            CacheType::Default,
-            CacheType::try_from_str(Some("-")).unwrap()
-        );
-        assert_eq!(
-            CacheType::Default,
-            CacheType::try_from_str(Some("")).unwrap()
-        );
-        assert_eq!(
-            CacheType::None,
-            CacheType::try_from_str(Some("none")).unwrap()
-        );
+        assert_eq!(CacheType::Default, CacheType::try_from_str(Some("-")).unwrap());
+        assert_eq!(CacheType::Default, CacheType::try_from_str(Some("")).unwrap());
+        assert_eq!(CacheType::None, CacheType::try_from_str(Some("none")).unwrap());
         assert_eq!(
             CacheType::Custom("/wat".into()),
             CacheType::try_from_str(Some("/wat")).unwrap()
