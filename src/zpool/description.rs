@@ -48,9 +48,7 @@ pub struct Zpool {
 }
 
 impl Zpool {
-    pub fn builder() -> ZpoolBuilder {
-        ZpoolBuilder::default()
-    }
+    pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -105,9 +103,7 @@ impl PartialEq<CreateZpoolRequest> for Zpool {
 }
 
 impl PartialEq<Zpool> for CreateZpoolRequest {
-    fn eq(&self, other: &Zpool) -> bool {
-        other == self
-    }
+    fn eq(&self, other: &Zpool) -> bool { other == self }
 }
 
 #[inline]
@@ -115,8 +111,8 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read: inner.next().unwrap().into_span().as_str().parse().unwrap(),
-        write: inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        read:     inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        write:    inner.next().unwrap().into_span().as_str().parse().unwrap(),
         checksum: inner.next().unwrap().into_span().as_str().parse().unwrap(),
     }
 }

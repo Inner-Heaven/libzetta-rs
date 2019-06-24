@@ -463,9 +463,7 @@ fn test_all_empty() {
 }
 
 #[test]
-fn test_zpool_with_logger() {
-    let _zpool = ZpoolOpen3::with_logger(get_logger());
-}
+fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
 
 #[test]
 fn test_zpool_scrub_not_found() {
@@ -696,7 +694,10 @@ fn test_zpool_add_mirror() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
@@ -708,8 +709,14 @@ fn test_zpool_add_mirror() {
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
-            .vdev(CreateVdevRequest::Mirror(vec![vdev2_path.clone(), vdev3_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev2_path.clone(),
+                vdev3_path.clone(),
+            ]))
             .build()
             .unwrap();
 
@@ -732,7 +739,11 @@ fn test_zpool_add_mirror_to_raidz() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::RaidZ(vec![vdev0_path.clone(), vdev1_path.clone(), vdev2_path.clone()]))
+            .vdev(CreateVdevRequest::RaidZ(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+                vdev2_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();

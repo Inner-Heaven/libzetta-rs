@@ -144,14 +144,15 @@ pub enum ZpoolErrorKind {
     NoValidReplicas,
     /// Couldn't parse string to raid type.
     UnknownRaidType,
-    /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors and top-level disks.
+    /// Cannot attach a device to device that is part of raidz. It can only be
+    /// attached to mirrors and top-level disks.
     CannotAttach,
     /// Operation on device that was not found in the pool.
     NoSuchDevice,
     /// Trying to detach a device from vdev without any valid replicas left.
     OnlyDevice,
-    /// Trying to add vdev with wring replication level to existing zpool with different replication level.
-    /// For example: mirror to zpool.
+    /// Trying to add vdev with wring replication level to existing zpool with
+    /// different replication level. For example: mirror to zpool.
     MismatchedRepliationLevel,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
@@ -241,9 +242,7 @@ pub enum CreateMode {
 }
 
 impl Default for CreateMode {
-    fn default() -> CreateMode {
-        CreateMode::Gentle
-    }
+    fn default() -> CreateMode { CreateMode::Gentle }
 }
 
 /// Bring device online as is.
@@ -388,20 +387,28 @@ pub trait ZpoolEngine {
         mode: OnlineMode,
     ) -> ZpoolResult<()>;
 
-    /// Attaches new_device (disk) to an existing zpool device (VDEV). The existing device cannot be part of
-    /// a raidz configuration. If device is not currently part of a mirrored configuration,
-    /// device automatically transforms into a two-way mirror of device and new_device.
+    /// Attaches new_device (disk) to an existing zpool device (VDEV). The
+    /// existing device cannot be part of a raidz configuration. If device
+    /// is not currently part of a mirrored configuration,
+    /// device automatically transforms into a two-way mirror of device and
+    /// new_device.
     fn attach<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         device: D,
         new_device: D,
     ) -> ZpoolResult<()>;
-    ///Detaches device from a mirror. The operation is refused if there are no other valid replicas of the data.
+    ///Detaches device from a mirror. The operation is refused if there are no
+    /// other valid replicas of the data.
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 
     /// Add a VDEV to existing Zpool.
-    fn add<N: AsRef<str>>(&self, name: N, new_vdev: CreateVdevRequest, add_mode: CreateMode) -> ZpoolResult<()>;
+    fn add<N: AsRef<str>>(
+        &self,
+        name: N,
+        new_vdev: CreateVdevRequest,
+        add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]

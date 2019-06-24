@@ -56,7 +56,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger: Logger,
+    logger:   Logger,
 }
 
 impl Default for ZpoolOpen3 {
@@ -89,9 +89,7 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command {
-        Command::new(&self.cmd_name)
-    }
+    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
 
     #[allow(dead_code)]
     fn zpool_mute(&self) -> Command {
@@ -394,7 +392,12 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn add<N: AsRef<str>>(&self, name: N, new_vdev: CreateVdevRequest, add_mode: CreateMode) -> Result<(), ZpoolError> {
+    fn add<N: AsRef<str>>(
+        &self,
+        name: N,
+        new_vdev: CreateVdevRequest,
+        add_mode: CreateMode,
+    ) -> Result<(), ZpoolError> {
         let mut z = self.zpool();
         z.arg("add");
         if add_mode == CreateMode::Force {

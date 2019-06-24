@@ -9,9 +9,7 @@ pub trait PropPair {
 }
 
 impl PropPair for FailMode {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, self.as_str())
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
 }
 
 impl PropPair for bool {
@@ -22,15 +20,11 @@ impl PropPair for bool {
 }
 
 impl PropPair for CacheType {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, self.as_str())
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, self.as_str()) }
 }
 
 impl PropPair for String {
-    fn to_pair(&self, key: &str) -> String {
-        format!("{}={}", key, &self)
-    }
+    fn to_pair(&self, key: &str) -> String { format!("{}={}", key, &self) }
 }
 
 /// Represent state of zpool or vdev. Read
@@ -442,14 +436,14 @@ mod test {
     fn test_defaults() {
         let built = ZpoolPropertiesWriteBuilder::default().build().unwrap();
         let handmade = ZpoolPropertiesWrite {
-            read_only: false,
-            auto_expand: false,
+            read_only:    false,
+            auto_expand:  false,
             auto_replace: false,
-            boot_fs: None,
-            cache_file: CacheType::Default,
-            comment: String::new(),
-            delegation: false,
-            fail_mode: FailMode::Wait,
+            boot_fs:      None,
+            cache_file:   CacheType::Default,
+            comment:      String::new(),
+            delegation:   false,
+            fail_mode:    FailMode::Wait,
         };
 
         assert_eq!(handmade, built);

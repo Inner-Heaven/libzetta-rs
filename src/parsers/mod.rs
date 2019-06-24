@@ -345,8 +345,8 @@ config:
 errors: No known data errors
 "#;
         let expected_errors = ErrorStatistics {
-            read: 1,
-            write: 2,
+            read:     1,
+            write:    2,
             checksum: 3,
         };
         let mut pairs =
