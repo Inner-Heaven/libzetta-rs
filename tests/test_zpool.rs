@@ -733,7 +733,10 @@ fn test_zpool_add_mirror() {
         assert_eq!(topo_expected, z);
     });
 }
+
+// Somehow this is okay on ZOL, but not okay on FreeBSD.
 #[test]
+#[cfg(target_os = "freebsd")]
 fn test_zpool_add_mirror_to_raidz() {
     run_test(|name| {
         let zpool = ZpoolOpen3::default();
@@ -758,7 +761,6 @@ fn test_zpool_add_mirror_to_raidz() {
 
         let result = zpool.add(&name, new_vdev, CreateMode::default());
 
-        dbg!(&result);
         assert!(result.is_err());
 
         if let Err(r) = result {
