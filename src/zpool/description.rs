@@ -109,9 +109,9 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read:     inner.next().unwrap().into_span().as_str().parse().unwrap(),
-        write:    inner.next().unwrap().into_span().as_str().parse().unwrap(),
-        checksum: inner.next().unwrap().into_span().as_str().parse().unwrap(),
+        read:     inner.next().unwrap().as_span().as_str().parse().unwrap(),
+        write:    inner.next().unwrap().as_span().as_str().parse().unwrap(),
+        checksum: inner.next().unwrap().as_span().as_str().parse().unwrap(),
     }
 }
 
@@ -122,7 +122,7 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
     for pair in pool_line.into_inner() {
         match pair.as_rule() {
             Rule::reason => {
-                zpool.reason(Some(Reason::Other(String::from(pair.into_span().as_str()))));
+                zpool.reason(Some(Reason::Other(String::from(pair.as_span().as_str()))));
             },
             Rule::error_statistics => {
                 zpool.error_statistics(get_error_statistics_from_pair(pair));
@@ -143,14 +143,14 @@ fn get_vdev_type(raid_name: Pair<Rule>) -> VdevType {
 fn get_path_from_path(path: Option<Pair<Rule>>) -> PathBuf {
     let path = path.expect("Missing path from disk line");
     debug_assert!(path.as_rule() == Rule::path);
-    PathBuf::from(path.into_span().as_str())
+    PathBuf::from(path.as_span().as_str())
 }
 
 #[inline]
 fn get_health_from_health(health: Option<Pair<Rule>>) -> Health {
     let health = health.expect("Missing health from disk line");
     debug_assert!(health.as_rule() == Rule::state_enum);
-    Health::try_from_str(Some(health.into_span().as_str())).expect("Failed to parse Health")
+    Health::try_from_str(Some(health.as_span().as_str())).expect("Failed to parse Health")
 }
 
 #[inline]
@@ -179,7 +179,7 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Opti
     for pair in pairs {
         match pair.as_rule() {
             Rule::error_statistics => stats = Some(get_error_statistics_from_pair(pair)),
-            Rule::reason => reason = Some(Reason::Other(String::from(pair.into_span().as_str()))),
+            Rule::reason => reason = Some(Reason::Other(String::from(pair.as_span().as_str()))),
             _ => {
                 unreachable!();
             },
