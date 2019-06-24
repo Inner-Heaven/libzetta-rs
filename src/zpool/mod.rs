@@ -39,6 +39,7 @@ lazy_static! {
     static ref RE_CANNOT_ATTACH: Regex = Regex::new(r"cannot attach \S+ to \S+ can only attach to mirrors and top-level disks").expect("failed to compile RE_CANNOT_ATTACH");
     static ref RE_NO_SUCH_DEVICE: Regex = Regex::new(r"cannot attach \S+ to \S+: no such device in pool").expect("failed to compile RE_NO_SUCH_DEVICE");
     static ref RE_ONLY_DEVICE: Regex = Regex::new(r"cannot detach \S+ only applicable to mirror and replacing vdevs").expect("failed to compile RE_ONLY_DEVICE");
+    static ref RE_MISMATCH_REPLICATION: Regex = Regex::new(r"invalid vdev specification\nuse '-f' to override the following errors:\nmismatched replication level:.+").expect("failed to compile RE_MISMATCHED_REPLICATION");
 }
 
 quick_error! {
@@ -82,6 +83,9 @@ quick_error! {
         NoSuchDevice {}
         /// Trying to detach a device from vdev without any valid replicas left.
         OnlyDevice {}
+        /// Trying to add vdev with wring replication level to existing zpool with different replication level.
+        /// For example: mirror to zpool.
+        MismatchedRepliationLevel {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -104,6 +108,7 @@ impl ZpoolError {
             ZpoolError::CannotAttach => ZpoolErrorKind::CannotAttach,
             ZpoolError::NoSuchDevice => ZpoolErrorKind::NoSuchDevice,
             ZpoolError::OnlyDevice => ZpoolErrorKind::OnlyDevice,
+            ZpoolError::MismatchedRepliationLevel => ZpoolErrorKind::MismatchedRepliationLevel,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -142,13 +147,16 @@ pub enum ZpoolErrorKind {
     NoValidReplicas,
     /// Couldn't parse string to raid type.
     UnknownRaidType,
-    /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors
-    /// and top-level disks.
+    /// Cannot attach a device to device that is part of raidz. It can only be
+    /// attached to mirrors and top-level disks.
     CannotAttach,
     /// Operation on device that was not found in the pool.
     NoSuchDevice,
     /// Trying to detach a device from vdev without any valid replicas left.
     OnlyDevice,
+    /// Trying to add vdev with wring replication level to existing zpool with
+    /// different replication level. For example: mirror to zpool.
+    MismatchedRepliationLevel,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -197,6 +205,8 @@ impl ZpoolError {
             ZpoolError::NoSuchDevice
         } else if RE_ONLY_DEVICE.is_match(&stderr) {
             ZpoolError::OnlyDevice
+        } else if RE_MISMATCH_REPLICATION.is_match(&stderr) {
+            ZpoolError::MismatchedRepliationLevel
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -381,18 +391,28 @@ pub trait ZpoolEngine {
         mode: OnlineMode,
     ) -> ZpoolResult<()>;
 
-    /// Attaches new_device to an existing zpool device. The existing device cannot be part of
-    /// a raidz configuration. If device is not currently part of a mirrored configuration,
-    /// device automatically transforms into a two-way mirror of device and new_device.
+    /// Attaches new_device (disk) to an existing zpool device (VDEV). The
+    /// existing device cannot be part of a raidz configuration. If device
+    /// is not currently part of a mirrored configuration,
+    /// device automatically transforms into a two-way mirror of device and
+    /// new_device.
     fn attach<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         device: D,
         new_device: D,
     ) -> ZpoolResult<()>;
-    ///Detaches device from a mirror. The operation is refused if there are no other valid replicas
-    /// of the data.
+    ///Detaches device from a mirror. The operation is refused if there are no
+    /// other valid replicas of the data.
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
+
+    /// Add a VDEV to existing Zpool.
+    fn add<N: AsRef<str>>(
+        &self,
+        name: N,
+        new_vdev: CreateVdevRequest,
+        add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
@@ -524,5 +544,12 @@ mod test {
         let text = b"cannot detach /vdevs/vdev0: only applicable to mirror and replacing vdevs";
         let err = ZpoolError::from_stderr(text);
         assert_eq!(ZpoolErrorKind::OnlyDevice, err.kind());
+    }
+
+    #[test]
+    fn test_mismatched_replication() {
+        let text = b"invalid vdev specification\nuse \'-f\' to override the following errors:\nmismatched replication level: pool uses raidz and new vdev is mirror";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::MismatchedRepliationLevel, err.kind());
     }
 }
