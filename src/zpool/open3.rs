@@ -33,10 +33,15 @@ use slog_stdlog::StdLog;
 use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
-use super::{
-    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError,
-    ZpoolProperties, ZpoolResult,
-};
+use super::{CreateMode,
+            CreateZpoolRequest,
+            OfflineMode,
+            OnlineMode,
+            PropPair,
+            ZpoolEngine,
+            ZpoolError,
+            ZpoolProperties,
+            ZpoolResult};
 use zpool::CreateVdevRequest;
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -410,7 +415,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         new_vdev: CreateVdevRequest,
         add_mode: CreateMode,
-    ) -> Result<(), ZpoolError> {
+    ) -> Result<(), ZpoolError>
+    {
         let mut z = self.zpool();
         z.arg("add");
         if add_mode == CreateMode::Force {

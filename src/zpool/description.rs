@@ -49,6 +49,7 @@ pub struct Zpool {
 
 impl Zpool {
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
+
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -296,11 +297,13 @@ mod test {
                 Vdev::builder()
                     .kind(VdevType::SingleDisk)
                     .health(Health::Online)
-                    .disks(vec![Disk::builder()
-                        .path("hd0")
-                        .health(Health::Online)
-                        .build()
-                        .unwrap()])
+                    .disks(vec![
+                        Disk::builder()
+                            .path("hd0")
+                            .health(Health::Online)
+                            .build()
+                            .unwrap(),
+                    ])
                     .build()
                     .unwrap(),
             )
