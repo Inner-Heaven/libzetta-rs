@@ -4,9 +4,7 @@ use pest::iterators::{Pair, Pairs};
 
 use parsers::Rule;
 use zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
-            CreateZpoolRequest,
-            Disk,
-            Health};
+            CreateZpoolRequest, Disk, Health};
 
 /// Reason why zpool in this state.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -136,10 +134,7 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
 
 #[inline]
 fn get_vdev_type(raid_name: Pair<Rule>) -> VdevType {
-    let raid_enum = raid_name
-        .into_inner()
-        .next()
-        .expect("Failed to parse raid_enum");
+    let raid_enum = raid_name.into_inner().next().expect("Failed to parse raid_enum");
     debug_assert!(raid_enum.as_rule() == Rule::raid_enum);
     VdevType::from_str(raid_enum.as_str()).expect("Failed to parse raid type")
 }
@@ -247,10 +242,7 @@ fn get_health_from_pair(pair: Pair<Rule>) -> Health {
 
 #[inline]
 fn get_u64_from_pair(pair: Pair<Rule>) -> u64 {
-    get_value_from_pair(pair)
-        .as_str()
-        .parse()
-        .expect("Failed to unwrap u64")
+    get_value_from_pair(pair).as_str().parse().expect("Failed to unwrap u64")
 }
 
 #[inline]
@@ -318,12 +310,8 @@ mod test {
             .zil(CreateVdevRequest::SingleDisk(PathBuf::from("hd0")))
             .build()
             .unwrap();
-        let zpool = Zpool::builder()
-            .name("wat")
-            .health(Health::Online)
-            .vdevs(vec![])
-            .build()
-            .unwrap();
+        let zpool =
+            Zpool::builder().name("wat").health(Health::Online).vdevs(vec![]).build().unwrap();
         assert_ne!(request, zpool);
     }
 }

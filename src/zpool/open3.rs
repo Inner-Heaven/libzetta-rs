@@ -33,10 +33,8 @@ use slog_stdlog::StdLog;
 use parsers::{Rule, StdoutParser};
 use zpool::description::Zpool;
 
-use super::{
-    CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError,
-    ZpoolProperties, ZpoolResult,
-};
+use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
+            ZpoolError, ZpoolProperties, ZpoolResult};
 use zpool::CreateVdevRequest;
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -48,9 +46,7 @@ lazy_static! {
     };
 }
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger
-        .into()
-        .new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
+    logger.into().new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
 pub struct ZpoolOpen3 {
@@ -66,10 +62,7 @@ impl Default for ZpoolOpen3 {
         };
 
         let logger = Logger::root(StdLog.fuse(), o!());
-        ZpoolOpen3 {
-            cmd_name,
-            logger: setup_logger(logger),
-        }
+        ZpoolOpen3 { cmd_name, logger: setup_logger(logger) }
     }
 }
 impl ZpoolOpen3 {
@@ -186,8 +179,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         key: &str,
         value: &P,
-    ) -> ZpoolResult<()>
-    {
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("set");
         z.arg(OsString::from(PropPair::to_pair(value, key)));
@@ -258,9 +250,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        let zpools = self
-            .zpools_from_import(out)
-            .expect("Failed to unwrap zpool from status check");
+        let zpools =
+            self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
         if zpools.is_empty() {
             return Err(ZpoolError::PoolNotFound);
         }
@@ -328,8 +319,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         device: D,
         mode: OfflineMode,
-    ) -> ZpoolResult<()>
-    {
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("offline");
         if mode == OfflineMode::UntilReboot {
@@ -352,8 +342,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         device: D,
         mode: OnlineMode,
-    ) -> ZpoolResult<()>
-    {
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("online");
         if mode == OnlineMode::Expand {
@@ -375,8 +364,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         device: D,
         new_device: D,
-    ) -> ZpoolResult<()>
-    {
+    ) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("attach");
         z.arg(name.as_ref());

@@ -18,13 +18,7 @@ pub struct ErrorStatistics {
 }
 
 impl Default for ErrorStatistics {
-    fn default() -> ErrorStatistics {
-        ErrorStatistics {
-            read:     0,
-            write:    0,
-            checksum: 0,
-        }
-    }
+    fn default() -> ErrorStatistics { ErrorStatistics { read: 0, write: 0, checksum: 0 } }
 }
 
 /// This is the most basic building block of vdev. It can be backed by a entire
@@ -360,11 +354,8 @@ mod test {
         let vdev = CreateVdevRequest::Mirror(get_disks(2, &file_path));
 
         let args = vdev.into_args();
-        let expected: Vec<OsString> = vec![
-            "mirror".into(),
-            file_path.clone().into(),
-            file_path.clone().into(),
-        ];
+        let expected: Vec<OsString> =
+            vec!["mirror".into(), file_path.clone().into(), file_path.clone().into()];
         assert_eq!(expected, args);
     }
 
@@ -421,11 +412,7 @@ mod test {
     #[test]
     fn test_path_eq_disk() {
         let path = PathBuf::from("wat");
-        let disk = Disk::builder()
-            .path("wat")
-            .health(Health::Online)
-            .build()
-            .unwrap();
+        let disk = Disk::builder().path("wat").health(Health::Online).build().unwrap();
         assert_eq!(path, disk);
         assert_eq!(path.as_path(), &disk);
         assert_eq!(disk, path);
@@ -435,11 +422,7 @@ mod test {
     #[test]
     fn test_path_ne_disk() {
         let path = PathBuf::from("wat");
-        let disk = Disk::builder()
-            .path("notwat")
-            .health(Health::Online)
-            .build()
-            .unwrap();
+        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
         assert_ne!(path, disk);
         assert_ne!(path.as_path(), &disk);
         assert_ne!(disk, path);
@@ -448,11 +431,7 @@ mod test {
 
     #[test]
     fn test_vdev_eq_vdev() {
-        let disk = Disk::builder()
-            .path("notwat")
-            .health(Health::Online)
-            .build()
-            .unwrap();
+        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
 
         let left = Vdev::builder()
             .kind(VdevType::SingleDisk)
@@ -465,11 +444,7 @@ mod test {
 
     #[test]
     fn test_vdev_ne_vdev() {
-        let disk = Disk::builder()
-            .path("notwat")
-            .health(Health::Online)
-            .build()
-            .unwrap();
+        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
 
         let left = Vdev::builder()
             .kind(VdevType::SingleDisk)
@@ -487,11 +462,7 @@ mod test {
 
         assert_ne!(left, right);
 
-        let disk2 = Disk::builder()
-            .path("wat")
-            .health(Health::Online)
-            .build()
-            .unwrap();
+        let disk2 = Disk::builder().path("wat").health(Health::Online).build().unwrap();
         let right = Vdev::builder()
             .kind(VdevType::RaidZ)
             .health(Health::Online)
