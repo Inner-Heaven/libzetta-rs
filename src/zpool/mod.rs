@@ -1,22 +1,25 @@
-use std::default::Default;
-use std::ffi::OsStr;
 /// Everything you need to work with zpools. Since there is no public library
 /// to work with zpool —
 /// the default impl will call to `zpool(8)`.
 use std::io;
-use std::num::{ParseFloatError, ParseIntError};
-use std::path::PathBuf;
+use std::{default::Default,
+          ffi::OsStr,
+          num::{ParseFloatError, ParseIntError},
+          path::PathBuf};
 
 use regex::Regex;
 
-pub use self::description::{Reason, Zpool};
-pub use self::open3::ZpoolOpen3;
-pub use self::properties::{
-    CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
-    ZpoolPropertiesWriteBuilder,
-};
-pub use self::topology::{CreateZpoolRequest, CreateZpoolRequestBuilder};
-pub use self::vdev::{CreateVdevRequest, Disk, Vdev, VdevType};
+pub use self::{description::{Reason, Zpool},
+               open3::ZpoolOpen3,
+               properties::{CacheType,
+                            FailMode,
+                            Health,
+                            PropPair,
+                            ZpoolProperties,
+                            ZpoolPropertiesWrite,
+                            ZpoolPropertiesWriteBuilder},
+               topology::{CreateZpoolRequest, CreateZpoolRequestBuilder},
+               vdev::{CreateVdevRequest, Disk, Vdev, VdevType}};
 
 pub mod open3;
 pub mod properties;
@@ -95,7 +98,7 @@ impl ZpoolError {
             ZpoolError::Io(_) => ZpoolErrorKind::Io,
             ZpoolError::PoolNotFound => ZpoolErrorKind::PoolNotFound,
             ZpoolError::InvalidTopology => ZpoolErrorKind::InvalidTopology,
-            ZpoolError::VdevReuse(_, _) => ZpoolErrorKind::VdevReuse,
+            ZpoolError::VdevReuse(..) => ZpoolErrorKind::VdevReuse,
             ZpoolError::ParseError => ZpoolErrorKind::ParseError,
             ZpoolError::DeviceTooSmall => ZpoolErrorKind::DeviceTooSmall,
             ZpoolError::PermissionDenied => ZpoolErrorKind::PermissionDenied,
@@ -281,7 +284,8 @@ pub trait ZpoolEngine {
         &self,
         name: N,
         props: ZpoolPropertiesWrite,
-    ) -> ZpoolResult<ZpoolProperties> {
+    ) -> ZpoolResult<ZpoolProperties>
+    {
         if !self.exists(&name)? {
             return Err(ZpoolError::PoolNotFound);
         }

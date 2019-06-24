@@ -8,12 +8,14 @@ pub struct StdoutParser;
 mod test {
     use std::path::PathBuf;
 
-    use pest::Parser;
-    use pest::{consumes_to, parses_to};
+    use pest::{consumes_to, parses_to, Parser};
 
     use parsers::*;
-    use zpool::vdev::{CreateVdevRequest, ErrorStatistics};
-    use zpool::{CreateZpoolRequestBuilder, Health, Reason, Zpool};
+    use zpool::{vdev::{CreateVdevRequest, ErrorStatistics},
+                CreateZpoolRequestBuilder,
+                Health,
+                Reason,
+                Zpool};
 
     #[test]
     fn test_action_single_line() {

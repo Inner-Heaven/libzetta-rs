@@ -21,10 +21,10 @@
 //!
 //! It's called open 3 because it opens stdin, stdout, stder.
 
-use std::env;
-use std::ffi::{OsStr, OsString};
-use std::path::PathBuf;
-use std::process::{Command, Output, Stdio};
+use std::{env,
+          ffi::{OsStr, OsString},
+          path::PathBuf,
+          process::{Command, Output, Stdio}};
 
 use pest::Parser;
 use slog::{Drain, Logger};
@@ -38,7 +38,6 @@ use super::{
     ZpoolProperties, ZpoolResult,
 };
 use zpool::CreateVdevRequest;
-
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
         let mut arg = OsString::with_capacity(171);
@@ -167,6 +166,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         z.status().map(|_| Ok(()))?
     }
+
     fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
         let mut z = self.zpool();
         z.args(&["list", "-p", "-H", "-o"]);
@@ -186,7 +186,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         key: &str,
         value: &P,
-    ) -> ZpoolResult<()> {
+    ) -> ZpoolResult<()>
+    {
         let mut z = self.zpool();
         z.arg("set");
         z.arg(OsString::from(PropPair::to_pair(value, key)));
@@ -199,6 +200,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("export");
@@ -214,6 +216,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     fn available(&self) -> ZpoolResult<Vec<Zpool>> {
         let mut z = self.zpool();
         z.arg("import");
@@ -221,6 +224,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         let out = z.output()?;
         self.zpools_from_import(out)
     }
+
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>> {
         let mut z = self.zpool();
         z.arg("import");
@@ -246,6 +250,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     /// Status of a single pool
     fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
         let mut z = self.zpool();
@@ -274,6 +279,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         let out = z.output()?;
         self.zpools_from_import(out)
     }
+
     fn scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("scrub");
@@ -286,6 +292,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("scrub");
@@ -299,6 +306,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("scrub");
@@ -320,7 +328,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         device: D,
         mode: OfflineMode,
-    ) -> ZpoolResult<()> {
+    ) -> ZpoolResult<()>
+    {
         let mut z = self.zpool();
         z.arg("offline");
         if mode == OfflineMode::UntilReboot {
@@ -336,13 +345,15 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     /// Brings the specified physical device online.
     fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         device: D,
         mode: OnlineMode,
-    ) -> ZpoolResult<()> {
+    ) -> ZpoolResult<()>
+    {
         let mut z = self.zpool();
         z.arg("online");
         if mode == OnlineMode::Expand {
@@ -364,7 +375,8 @@ impl ZpoolEngine for ZpoolOpen3 {
         name: N,
         device: D,
         new_device: D,
-    ) -> ZpoolResult<()> {
+    ) -> ZpoolResult<()>
+    {
         let mut z = self.zpool();
         z.arg("attach");
         z.arg(name.as_ref());
@@ -378,6 +390,7 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("detach");
