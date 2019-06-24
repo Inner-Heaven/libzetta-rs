@@ -37,6 +37,7 @@ use super::{
     CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError,
     ZpoolProperties, ZpoolResult,
 };
+use zpool::CreateVdevRequest;
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -384,6 +385,23 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg("detach");
         z.arg(name.as_ref());
         z.arg(device.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
+    fn add<N: AsRef<str>>(&self, name: N, new_vdev: CreateVdevRequest, add_mode: CreateMode) -> Result<(), ZpoolError> {
+        let mut z = self.zpool();
+        z.arg("add");
+        if add_mode == CreateMode::Force {
+            z.arg("-f");
+        }
+        z.arg(name.as_ref());
+        z.args(new_vdev.into_args());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
