@@ -752,6 +752,7 @@ fn test_zpool_add_mirror_to_raidz() {
 
         let result = zpool.add(&name, new_vdev, CreateMode::default());
 
+        dbg!(&result);
         assert!(result.is_err());
 
         if let Err(r) = result {
