@@ -3,7 +3,7 @@ authors = ["Andrey Cherkashin <with.out@me.com>"]
 name = "libzfs"
 version = "0.1.0"
 [dependencies]
-derive-getters = "0.0.7"
+derive-getters = "0.0.8"
 derive_builder = "0.7"
 lazy_static = "1.2"
 libc = "0.2"
