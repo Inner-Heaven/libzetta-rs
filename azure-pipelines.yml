@@ -52,6 +52,11 @@ jobs:
         bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: $(System.DefaultWorkingDirectory)/**/cobertura.xml
+      condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
     - task: PublishTestResults@2
       inputs:
         testRunner: JUnit
