@@ -16,7 +16,7 @@ slog-stdlog = "3"
 
 [dev-dependencies]
 cavity = "1.1"
-rand = "0.6"
+rand = "0.7"
 slog-term = "2"
 tempdir = "0.3"
 
