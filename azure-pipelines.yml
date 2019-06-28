@@ -40,7 +40,7 @@ jobs:
         sudo mkdir /vdevs && sudo chmod 777 /vdevs
       displayName: Install ZFS on Linux
     - script: |
-        CARGO=$HOME/.cargo/bin/cargo
+        CARGO=$(which cargo)
         RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
         cargo install cargo-suity
         mkdir test-results
