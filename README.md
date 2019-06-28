@@ -2,7 +2,6 @@
 
 [![Build Status](https://dev.azure.com/andoriyu/libpandemonium/_apis/build/status/Inner-Heaven.libzfs-rs?branchName=master)](https://dev.azure.com/andoriyu/libpandemonium/_build/latest?definitionId=1&branchName=master)
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_shield)
 
 > libzfs-rs is a stable interface for programmatic administration of ZFS
 
@@ -31,7 +30,7 @@ Note that integration tests do a lot of zpool and zfs operations on live system.
 
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ✔   |    ✔   |    ✔   |     ✔    |      ✔ ¹     |     ❌    |       ❌      |
+| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ✔   |    ✔   |    ✔   |     ✔    |      ✔ ¹     |     ✔    |       ❌      |
 
 1. Reads the status, but api isn't stable and does poor job at reporting scrubbing status.
 
@@ -43,6 +42,3 @@ Literally nothing works.
 ## LICENSE
 
 [BSD-2-Clause](LICENSE).
-
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FInner-Heaven%2Flibzfs-rs?ref=badge_large)
