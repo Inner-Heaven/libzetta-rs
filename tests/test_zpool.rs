@@ -611,7 +611,7 @@ fn test_zpool_add_naked() {
 
         let new_vdev = CreateVdevRequest::SingleDisk(vdev1_path.clone());
 
-        let result = zpool.add(&name, new_vdev, CreateMode::Gentle);
+        let result = zpool.add_vdev(&name, new_vdev, CreateMode::Gentle);
 
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
@@ -644,7 +644,7 @@ fn test_zpool_add_naked_force() {
 
         let new_vdev = CreateVdevRequest::SingleDisk(vdev1_path.clone());
 
-        let result = zpool.add(&name, new_vdev, CreateMode::Force);
+        let result = zpool.add_vdev(&name, new_vdev, CreateMode::Force);
 
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
@@ -679,7 +679,7 @@ fn test_zpool_add_mirror() {
 
         let new_vdev = CreateVdevRequest::Mirror(vec![vdev2_path.clone(), vdev3_path.clone()]);
 
-        let result = zpool.add(&name, new_vdev, CreateMode::default());
+        let result = zpool.add_vdev(&name, new_vdev, CreateMode::default());
 
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
@@ -722,12 +722,40 @@ fn test_zpool_add_mirror_to_raidz() {
 
         let new_vdev = CreateVdevRequest::Mirror(vec![vdev3_path.clone(), vdev4_path.clone()]);
 
-        let result = zpool.add(&name, new_vdev, CreateMode::default());
+        let result = zpool.add_vdev(&name, new_vdev, CreateMode::default());
 
         assert!(result.is_err());
 
         if let Err(r) = result {
             assert_eq!(ZpoolErrorKind::MismatchedRepliationLevel, r.kind());
         }
+    });
+}
+
+#[test]
+fn test_zpool_remove_zil() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev0_path = setup_vdev("/vdevs/vdev1", &Bytes::MegaBytes(64 + 10));
+        let vdev1_path = setup_vdev("/vdevs/vdev2", &Bytes::MegaBytes(64 + 10));
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::SingleDisk(vdev0_path.clone()))
+            .zil(CreateVdevRequest::SingleDisk(vdev1_path.clone()))
+            .build()
+            .unwrap();
+        zpool.create(topo).unwrap();
+
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::SingleDisk(vdev0_path.clone()))
+            .build()
+            .unwrap();
+
+        let result = zpool.status(&name).unwrap();
+
+        assert_eq!(topo, result);
     });
 }

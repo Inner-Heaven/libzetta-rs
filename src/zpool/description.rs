@@ -2,9 +2,9 @@ use std::{path::PathBuf, str::FromStr};
 
 use pest::iterators::{Pair, Pairs};
 
-use crate::parsers::Rule;
-use crate::zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
-            CreateZpoolRequest, Disk, Health};
+use crate::{parsers::Rule,
+            zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
+                    CreateZpoolRequest, Disk, Health}};
 
 /// Reason why zpool in this state.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,6 +31,9 @@ pub struct Zpool {
     /// Zfs Intent Log device
     #[builder(default)]
     zil: Option<Vdev>,
+    #[builder(default)]
+    spares: Vec<Disk>,
+    /// Zfs Intent Log device
     /// Value of action field what ever it is.
     #[builder(default)]
     action: Option<String>,
@@ -47,6 +50,7 @@ pub struct Zpool {
 
 impl Zpool {
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
+
     pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -76,9 +80,7 @@ impl Zpool {
                 },
                 Rule::config | Rule::status | Rule::see | Rule::pool_headers => {},
                 Rule::scan_line => {},
-                _ => {
-                    unreachable!()
-                },
+                _ => unreachable!(),
             }
         }
         zpool.build().unwrap()

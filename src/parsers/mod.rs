@@ -10,9 +10,9 @@ mod test {
 
     use pest::{consumes_to, parses_to, Parser};
 
-    use parsers::*;
-    use zpool::{vdev::{CreateVdevRequest, ErrorStatistics},
-                CreateZpoolRequestBuilder, Health, Reason, Zpool};
+    use crate::{parsers::*,
+                zpool::{vdev::{CreateVdevRequest, ErrorStatistics},
+                        CreateZpoolRequestBuilder, Health, Reason, Zpool}};
 
     #[test]
     fn test_action_single_line() {
@@ -315,8 +315,6 @@ errors: No known data errors
             ])
             .build()
             .unwrap();
-        //dbg!(zpool.topology());
-
         assert_eq!(&topo, &zpool);
     }
 

@@ -30,8 +30,8 @@ use pest::Parser;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 
-use crate::parsers::{Rule, StdoutParser};
-use crate::zpool::description::Zpool;
+use crate::{parsers::{Rule, StdoutParser},
+            zpool::description::Zpool};
 
 use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
             ZpoolError, ZpoolProperties, ZpoolResult};
@@ -392,7 +392,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn add<N: AsRef<str>>(
+    fn add_vdev<N: AsRef<str>>(
         &self,
         name: N,
         new_vdev: CreateVdevRequest,
@@ -405,6 +405,20 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
         z.arg(name.as_ref());
         z.args(new_vdev.into_args());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
+    fn remove<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()> {
+        let mut z = self.zpool();
+        z.arg("remove");
+        z.arg(name.as_ref());
+        z.arg(device.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {

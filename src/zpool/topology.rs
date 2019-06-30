@@ -80,6 +80,12 @@ pub struct CreateZpoolRequest {
     /// them
     #[builder(default)]
     zil: Option<CreateVdevRequest>,
+    /// The hot spares feature enables you to identify disks that could be used to replace a failed
+    /// or faulted device in one or more storage pools. Designating a device as a hot spare means
+    /// that the device is not an active device in the pool, but if an active device in the pool
+    /// fails, the hot spare automatically replaces the failed device.
+    #[builder(default)]
+    spares: Vec<PathBuf>,
 }
 
 impl CreateZpoolRequest {
@@ -129,6 +135,11 @@ impl CreateZpoolRequest {
             ret.extend(z);
         }
 
+        if !self.spares.is_empty() {
+            let spares = self.spares.into_iter().map(PathBuf::into_os_string);
+            ret.push("spare".into());
+            ret.extend(spares);
+        }
         ret
     }
 }

@@ -1,12 +1,5 @@
 #![recursion_limit = "256"]
-#![deny(
-    nonstandard_style,
-    future_incompatible,
-    clippy::all,
-    clippy::restriction,
-    clippy::nursery,
-)]
-
+#![deny(nonstandard_style, future_incompatible, clippy::all, clippy::restriction, clippy::nursery)]
 #![allow(clippy::module_name_repetitions)]
 
 #[cfg(test)] extern crate cavity;
@@ -30,4 +23,3 @@ extern crate slog_stdlog;
 // library modules
 pub mod parsers;
 pub mod zpool;
-
