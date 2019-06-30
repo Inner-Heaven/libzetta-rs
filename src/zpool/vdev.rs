@@ -3,7 +3,7 @@ use std::{default::Default,
           path::{Path, PathBuf},
           str::FromStr};
 
-use zpool::{Health, Reason, ZpoolError};
+use crate::zpool::{Health, Reason, ZpoolError};
 
 /// Error statistics.
 #[derive(Debug, Clone, Eq, PartialEq)]

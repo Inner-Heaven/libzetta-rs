@@ -30,12 +30,12 @@ use pest::Parser;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 
-use parsers::{Rule, StdoutParser};
-use zpool::description::Zpool;
+use crate::parsers::{Rule, StdoutParser};
+use crate::zpool::description::Zpool;
 
 use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
             ZpoolError, ZpoolProperties, ZpoolResult};
-use zpool::CreateVdevRequest;
+use crate::zpool::CreateVdevRequest;
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
         let mut arg = OsString::with_capacity(171);
@@ -235,7 +235,6 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        println!("{:#?}", out);
         if out.status.success() {
             Ok(())
         } else {

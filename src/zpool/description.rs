@@ -2,8 +2,8 @@ use std::{path::PathBuf, str::FromStr};
 
 use pest::iterators::{Pair, Pairs};
 
-use parsers::Rule;
-use zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
+use crate::parsers::Rule;
+use crate::zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
             CreateZpoolRequest, Disk, Health};
 
 /// Reason why zpool in this state.
@@ -77,7 +77,6 @@ impl Zpool {
                 Rule::config | Rule::status | Rule::see | Rule::pool_headers => {},
                 Rule::scan_line => {},
                 _ => {
-                    dbg!(pair);
                     unreachable!()
                 },
             }
