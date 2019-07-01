@@ -394,15 +394,24 @@ pub trait ZpoolEngine {
     ) -> ZpoolResult<()>;
     ///Detaches device from a mirror. The operation is refused if there are no
     /// other valid replicas of the data.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `device` - Name of the device or path to sparse file.
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 
     /// Add a VDEV to existing Zpool.
-    fn add<N: AsRef<str>>(
+    fn add_vdev<N: AsRef<str>>(
         &self,
         name: N,
         new_vdev: CreateVdevRequest,
         add_mode: CreateMode,
     ) -> ZpoolResult<()>;
+
+    /// Remove Spare, Cache or log device
+    ///
+    /// * `name` - Name of the zpool
+    /// * `device` - Name of the device or path to sparse file.
+    fn remove<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 }
 
 #[cfg(test)]
