@@ -397,4 +397,43 @@ errors: No known data errors
         let zpool = Zpool::from_pest_pair(pair);
         assert_eq!(&Health::Degraded, zpool.health());
     }
+
+    #[test]
+    fn test_zpool_with_cache_and_log() {
+        let stdout = r#"  pool: hell
+ state: ONLINE
+  scan: none requested
+config:
+
+        NAME              STATE     READ WRITE CKSUM
+        test-123          ONLINE       0     0     0
+          /vdevs/vdev0    ONLINE       0     0     0
+        logs
+          mirror-1        ONLINE       0     0     0
+            /vdevs/vdev1  ONLINE       0     0     0
+            /vdevs/vdev2  ONLINE       0     0     0
+        cache
+          md1             ONLINE       0     0     0
+
+
+errors: No known data errors
+        "#;
+
+        let mut pairs =
+            StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("hell")
+            .vdev(CreateVdevRequest::SingleDisk(PathBuf::from("/vdevs/vdev0")))
+            .cache(PathBuf::from("md1"))
+            .zil(CreateVdevRequest::Mirror(vec![
+                PathBuf::from("/vdevs/vdev1"),
+                PathBuf::from("/vdevs/vdev2"),
+            ]))
+            .build()
+            .unwrap();
+
+        assert_eq!(&topo, &zpool);
+    }
 }
