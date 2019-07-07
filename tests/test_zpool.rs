@@ -774,7 +774,6 @@ fn test_zpool_remove_zil() {
 fn test_zpool_add_cache() {
     run_test(|name| {
         let zpool = ZpoolOpen3::default();
-        let zpool = ZpoolOpen3::with_logger(get_logger());
         let vdev1_path = setup_vdev("/vdevs/vdev1", &Bytes::MegaBytes(64 + 10));
         let vdev2_path = get_virtual_device();
         let topo = CreateZpoolRequestBuilder::default()
@@ -797,9 +796,7 @@ fn test_zpool_add_cache() {
 
         assert!(result.is_ok());
 
-        dbg!(&topo_expected);
         let z = zpool.status(&name).unwrap();
-        dbg!(&z);
         assert_eq!(topo_expected, z);
     });
 }
