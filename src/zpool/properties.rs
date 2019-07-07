@@ -31,14 +31,16 @@ impl PropPair for String {
 /// [more](https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html).
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Health {
-    /// Healthy and operational
+    /// Healthy and operational.
     Online,
-    /// Unhealthy, but operational,
+    /// Unhealthy, but operational.
     Degraded,
-    /// Not operational
+    /// Not operational.
     Faulted,
-    /// Taken offline by admin
+    /// Taken offline by admin.
     Offline,
+    /// Spare is ready to take over failed device.
+    Available,
     /// Can't open device.
     Unavailable,
     /// Physically removed while the system was running.
@@ -55,6 +57,7 @@ impl Health {
             "DEGRADED" => Ok(Health::Degraded),
             "FAULTED" => Ok(Health::Faulted),
             "OFFLINE" => Ok(Health::Offline),
+            "AVAIL" => Ok(Health::Available),
             "UNAVAIL" => Ok(Health::Unavailable),
             "REMOVED" => Ok(Health::Removed),
             _ => Err(ZpoolError::ParseError),

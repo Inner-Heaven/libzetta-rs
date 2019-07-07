@@ -146,6 +146,9 @@ impl CreateZpoolRequest {
 }
 
 impl CreateZpoolRequestBuilder {
+    /// Add vdev to request.
+    ///
+    /// * `vdev` - [CreateVdevRequest](struct.CreateVdevRequest.html) for vdev.
     pub fn vdev(&mut self, vdev: CreateVdevRequest) -> &mut CreateZpoolRequestBuilder {
         match self.vdevs {
             Some(ref mut vec) => vec.push(vdev),
@@ -157,6 +160,10 @@ impl CreateZpoolRequestBuilder {
         self
     }
 
+    /// Add cache device to request.
+    ///
+    /// * `disk` - path to file or name of block device in `/dev/`. Some ZFS implementations forbid
+    ///   using files as cache.
     pub fn cache(&mut self, disk: PathBuf) -> &mut CreateZpoolRequestBuilder {
         match self.caches {
             Some(ref mut vec) => vec.push(disk),
@@ -168,12 +175,29 @@ impl CreateZpoolRequestBuilder {
         self
     }
 
+    /// Add Vdev that will be used as ZFS Intent Log to request.
+    ///
+    /// * `vdev` - [CreateVdevRequest](struct.CreateVdevRequest.html) for ZIL device.
     pub fn zil(&mut self, log: CreateVdevRequest) -> &mut CreateZpoolRequestBuilder {
         match self.logs {
             Some(ref mut vec) => vec.push(log),
             None => {
                 self.logs = Some(Vec::with_capacity(1));
                 return self.zil(log);
+            },
+        }
+        self
+    }
+
+    /// Add spare disk that will be used to replace failed device in zpool.
+    ///
+    /// * `disk` - path to file or name of block device in `/dev/`.
+    pub fn spare(&mut self, disk: PathBuf) -> &mut CreateZpoolRequestBuilder {
+        match self.spares {
+            Some(ref mut vec) => vec.push(disk),
+            None => {
+                self.spares = Some(Vec::new());
+                return self.spare(disk);
             },
         }
         self

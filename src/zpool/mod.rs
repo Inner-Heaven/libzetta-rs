@@ -443,6 +443,18 @@ pub trait ZpoolEngine {
         add_mode: CreateMode,
     ) -> ZpoolResult<()>;
 
+    /// Add a spare to existing Zpool.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `new_spare` - Disk to use as spare
+    /// * `add_mode` - Disable some safety checks
+    fn add_spare<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        new_spare: D,
+        add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
+
     /// Remove Spare, Cache or log device
     ///
     /// * `name` - Name of the zpool
