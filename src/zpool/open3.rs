@@ -460,6 +460,29 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
+    fn add_spare<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        new_spare: D,
+        add_mode: CreateMode,
+    ) -> Result<(), ZpoolError> {
+        let mut z = self.zpool();
+        z.arg("add");
+        if add_mode == CreateMode::Force {
+            z.arg("-f");
+        }
+        z.arg(name.as_ref());
+        z.arg("spare");
+        z.arg(new_spare.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
     fn remove<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("remove");
