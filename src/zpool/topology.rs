@@ -79,7 +79,7 @@ pub struct CreateZpoolRequest {
     /// If multiple log devices are used, writes will be load balanced across
     /// them
     #[builder(default)]
-    zil: Option<CreateVdevRequest>,
+    logs: Vec<CreateVdevRequest>,
     /// The hot spares feature enables you to identify disks that could be used to replace a failed
     /// or faulted device in one or more storage pools. Designating a device as a hot spare means
     /// that the device is not an active device in the pool, but if an active device in the pool
@@ -99,10 +99,11 @@ impl CreateZpoolRequest {
             return false;
         }
 
-        match self.zil {
-            Some(ref vdev) => vdev.is_valid(),
-            None => true,
+        let valid_logs = self.logs.iter().all(CreateVdevRequest::is_valid);
+        if !valid_logs {
+            return false;
         }
+        true
     }
 
     /// Verify that given topology can be used to create new zpool.
@@ -121,18 +122,18 @@ impl CreateZpoolRequest {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
         let vdevs = self.vdevs.into_iter().flat_map(CreateVdevRequest::into_args);
-        let zil = self.zil.map(CreateVdevRequest::into_args);
         ret.extend(vdevs);
+
+        if !self.logs.is_empty() {
+            let log_vdevs = self.logs.into_iter().flat_map(CreateVdevRequest::into_args);
+            ret.push("log".into());
+            ret.extend(log_vdevs);
+        }
 
         if !self.caches.is_empty() {
             let caches = self.caches.into_iter().map(PathBuf::into_os_string);
             ret.push("cache".into());
             ret.extend(caches);
-        }
-
-        if let Some(z) = zil {
-            ret.push("log".into());
-            ret.extend(z);
         }
 
         if !self.spares.is_empty() {
@@ -162,6 +163,17 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.caches = Some(Vec::new());
                 return self.cache(disk);
+            },
+        }
+        self
+    }
+
+    pub fn zil(&mut self, log: CreateVdevRequest) -> &mut CreateZpoolRequestBuilder {
+        match self.logs {
+            Some(ref mut vec) => vec.push(log),
+            None => {
+                self.logs = Some(Vec::with_capacity(1));
+                return self.zil(log);
             },
         }
         self

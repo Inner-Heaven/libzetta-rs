@@ -35,6 +35,7 @@ lazy_static! {
     static ref RE_NO_SUCH_DEVICE: Regex = Regex::new(r"cannot attach \S+ to \S+: no such device in pool").expect("failed to compile RE_NO_SUCH_DEVICE");
     static ref RE_ONLY_DEVICE: Regex = Regex::new(r"cannot detach \S+ only applicable to mirror and replacing vdevs").expect("failed to compile RE_ONLY_DEVICE");
     static ref RE_MISMATCH_REPLICATION: Regex = Regex::new(r"invalid vdev specification\nuse '-f' to override the following errors:\nmismatched replication level:.+").expect("failed to compile RE_MISMATCHED_REPLICATION");
+    static ref RE_INVALID_CACHE_DEVICE: Regex = Regex::new(r"cannot add to \S+: cache device must be a disk or disk slice\n?").expect("failed to compile RE_INVALID_CACHE_DEVICE");
 }
 
 quick_error! {
@@ -80,7 +81,9 @@ quick_error! {
         OnlyDevice {}
         /// Trying to add vdev with wring replication level to existing zpool with different replication level.
         /// For example: mirror to zpool.
-        MismatchedRepliationLevel {}
+        MismatchedReplicationLevel {}
+        /// Cache device must a disk or disk slice.
+        InvalidCacheDevice {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
     }
@@ -103,7 +106,8 @@ impl ZpoolError {
             ZpoolError::CannotAttach => ZpoolErrorKind::CannotAttach,
             ZpoolError::NoSuchDevice => ZpoolErrorKind::NoSuchDevice,
             ZpoolError::OnlyDevice => ZpoolErrorKind::OnlyDevice,
-            ZpoolError::MismatchedRepliationLevel => ZpoolErrorKind::MismatchedRepliationLevel,
+            ZpoolError::MismatchedReplicationLevel => ZpoolErrorKind::MismatchedReplicationLevel,
+            ZpoolError::InvalidCacheDevice => ZpoolErrorKind::InvalidCacheDevice,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
     }
@@ -151,7 +155,9 @@ pub enum ZpoolErrorKind {
     OnlyDevice,
     /// Trying to add vdev with wring replication level to existing zpool with
     /// different replication level. For example: mirror to zpool.
-    MismatchedRepliationLevel,
+    MismatchedReplicationLevel,
+    /// Cache device must a disk or disk slice.
+    InvalidCacheDevice,
     /// Don't know (yet) how to categorize this error. If you see this error -
     /// open an issues.
     Other,
@@ -201,7 +207,9 @@ impl ZpoolError {
         } else if RE_ONLY_DEVICE.is_match(&stderr) {
             ZpoolError::OnlyDevice
         } else if RE_MISMATCH_REPLICATION.is_match(&stderr) {
-            ZpoolError::MismatchedRepliationLevel
+            ZpoolError::MismatchedReplicationLevel
+        } else if RE_INVALID_CACHE_DEVICE.is_match(&stderr) {
+            ZpoolError::InvalidCacheDevice
         } else {
             ZpoolError::Other(stderr.into())
         }
@@ -400,10 +408,38 @@ pub trait ZpoolEngine {
     fn detach<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()>;
 
     /// Add a VDEV to existing Zpool.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `new_vdev` - New VDEV
+    /// * `add_mode` - Disable some safety checks
     fn add_vdev<N: AsRef<str>>(
         &self,
         name: N,
         new_vdev: CreateVdevRequest,
+        add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
+
+    /// Add a ZIL to existing Zpool.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `new_zil` - VDEV to use as ZIL
+    /// * `add_mode` - Disable some safety checks
+    fn add_zil<N: AsRef<str>>(
+        &self,
+        name: N,
+        new_zil: CreateVdevRequest,
+        add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
+
+    /// Add a cache to existing Zpool.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `new_cache` - Disk to use as cache
+    /// * `add_mode` - Disable some safety checks
+    fn add_cache<N: AsRef<str>, D: AsRef<OsStr>>(
+        &self,
+        name: N,
+        new_cache: D,
         add_mode: CreateMode,
     ) -> ZpoolResult<()>;
 
@@ -549,6 +585,13 @@ mod test {
     fn test_mismatched_replication() {
         let text = b"invalid vdev specification\nuse \'-f\' to override the following errors:\nmismatched replication level: pool uses raidz and new vdev is mirror";
         let err = ZpoolError::from_stderr(text);
-        assert_eq!(ZpoolErrorKind::MismatchedRepliationLevel, err.kind());
+        assert_eq!(ZpoolErrorKind::MismatchedReplicationLevel, err.kind());
+    }
+
+    #[test]
+    fn test_invalid_cache_device() {
+        let text = b"cannot add to 'asd': cache device must be a disk or disk slice\n?";
+        let err = ZpoolError::from_stderr(text);
+        assert_eq!(ZpoolErrorKind::InvalidCacheDevice, err.kind());
     }
 }

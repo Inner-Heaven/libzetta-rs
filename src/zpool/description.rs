@@ -28,12 +28,12 @@ pub struct Zpool {
     /// List of cache devices.
     #[builder(default)]
     caches: Vec<Disk>,
-    /// Zfs Intent Log device
+    /// Zfs Intent Log devices.
     #[builder(default)]
-    zil: Option<Vdev>,
+    logs: Vec<Vdev>,
+    /// Spare devices.
     #[builder(default)]
     spares: Vec<Disk>,
-    /// Zfs Intent Log device
     /// Value of action field what ever it is.
     #[builder(default)]
     action: Option<String>,
@@ -78,6 +78,12 @@ impl Zpool {
                 Rule::pool_line => {
                     set_stats_and_reason_from_pool_line(pair, &mut zpool);
                 },
+                Rule::logs => {
+                    zpool.logs(get_logs_from_pair(pair));
+                },
+                Rule::caches => {
+                    zpool.caches(get_caches_from_pair(pair));
+                },
                 Rule::config | Rule::status | Rule::see | Rule::pool_headers => {},
                 Rule::scan_line => {},
                 _ => unreachable!(),
@@ -89,12 +95,7 @@ impl Zpool {
 
 impl PartialEq<CreateZpoolRequest> for Zpool {
     fn eq(&self, other: &CreateZpoolRequest) -> bool {
-        let the_same_zpool = match (&self.zil, other.zil()) {
-            (None, None) => true,
-            (Some(ref a), Some(ref b)) => a == b,
-            _ => false,
-        };
-        the_same_zpool
+        &self.logs == other.logs()
             && &self.name == other.name()
             && &self.caches == other.caches()
             && &self.vdevs == other.vdevs()
@@ -267,6 +268,22 @@ fn get_error_from_pair(pair: Pair<Rule>) -> Option<String> {
     }
 }
 
+#[inline]
+fn get_logs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
+    debug_assert!(pair.as_rule() == Rule::logs);
+    if let Some(vdevs) = pair.into_inner().next() {
+        get_vdevs_from_pair(vdevs)
+    } else {
+        Vec::new()
+    }
+}
+
+#[inline]
+fn get_caches_from_pair(pair: Pair<Rule>) -> Vec<Disk> {
+    debug_assert!(pair.as_rule() == Rule::caches);
+    return pair.into_inner().map(get_disk_from_disk_line).collect();
+}
+
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
@@ -280,23 +297,19 @@ mod test {
         let request = CreateZpoolRequest::builder()
             .name("wat")
             .zil(CreateVdevRequest::SingleDisk(PathBuf::from("hd0")))
+            .cache(PathBuf::from("hd1"))
             .build()
             .unwrap();
         let zpool = Zpool::builder()
             .name("wat")
             .health(Health::Online)
-            .zil(
-                Vdev::builder()
-                    .kind(VdevType::SingleDisk)
-                    .health(Health::Online)
-                    .disks(vec![Disk::builder()
-                        .path("hd0")
-                        .health(Health::Online)
-                        .build()
-                        .unwrap()])
-                    .build()
-                    .unwrap(),
-            )
+            .caches(vec![Disk::builder().path("hd1").health(Health::Online).build().unwrap()])
+            .logs(vec![Vdev::builder()
+                .kind(VdevType::SingleDisk)
+                .health(Health::Online)
+                .disks(vec![Disk::builder().path("hd0").health(Health::Online).build().unwrap()])
+                .build()
+                .unwrap()])
             .vdevs(vec![])
             .build()
             .unwrap();
