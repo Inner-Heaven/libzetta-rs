@@ -483,6 +483,26 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
+    fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(
+        &self,
+        name: N,
+        old_disk: D,
+        new_disk: O,
+    ) -> Result<(), ZpoolError> {
+        let mut z = self.zpool();
+        z.arg("replace");
+        z.arg(name.as_ref());
+        z.arg(old_disk.as_ref());
+        z.arg(new_disk.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
     fn remove<N: AsRef<str>, D: AsRef<OsStr>>(&self, name: N, device: D) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("remove");
