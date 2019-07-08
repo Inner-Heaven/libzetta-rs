@@ -853,3 +853,35 @@ fn test_zpool_add_spare() {
         assert_eq!(topo_expected, z);
     });
 }
+
+#[test]
+fn test_zpool_replace_disk() {
+    run_test(|name| {
+        let zpool = ZpoolOpen3::default();
+        let vdev0_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
+        let vdev1_path = setup_vdev("/vdevs/vdev1", &Bytes::MegaBytes(64 + 10));
+        let vdev2_path = setup_vdev("/vdevs/vdev2", &Bytes::MegaBytes(64 + 10));
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .build()
+            .unwrap();
+        zpool.create(topo.clone()).unwrap();
+
+
+        let result = zpool.replace_disk(&name, &vdev0_path, &vdev2_path);
+        assert!(result.is_ok());
+
+        let topo_expected = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .create_mode(CreateMode::Force)
+            .vdev(CreateVdevRequest::Mirror(vec![vdev2_path.clone(), vdev1_path.clone()]))
+            .build()
+            .unwrap();
+
+        let z = zpool.status(&name).unwrap();
+
+        assert_eq!(topo_expected, z);
+    });
+}

@@ -422,7 +422,7 @@ pub trait ZpoolEngine {
     /// Add a ZIL to existing Zpool.
     ///
     /// * `name` - Name of the zpool
-    /// * `new_zil` - VDEV to use as ZIL
+    /// * `new_zil` - A VDEV to use as ZIL
     /// * `add_mode` - Disable some safety checks
     fn add_zil<N: AsRef<str>>(
         &self,
@@ -434,7 +434,7 @@ pub trait ZpoolEngine {
     /// Add a cache to existing Zpool.
     ///
     /// * `name` - Name of the zpool
-    /// * `new_cache` - Disk to use as cache
+    /// * `new_cache` - A disk to use as cache
     /// * `add_mode` - Disable some safety checks
     fn add_cache<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
@@ -446,13 +446,24 @@ pub trait ZpoolEngine {
     /// Add a spare to existing Zpool.
     ///
     /// * `name` - Name of the zpool
-    /// * `new_spare` - Disk to use as spare
+    /// * `new_spare` - A disk to use as spare
     /// * `add_mode` - Disable some safety checks
     fn add_spare<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         new_spare: D,
         add_mode: CreateMode,
+    ) -> ZpoolResult<()>;
+
+    /// [Replace](https://docs.oracle.com/cd/E19253-01/819-5461/gazgd/index.html) a device with another.
+    ///
+    /// * `old_disk` - A disk to be replaced.
+    /// * `new_disk` - A new disk.
+     fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(
+        &self,
+        name: N,
+        old_disk: D,
+        new_disk: O,
     ) -> ZpoolResult<()>;
 
     /// Remove Spare, Cache or log device
