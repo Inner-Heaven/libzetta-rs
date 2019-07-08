@@ -856,6 +856,8 @@ fn test_zpool_add_spare() {
 
 #[test]
 fn test_zpool_replace_disk() {
+    use std::{thread, time};
+
     run_test(|name| {
         let zpool = ZpoolOpen3::default();
         let vdev0_path = setup_vdev("/vdevs/vdev0", &Bytes::MegaBytes(64 + 10));
@@ -879,10 +881,11 @@ fn test_zpool_replace_disk() {
             .build()
             .unwrap();
 
-        let z = zpool.status(&name).unwrap();
+        // otherwise test _might_ fail.
+        let wait_time = time::Duration::from_secs(13);
+        thread::sleep(wait_time);
 
-        dbg!(&topo_expected);
-        dbg!(&z);
+        let z = zpool.status(&name).unwrap();
         assert_eq!(topo_expected, z);
     });
 }
