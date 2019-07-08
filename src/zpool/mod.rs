@@ -459,7 +459,7 @@ pub trait ZpoolEngine {
     ///
     /// * `old_disk` - A disk to be replaced.
     /// * `new_disk` - A new disk.
-     fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(
+    fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(
         &self,
         name: N,
         old_disk: D,

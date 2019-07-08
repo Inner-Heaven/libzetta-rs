@@ -869,7 +869,6 @@ fn test_zpool_replace_disk() {
             .unwrap();
         zpool.create(topo.clone()).unwrap();
 
-
         let result = zpool.replace_disk(&name, &vdev0_path, &vdev2_path);
         assert!(result.is_ok());
 
@@ -882,6 +881,8 @@ fn test_zpool_replace_disk() {
 
         let z = zpool.status(&name).unwrap();
 
+        dbg!(&topo_expected);
+        dbg!(&z);
         assert_eq!(topo_expected, z);
     });
 }

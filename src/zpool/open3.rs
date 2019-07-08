@@ -483,7 +483,12 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(&self, name: N, old_disk: D, new_disk: O) -> Result<(), ZpoolError> {
+    fn replace_disk<N: AsRef<str>, D: AsRef<OsStr>, O: AsRef<OsStr>>(
+        &self,
+        name: N,
+        old_disk: D,
+        new_disk: O,
+    ) -> Result<(), ZpoolError> {
         let mut z = self.zpool();
         z.arg("replace");
         z.arg(name.as_ref());
