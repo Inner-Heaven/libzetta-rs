@@ -36,7 +36,7 @@ jobs:
         sudo losetup /dev/loop0 `pwd`/loop0
       displayName: Setup loop device
     - script: |
-        sudo curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity
+        sudo curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity --to /usr/local/bin/
       displayName: Install suity
     - script: |
         CARGO=$(which cargo)
