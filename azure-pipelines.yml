@@ -27,26 +27,21 @@ jobs:
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
     - script: |
-        ls /etc/apt/sources.list.d/
-        MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
-        sudo apt-get install -qq -y linux-headers-$(uname -r) uuid-dev tree
-        cd /tmp
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_REL/spl-$ZOL_REL.tar.gz | tar xz
-        curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZOL_REL/zfs-$ZOL_REL.tar.gz | tar xz
-        (cd spl-$ZOL_REL && ./configure --prefix=/usr && make && sudo make install) > /dev/null
-        (cd zfs-$ZOL_REL && ./configure --prefix=/usr && make && sudo make install) > /dev/null
-        sudo modprobe zfs
-        cd $TRAVIS_BUILD_DIR
-        sudo mkdir /vdevs && sudo chmod 777 /vdevs
+        sudo add-apt-repository ppa:jonathonf/zfs-0.7
+        sudo apt-get update
+        sudo apt-get install zfs-dkms
       displayName: Install ZFS on Linux
     - script: |
         dd if=/dev/zero of=loop0 bs=1M count=96
         sudo losetup /dev/loop0 `pwd`/loop0
       displayName: Setup loop device
     - script: |
+        curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity
+        sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
+      displayName: Install suity
+    - script: |
         CARGO=$(which cargo)
         RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
-        cargo install cargo-suity
         mkdir test-results
         sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
