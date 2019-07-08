@@ -28,7 +28,7 @@ jobs:
       displayName: Install dependencies
     - script: |
         sudo add-apt-repository ppa:jonathonf/zfs-0.7
-        sudo apt-get updatu
+        sudo apt-get update
         sudo apt-get install zfs-dkms zfs-linux spl-linux
       displayName: Install ZFS on Linux
     - script: |
