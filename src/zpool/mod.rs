@@ -26,6 +26,7 @@ lazy_static! {
     static ref RE_REUSE_VDEV_ZOL: Regex = Regex::new(r"cannot create \S+: one or more vdevs refer to the same device, or one of\nthe devices is part of an active md or lvm device\n").expect("failed to compile RE_VDEV_REUSE_ZOL)");
     static ref RE_REUSE_VDEV: Regex = Regex::new(r"following errors:\n(\S+) is part of active pool '(\S+)'").expect("failed to compile RE_VDEV_REUSE)");
     static ref RE_REUSE_VDEV2: Regex = Regex::new(r"invalid vdev specification\nuse '-f' to override the following errors:\n(\S+) is part of potentially active pool '(\S+)'\n?").expect("failed to compile RE_VDEV_REUSE2)");
+    static ref RE_REUSE_VDEV3: Regex = Regex::new(r"invalid vdev specification\nuse \S+ to override the following errors:\n(\S+) is part of exported pool '(\S+)'\n?").expect("failed to compile RE_VDEV_REUSE3)");
     static ref RE_TOO_SMALL: Regex = Regex::new(r"cannot create \S+: one or more devices is less than the minimum size \S+").expect("failed to compile RE_TOO_SMALL");
     static ref RE_PERMISSION_DENIED: Regex = Regex::new(r"cannot create \S+: permission denied\n").expect("failed to compile RE_PERMISSION_DENIED");
     static ref RE_NO_ACTIVE_SCRUBS: Regex = Regex::new(r"cannot (pause|cancel) scrubbing .+: there is no active scrub\n").expect("failed to compile RE_NO_ACTIVE_SCRUBS");
@@ -184,6 +185,12 @@ impl ZpoolError {
             )
         } else if RE_REUSE_VDEV2.is_match(&stderr) {
             let caps = RE_REUSE_VDEV2.captures(&stderr).unwrap();
+            ZpoolError::VdevReuse(
+                caps.get(1).unwrap().as_str().into(),
+                caps.get(2).unwrap().as_str().into(),
+            )
+        } else if RE_REUSE_VDEV3.is_match(&stderr) {
+            let caps = RE_REUSE_VDEV3.captures(&stderr).unwrap();
             ZpoolError::VdevReuse(
                 caps.get(1).unwrap().as_str().into(),
                 caps.get(2).unwrap().as_str().into(),
@@ -505,10 +512,9 @@ mod test {
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
 
         // TODO(#49): add regexp for this too
-        //let vdev_reuse_text = b"invalid vdev specification\nuse \'-f\' to override
-        // the following errors:\n/vdevs/vdev0 is part of exported pool \'test\'\n";
-        // let err = ZpoolError::from_stderr(vdev_reuse_text);
-        //assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
+        let vdev_reuse_text = b"invalid vdev specification\nuse '-f' to override the following errors:\n/vdevs/vdev0 is part of exported pool 'test'\n";
+        let err = ZpoolError::from_stderr(vdev_reuse_text);
+        assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
     }
 
     #[test]
