@@ -1,6 +1,15 @@
-/// Everything you need to work with zpools. Since there is no public library
-/// to work with zpool —
-/// the default impl will call to `zpool(8)`.
+//! Generic interface to work with zpools.
+//!
+//! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of multiple parts:
+//!
+//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to switch to pest at one point.
+//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and [ZpoolErrorKind](enum.ZpoolErrorKind.html).
+//!     - First used as actual error
+//!     - Second used for easy comparision because `io::Error` cannot into `Eq`
+//!  - Some enums for various fields to avoid using boring `bool`
+//!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related.
+//!     - It's implemented as trait for easy mocking.
+//!
 use std::io;
 use std::{default::Default,
           ffi::OsStr,
@@ -40,12 +49,12 @@ lazy_static! {
 }
 
 quick_error! {
-    /// Error kinds. This type will be used across zpool module.
+    ///  Zpool sub-module errors. Every error returned by this module is wrapped into `ZpoolError`
     #[derive(Debug)]
     pub enum ZpoolError {
         /// `zpool` not found in path. Open3 specific error.
         CmdNotFound {}
-        /// zpool executable not found in path.
+        /// Any other Io related error. Exists just in case. Presence of this error is a bug.
         Io(err: io::Error) {
             cause(err)
         }
@@ -62,13 +71,13 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
-        /// Device used in CreateZpoolRequest is smaller than 64M
+        /// Device used in CreateZpoolRequest is smaller than 64M or 128M on some platforms.
         DeviceTooSmall {}
         /// Permission denied to create zpool. This might happened because:
         /// a) you running it as not root
         /// b) you running it inside jail that isn't allowed to operate zfs
         PermissionDenied {}
-        /// Trying to pause/stop scrub thas either never stared or already completed
+        /// Trying to pause/stop scrub that is either never stared or already completed
         NoActiveScrubs {}
         /// Trying to take only device offline.
         NoValidReplicas {}
@@ -83,7 +92,7 @@ quick_error! {
         /// Trying to add vdev with wring replication level to existing zpool with different replication level.
         /// For example: mirror to zpool.
         MismatchedReplicationLevel {}
-        /// Cache device must a disk or disk slice.
+        /// Cache device must a disk or disk slice/partition.
         InvalidCacheDevice {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
@@ -114,13 +123,13 @@ impl ZpoolError {
     }
 }
 
-/// This is a hack to allow error identification without 100500 lines of code
-/// because
-/// `std::io::Error` doesn't implement `PartialEq`.
+/// This is a hack to allow doing `Eq` on errors because `std::io::Error` doesn't implement `PartialEq`.
+/// Error descriptions are copied from [ZpoolError](enum.ZpoolError.html). Might be out of date.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ZpoolErrorKind {
     /// `zpool` not found in path. Open3 specific error.
     CmdNotFound,
+    /// Any other Io related error. Exists just in case. Presence of this error is a bug.
     Io,
     /// Trying to manipulate non-existent pool.
     PoolNotFound,
