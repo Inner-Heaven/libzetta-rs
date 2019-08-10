@@ -285,12 +285,12 @@ fn get_logs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
 #[inline]
 fn get_caches_from_pair(pair: Pair<Rule>) -> Vec<Disk> {
     debug_assert!(pair.as_rule() == Rule::caches);
-    return pair.into_inner().map(get_disk_from_disk_line).collect();
+    pair.into_inner().map(get_disk_from_disk_line).collect()
 }
 #[inline]
 fn get_spares_from_pair(pair: Pair<Rule>) -> Vec<Disk> {
     debug_assert!(pair.as_rule() == Rule::spares);
-    return pair.into_inner().map(get_disk_from_disk_line).collect();
+    pair.into_inner().map(get_disk_from_disk_line).collect()
 }
 
 // This module can have better tests. Issue #65
