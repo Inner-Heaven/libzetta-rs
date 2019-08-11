@@ -33,10 +33,9 @@
 //! Doesn't exist yet. I don't what will go there.
 
 #[cfg(test)] extern crate cavity;
-#[macro_use]
-extern crate derive_builder;
-#[macro_use]
-extern crate derive_getters;
+#[macro_use] extern crate derive_builder;
+#[macro_use] extern crate getset;
+
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;

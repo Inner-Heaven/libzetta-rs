@@ -17,6 +17,7 @@ pub enum Reason {
 /// Consumer friendly Zpool representation. It has generic health status information, structure of vdevs, devices used to create said vdevs as well as error statistics.
 #[derive(Getters, Builder, Debug, Eq, PartialEq)]
 #[builder(setter(into))]
+#[get = "pub"]
 pub struct Zpool {
     /// Name of the pool
     name: String,

@@ -27,6 +27,7 @@ impl Default for ErrorStatistics {
 /// have error counts.
 #[derive(Debug, Clone, Getters, Eq, Builder)]
 #[builder(setter(into))]
+#[get = "pub"]
 pub struct Disk {
     /// Path to a backing device or file. If path is relative, then it's
     /// relative to `/dev/`.
@@ -200,6 +201,7 @@ impl PartialEq<Vdev> for CreateVdevRequest {
 /// vdevs are used, ZFS spreads data across the vdevs to increase performance
 /// and maximize usable space.
 #[derive(Debug, Clone, Getters, Builder, Eq)]
+#[get = "pub"]
 pub struct Vdev {
     /// Type of Vdev
     kind: VdevType,

@@ -45,8 +45,10 @@ use crate::zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, Cr
 ///     .build()
 ///     .unwrap();
 /// ```
+
 #[derive(Default, Builder, Debug, Clone, Getters, PartialEq, Eq)]
 #[builder(setter(into))]
+#[get = "pub"]
 pub struct CreateZpoolRequest {
     /// Name to give new zpool
     name: String,

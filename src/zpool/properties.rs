@@ -153,6 +153,7 @@ impl CacheType {
 /// assert!(props.is_ok());
 /// ```
 #[derive(Getters, Builder, Debug, Clone, PartialEq, Eq)]
+#[get = "pub"]
 pub struct ZpoolPropertiesWrite {
     /// Make zpool readonly. This can only be changed during import.
     #[builder(default = "false")]
