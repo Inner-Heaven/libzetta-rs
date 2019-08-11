@@ -2,13 +2,13 @@
 //!
 //! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of multiple parts:
 //!
-//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to switch to pest at one point.
-//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and [ZpoolErrorKind](enum.ZpoolErrorKind.html).
+//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to switch to pest at one point
+//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and [ZpoolErrorKind](enum.ZpoolErrorKind.html)
 //!     - First used as actual error
 //!     - Second used for easy comparision because `io::Error` cannot into `Eq`
 //!  - Some enums for various fields to avoid using boring `bool`
-//!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related.
-//!     - It's implemented as trait for easy mocking.
+//!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related
+//!     - It's implemented as trait for easy mocking
 //!
 use std::io;
 use std::{default::Default,
@@ -49,7 +49,7 @@ lazy_static! {
 }
 
 quick_error! {
-    ///  Zpool sub-module errors. Every error returned by this module is wrapped into `ZpoolError`
+    ///  Zpool sub-module errors. Every error returned by this module is wrapped into `ZpoolError`.
     #[derive(Debug)]
     pub enum ZpoolError {
         /// `zpool` not found in path. Open3 specific error.
@@ -235,6 +235,7 @@ impl ZpoolError {
 /// Type alias to `Result<T, ZpoolError>`.
 pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
+/// Strategy to use when bringing device offline.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OfflineMode {
     /// Device will be taken offline until operator manually bring it back
@@ -245,6 +246,7 @@ pub enum OfflineMode {
     UntilReboot,
 }
 
+/// Strategy to use when bringing device online.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OnlineMode {
     /// Bring device online as is.
@@ -255,11 +257,21 @@ pub enum OnlineMode {
     Expand,
 }
 
+/// Strategy to use when creating Zpool.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum CreateMode {
     /// Forces use of vdevs, even if they appear in use or specify a conflicting
     /// replication level.  Not all devices can be overridden in this manner
     Force,
+    /// Do not use force mode.
+    Gentle,
+}
+/// Strategy to use when destroying Zpool.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum DestroyMode {
+    /// Forces	any active datasets contained within the pool to be unmounted.
+    Force,
+    /// Do not use force mode.
     Gentle,
 }
 
@@ -267,37 +279,25 @@ impl Default for CreateMode {
     fn default() -> CreateMode { CreateMode::Gentle }
 }
 
-/// Bring device online as is.
-/// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
-/// Using trait here, so I can mock it in unit tests.
+/// Interface to manage zpools.
 pub trait ZpoolEngine {
-    /// Check if pool with given name exists. This should not return
-    /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html) error, instead
-    /// it should return `Ok(false)`.
+    /// Check if pool with given name exists. NOTE: this won't return
+    /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html), instead
+    /// it will return `Ok(false)`.
+    ///
+    /// * `name` - Name of the zpool
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
     /// Create new zpool.
+    ///
+    /// * request - A request to create a zpool. Consult documentation for [CreateZpoolRequest](vdev/enum.CreateVdevRequest.html) for more information.
     fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()>;
-    /// Version of destroy that doesn't verify if pool exists before removing
-    /// it.
-    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
-    /// Destroy zpool.
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-
-        self.destroy_unchecked(name, force)
-    }
+    /// Destroy zpool. NOTE: returns `Ok(())` if pool doesn't exist.
+    ///
+    /// * `name` - Name of the zpool
+    /// * `mode` - Strategy to use when destroying the pool
+    fn destroy<N: AsRef<str>>(&self, name: N, mode: DestroyMode) -> ZpoolResult<()>;
     /// Read properties of the pool.
-    fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
-    /// Read properties of the pool.
-    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.read_properties_unchecked(name)
-    }
-
+    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
     /// Update zpool properties.
     fn update_properties<N: AsRef<str>>(
         &self,
@@ -308,71 +308,62 @@ pub trait ZpoolEngine {
             return Err(ZpoolError::PoolNotFound);
         }
 
-        let current = self.read_properties_unchecked(&name)?;
+        let current = self.read_properties(&name)?;
 
         if current.auto_expand != *props.auto_expand() {
-            self.set_unchecked(&name, "autoexpand", props.auto_expand())?;
+            self.set_property(&name, "autoexpand", props.auto_expand())?;
         }
 
         if current.auto_replace != *props.auto_replace() {
-            self.set_unchecked(&name, "autoreplace", props.auto_replace())?;
+            self.set_property(&name, "autoreplace", props.auto_replace())?;
         }
 
         if current.cache_file != *props.cache_file() {
-            self.set_unchecked(&name, "cachefile", props.cache_file())?;
+            self.set_property(&name, "cachefile", props.cache_file())?;
         }
 
         // remove comment
         let desired = if props.comment().is_empty() { None } else { Some(props.comment().clone()) };
         if current.comment != desired {
-            self.set_unchecked(&name, "comment", props.comment())?;
+            self.set_property(&name, "comment", props.comment())?;
         }
 
         if current.delegation != *props.delegation() {
-            self.set_unchecked(&name, "delegation", props.delegation())?;
+            self.set_property(&name, "delegation", props.delegation())?;
         }
 
         if current.fail_mode != *props.fail_mode() {
-            self.set_unchecked(&name, "failmode", props.fail_mode())?;
+            self.set_property(&name, "failmode", props.fail_mode())?;
         }
 
-        self.read_properties_unchecked(name)
+        self.read_properties(name)
     }
 
+    #[doc(hidden)]
     /// Internal function used to set values. Should be avoided.
-    fn set_unchecked<N: AsRef<str>, P: PropPair>(
+    fn set_property<N: AsRef<str>, P: PropPair>(
         &self,
         name: N,
         key: &str,
         value: &P,
     ) -> ZpoolResult<()>;
     /// Export Pool.
-    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.export_unchecked(name, force)
-    }
-
-    fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
     /// List of pools available for import in `/dev/` directory.
     fn available(&self) -> ZpoolResult<Vec<Zpool>>;
-    /// List of pools available
+
+    /// List of pools available in `dir`.
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>>;
 
-    /// Import pool
+    /// Import pool from `/dev/`.
+    fn import<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+
+    /// Import pool from `dir`.
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 
     /// Get the detailed health status for the given pools.
-    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
+    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
 
-    /// Get the detailed health status for the given pool.
-    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.status_unchecked(name)
-    }
     /// Get a status of each pool active in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>>;
 

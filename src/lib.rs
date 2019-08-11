@@ -7,7 +7,7 @@
 //! This library intends to provide a safe interface to ZFS operator tools. This library also meant
 //! to be a low level library not much will be sugar coated here.
 //!
-//! # Current state
+//! # Overview
 //! ## zpool
 //! Library has a feature complete wrapper around `zpool(8)` with somewhat stable api. I can't guarantee
 //! that API won't change any moment, but I don't see a reason for it be changes at the moment.
@@ -21,7 +21,7 @@
 //! Right now there is no "library usage" instruction, but zpool module can be used directly.
 //! In the future some sugar to setup logging will be added to library level.
 //!
-//! # Structure
+//! # Project structure
 //! ### parsers
 //! Module for PEG parsers backed by [Pest](https://pest.rs/).
 //!

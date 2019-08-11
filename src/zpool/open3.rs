@@ -34,8 +34,9 @@ use crate::{parsers::{Rule, StdoutParser},
             zpool::description::Zpool};
 
 use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
-            ZpoolError, ZpoolProperties, ZpoolResult};
+            ZpoolError, ZpoolProperties, ZpoolResult, DestroyMode};
 use crate::zpool::CreateVdevRequest;
+
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
         let mut arg = OsString::with_capacity(171);
@@ -149,10 +150,10 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn destroy<N: AsRef<str>>(&self, name: N, mode: DestroyMode) -> ZpoolResult<()> {
         let mut z = self.zpool_mute();
         z.arg("destroy");
-        if force {
+        if let DestroyMode::Force = mode {
             z.arg("-f");
         }
         z.arg(name.as_ref());
@@ -160,7 +161,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.status().map(|_| Ok(()))?
     }
 
-    fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
+    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
         let mut z = self.zpool();
         z.args(&["list", "-p", "-H", "-o"]);
         z.arg(&*ZPOOL_PROP_ARG);
@@ -174,7 +175,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn set_unchecked<N: AsRef<str>, P: PropPair>(
+    fn set_property<N: AsRef<str>, P: PropPair>(
         &self,
         name: N,
         key: &str,
@@ -193,7 +194,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("export");
         if force {
@@ -227,6 +228,19 @@ impl ZpoolEngine for ZpoolOpen3 {
         self.zpools_from_import(out)
     }
 
+    fn import<N: AsRef<str>>(&self, name: N) -> Result<(), ZpoolError> {
+        let mut z = self.zpool();
+        z.arg("import");
+        z.arg(name.as_ref());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(ZpoolError::from_stderr(&out.stderr))
+        }
+    }
+
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("import");
@@ -242,8 +256,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    /// Status of a single pool
-    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
+    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
         let mut z = self.zpool();
         z.arg("status");
         z.arg(name.as_ref());
@@ -261,7 +274,6 @@ impl ZpoolEngine for ZpoolOpen3 {
         Ok(zpool)
     }
 
-    /// Get a status of each pool active in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>> {
         let mut z = self.zpool();
         z.arg("status");
@@ -311,8 +323,6 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    /// Takes the specified physical device offline. While the device is
-    /// offline, no attempt is made to read or write to the device.
     fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
@@ -335,7 +345,6 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    /// Brings the specified physical device online.
     fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,

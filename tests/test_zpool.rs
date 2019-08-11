@@ -17,7 +17,7 @@ use rand::Rng;
 use libzfs::{slog::*,
              zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, FailMode, Health,
                      OfflineMode, OnlineMode, ZpoolEngine, ZpoolError, ZpoolErrorKind,
-                     ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
+                     ZpoolOpen3, ZpoolPropertiesWriteBuilder, DestroyMode}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -73,7 +73,7 @@ where
     });
 
     let zpool = ZpoolOpen3::default();
-    let _ = zpool.destroy(&name, true);
+    let _ = zpool.destroy(&name, DestroyMode::Force);
     drop(lock);
 
     result.unwrap();
@@ -143,7 +143,7 @@ fn create_check_update_delete() {
         assert_eq!(None, props.comment);
         assert_eq!(true, props.delegation);
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.exists(&name).unwrap();
         assert!(!result);
@@ -199,7 +199,7 @@ fn reuse_vdev() {
             assert_eq!(vdev_file, vdev);
             assert_eq!(name_1, pool);
         }
-        zpool.destroy(&name_1, true).unwrap();
+        zpool.destroy(&name_1, DestroyMode::Force).unwrap();
     });
 }
 #[test]
@@ -223,10 +223,6 @@ fn create_invalid_topo() {
 fn pool_not_found() {
     let zpool = ZpoolOpen3::default();
     let name = get_zpool_name();
-
-    let err = zpool.destroy(&name, true).unwrap_err();
-
-    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 
     let err = zpool.read_properties(&name).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
@@ -256,7 +252,7 @@ fn read_args() {
         let props = zpool.read_properties(&name);
 
         assert!(props.is_ok());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -279,7 +275,7 @@ fn create_mount() {
         let result = zpool.create(topo);
         result.unwrap();
         assert!(mount_point.exists());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -311,7 +307,7 @@ fn create_mount_and_alt_root() {
         assert_eq!(props.alt_root, Some(PathBuf::from("/mnt")));
 
         assert!(expected.exists());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 #[test]
@@ -344,7 +340,7 @@ fn create_with_props() {
         assert_eq!(true, props.auto_expand);
         assert_eq!(FailMode::Panic, props.fail_mode);
         assert_eq!(Some(comment.clone()), props.comment);
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -371,7 +367,7 @@ fn test_export_import() {
         let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
         assert!(result.is_ok());
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.available().unwrap();
         assert!(result.is_empty());
@@ -401,7 +397,7 @@ fn test_export_import_force() {
         let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
         assert!(result.is_ok());
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.available().unwrap();
         assert!(result.is_empty());
