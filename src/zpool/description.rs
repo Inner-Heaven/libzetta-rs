@@ -52,9 +52,10 @@ pub struct Zpool {
 }
 
 impl Zpool {
+    /// Create a builder - a preferred way to created a structure.
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
 
-    pub fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
+    pub(crate) fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
         let mut zpool = ZpoolBuilder::default();

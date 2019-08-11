@@ -119,19 +119,19 @@ fn create_check_update_delete() {
 
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(true, props.auto_replace);
-        assert_eq!(Some(String::from("Wat")), props.comment);
-        assert_eq!(FailMode::Panic, props.fail_mode);
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&true, props.auto_replace());
+        assert_eq!(&Some(String::from("Wat")), props.comment());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
 
         let updated_props =
             ZpoolPropertiesWriteBuilder::from_props(&props).comment("Wat").build().unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(true, props.auto_replace);
-        assert_eq!(Some(String::from("Wat")), props.comment);
-        assert_eq!(FailMode::Panic, props.fail_mode);
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&true, props.auto_replace());
+        assert_eq!(&Some(String::from("Wat")), props.comment());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
 
         let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
             .comment(String::new())
@@ -140,8 +140,8 @@ fn create_check_update_delete() {
             .unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(None, props.comment);
-        assert_eq!(true, props.delegation);
+        assert_eq!(&None, props.comment());
+        assert_eq!(&true, props.delegation());
 
         zpool.destroy(&name, DestroyMode::Force).unwrap();
 
@@ -304,7 +304,7 @@ fn create_mount_and_alt_root() {
         result.unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(props.alt_root, Some(PathBuf::from("/mnt")));
+        assert_eq!(&Some(PathBuf::from("/mnt")), props.alt_root());
 
         assert!(expected.exists());
         zpool.destroy(&name, DestroyMode::Force).unwrap();
@@ -337,9 +337,9 @@ fn create_with_props() {
         zpool.create(topo).unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(FailMode::Panic, props.fail_mode);
-        assert_eq!(Some(comment.clone()), props.comment);
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
+        assert_eq!(&Some(comment.clone()), props.comment());
         zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }

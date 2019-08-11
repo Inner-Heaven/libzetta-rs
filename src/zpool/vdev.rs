@@ -219,6 +219,7 @@ pub struct Vdev {
 }
 
 impl Vdev {
+    /// Create a builder - a referred way of creating Vdev structure.
     pub fn builder() -> VdevBuilder { VdevBuilder::default() }
 }
 /// Vdevs are equal of their type and backing disks are equal.

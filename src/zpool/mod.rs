@@ -328,29 +328,29 @@ pub trait ZpoolEngine {
 
         let current = self.read_properties(&name)?;
 
-        if current.auto_expand != *props.auto_expand() {
+        if current.auto_expand() != props.auto_expand() {
             self.set_property(&name, "autoexpand", props.auto_expand())?;
         }
 
-        if current.auto_replace != *props.auto_replace() {
+        if current.auto_replace() != props.auto_replace() {
             self.set_property(&name, "autoreplace", props.auto_replace())?;
         }
 
-        if current.cache_file != *props.cache_file() {
+        if current.cache_file() != props.cache_file() {
             self.set_property(&name, "cachefile", props.cache_file())?;
         }
 
         // remove comment
         let desired = if props.comment().is_empty() { None } else { Some(props.comment().clone()) };
-        if current.comment != desired {
+        if current.comment() != &desired {
             self.set_property(&name, "comment", props.comment())?;
         }
 
-        if current.delegation != *props.delegation() {
+        if current.delegation() != props.delegation() {
             self.set_property(&name, "delegation", props.delegation())?;
         }
 
-        if current.fail_mode != *props.fail_mode() {
+        if current.fail_mode() != props.fail_mode() {
             self.set_property(&name, "failmode", props.fail_mode())?;
         }
 
