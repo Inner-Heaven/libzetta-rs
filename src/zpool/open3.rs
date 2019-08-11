@@ -19,7 +19,7 @@
 //! assert!(engine.exists("z").unwrap());
 //! ```
 //!
-//! It's called open 3 because it opens stdin, stdout, stder.
+//! It's called [open3](https://docs.ruby-lang.org/en/2.0.0/Open3.html) because it opens `stdin`, `stdout`, `stderr`.
 
 use std::{env,
           ffi::{OsStr, OsString},
@@ -49,12 +49,14 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into().new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
+/// Open3 implementation of [`ZpoolEngine`](../trait.ZpoolEngine.html). You can use `ZpoolOpen3::default` to create it.
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger:   Logger,
 }
 
 impl Default for ZpoolOpen3 {
+    /// Uses `log` crate as drain for `Slog`. Tries to use `ZPOOL_CMD` from environment if variable is missing then it uses `zpool` from `$PATH`.
     fn default() -> ZpoolOpen3 {
         let cmd_name = match env::var_os("ZPOOL_CMD") {
             Some(val) => val,
@@ -84,6 +86,7 @@ impl ZpoolOpen3 {
     fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
 
     #[allow(dead_code)]
+    /// Force disable logging by using `/dev/null` as drain.
     fn zpool_mute(&self) -> Command {
         let mut z = self.zpool();
         z.stdout(Stdio::null());

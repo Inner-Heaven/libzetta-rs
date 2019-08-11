@@ -200,6 +200,11 @@ pub struct ZpoolPropertiesWrite {
 }
 
 impl ZpoolPropertiesWrite {
+    /// A preferred way to create this structure.
+    pub fn builder() -> ZpoolPropertiesWriteBuilder  {
+        ZpoolPropertiesWriteBuilder::default()
+    }
+
     #[doc(hidden)]
     pub fn into_args(self) -> Vec<OsString> {
         let mut ret = Vec::with_capacity(7);
@@ -234,7 +239,7 @@ impl ZpoolPropertiesWriteBuilder {
     }
 }
 
-/// All pre-defined properties of Zpool - both immutable and mutable.
+/// All pre-defined properties of Zpool - both immutable and mutable. Majority of this documentation lifted from manual page.
 #[derive(Debug, Clone, PartialEq, Getters)]
 #[get = "pub"]
 pub struct ZpoolProperties {
@@ -245,7 +250,7 @@ pub struct ZpoolProperties {
     capacity: u8,
     /// A text string consisting of printable ASCII characters that will be
     /// stored such that it is
-    /// available even if the pool becomes faulted.  An administrator can
+    /// available even if the pool becomes faulted. An administrator can
     /// provide additional information about a pool using this property.
     comment: Option<String>,
     /// The deduplication ratio specified for a pool, expressed as a
@@ -333,7 +338,7 @@ fn parse_u64(val: Option<&str>) -> ZpoolResult<u64> {
     Ok(val_str.parse()?)
 }
 impl ZpoolProperties {
-    pub fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
+    pub(crate) fn try_from_stdout(out: &[u8]) -> ZpoolResult<ZpoolProperties> {
         let mut stdout: String = String::from_utf8_lossy(out).into();
         // remove new line at the end.
         stdout.pop();
@@ -638,5 +643,11 @@ mod test {
         .collect();
         let result = props.into_args();
         assert_eq!(expected, result);
+    }
+
+
+    #[test]
+    fn write_builder() {
+        let _right: ZpoolPropertiesWriteBuilder = ZpoolPropertiesWrite::builder();
     }
 }

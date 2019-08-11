@@ -1,54 +1,53 @@
-/// CreateZpoolRequest is a structure that describes zpool vdev structure.
-/// Use to create and updated zpool
+
+//! Structure representing what zpool consist of. This structure is used in zpool creation and when new drives are attached.
+//!
+//! ### Examples
+//!
+//! Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
+//!
+//! ```rust
+//! use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequest};
+//! use std::path::PathBuf;
+//!
+//! let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
+//! let topo = CreateZpoolRequest::builder()
+//!     .name(String::from("tank"))
+//!     .vdevs(vec![CreateVdevRequest::Mirror(drives)])
+//!     .build()
+//!     .unwrap();
+//! ```
+//! Overkill example: 2 drives in mirror and a single drive, zil on double
+//! mirror and 2 l2rc.
+//!
+//! ```rust, norun
+//! use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+//! use std::path::PathBuf;
+//!
+//! let zil_drives = vec![PathBuf::from("hd0"), PathBuf::from("hd1")];
+//! let mirror_drives = vec![PathBuf::from("hd2"), PathBuf::from("hd3")];
+//! let cache_drives = vec![PathBuf::from("hd4"), PathBuf::from("hd5")];
+//! let topo = CreateZpoolRequest::builder()
+//!     .name("tank")
+//!     .vdevs(vec![CreateVdevRequest::Mirror(mirror_drives)])
+//!     .cache("/tmp/sparse.file".into())
+//!     .vdev(CreateVdevRequest::SingleDisk(PathBuf::from("hd6")))
+//!     .caches(cache_drives)
+//!     .zil(CreateVdevRequest::Mirror(zil_drives))
+//!     .altroot(PathBuf::from("/mnt"))
+//!     .mount(PathBuf::from("/mnt"))
+//!     .build()
+//!     .unwrap();
+//! ```
+
+
 use std::ffi::OsString;
 use std::path::PathBuf;
 
 use crate::zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, CreateMode};
-
-/// Structure representing what zpool consist of.
-/// This structure is used in zpool creation and when new drives are attached.
-///
-/// ### Examples
-///
-/// Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
-///
-/// ```rust
-/// use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequest};
-/// use std::path::PathBuf;
-///
-/// let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
-/// let topo = CreateZpoolRequest::builder()
-///     .name(String::from("tank"))
-///     .vdevs(vec![CreateVdevRequest::Mirror(drives)])
-///     .build()
-///     .unwrap();
-/// ```
-/// Overkill example: 2 drives in mirror and a single drive, zil on double
-/// mirror and 2 l2rc.
-///
-/// ```rust, norun
-/// use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
-/// use std::path::PathBuf;
-///
-/// let zil_drives = vec![PathBuf::from("hd0"), PathBuf::from("hd1")];
-/// let mirror_drives = vec![PathBuf::from("hd2"), PathBuf::from("hd3")];
-/// let cache_drives = vec![PathBuf::from("hd4"), PathBuf::from("hd5")];
-/// let topo = CreateZpoolRequest::builder()
-///     .name("tank")
-///     .vdevs(vec![CreateVdevRequest::Mirror(mirror_drives)])
-///     .cache("/tmp/sparse.file".into())
-///     .vdev(CreateVdevRequest::SingleDisk(PathBuf::from("hd6")))
-///     .caches(cache_drives)
-///     .zil(CreateVdevRequest::Mirror(zil_drives))
-///     .altroot(PathBuf::from("/mnt"))
-///     .mount(PathBuf::from("/mnt"))
-///     .build()
-///     .unwrap();
-/// ```
-
 #[derive(Default, Builder, Debug, Clone, Getters, PartialEq, Eq)]
 #[builder(setter(into))]
 #[get = "pub"]
+/// Consumer friendly representation of zpool structure.
 pub struct CreateZpoolRequest {
     /// Name to give new zpool
     name: String,
@@ -91,7 +90,7 @@ pub struct CreateZpoolRequest {
 }
 
 impl CreateZpoolRequest {
-    /// Create builder
+    /// A preferred way to create this.
     pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
 
     /// Verify that given topology can be used to update existing pool.
@@ -119,8 +118,8 @@ impl CreateZpoolRequest {
         self.is_suitable_for_update()
     }
 
-    /// Make CreateZpoolRequest usable as arg for Command
-    pub fn into_args(self) -> Vec<OsString> {
+    /// Make CreateZpoolRequest usable as arg for [`Command`](https://doc.rust-lang.org/std/process/struct.Command.html).
+    pub(crate) fn into_args(self) -> Vec<OsString> {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
         let vdevs = self.vdevs.into_iter().flat_map(CreateVdevRequest::into_args);
