@@ -1,3 +1,5 @@
+//! If anyone has a better name for this module - hit me up. This module is where consumer friendly representation of Zpool is defined.
+//! This is where pest's [Pairs](../../../pest/iterators/struct.Pair.html) turned into [Zpool](struct.Zpool.html).
 use std::{path::PathBuf, str::FromStr};
 
 use pest::iterators::{Pair, Pairs};
@@ -6,13 +8,13 @@ use crate::{parsers::Rule,
             zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
                     CreateZpoolRequest, Disk, Health}};
 
-/// Reason why zpool in this state.
+/// Reason why zpool in this state. Right now it's just a wrapper around `String` in the future there _might_ be more machine friendly format.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Reason {
     /// Not yet classified reason.
     Other(String),
 }
-
+/// Consumer friendly Zpool representation. It has generic health status information, structure of vdevs, devices used to create said vdevs as well as error statistics.
 #[derive(Getters, Builder, Debug, Eq, PartialEq)]
 #[builder(setter(into))]
 pub struct Zpool {

@@ -34,8 +34,7 @@ use crate::{parsers::{Rule, StdoutParser},
             zpool::description::Zpool};
 
 use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
-            ZpoolError, ZpoolProperties, ZpoolResult, DestroyMode};
-use crate::zpool::CreateVdevRequest;
+            ZpoolError, ZpoolProperties, ZpoolResult, DestroyMode, ExportMode, CreateVdevRequest};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -194,10 +193,10 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
+    fn export<N: AsRef<str>>(&self, name: N, mode: ExportMode) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("export");
-        if force {
+        if let ExportMode::Force = mode {
             z.arg("-f");
         }
         z.arg(name.as_ref());

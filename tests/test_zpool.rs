@@ -17,7 +17,7 @@ use rand::Rng;
 use libzfs::{slog::*,
              zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, FailMode, Health,
                      OfflineMode, OnlineMode, ZpoolEngine, ZpoolError, ZpoolErrorKind,
-                     ZpoolOpen3, ZpoolPropertiesWriteBuilder, DestroyMode}};
+                     ZpoolOpen3, ZpoolPropertiesWriteBuilder, DestroyMode, ExportMode}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -231,7 +231,7 @@ fn pool_not_found() {
     let err = zpool.update_properties(&name, props).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 
-    let err = zpool.export("fake", true).unwrap_err();
+    let err = zpool.export("fake", ExportMode::Gentle).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 }
 
@@ -359,7 +359,7 @@ fn test_export_import() {
             .unwrap();
         zpool.create(topo).expect("Failed to create pool for export");
 
-        let result = zpool.export(&name, false);
+        let result = zpool.export(&name, ExportMode::Gentle);
         assert!(result.is_ok());
         let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
         assert_eq!(list.len(), 1);
@@ -389,7 +389,7 @@ fn test_export_import_force() {
             .unwrap();
         zpool.create(topo).expect("Failed to create pool for export");
 
-        let result = zpool.export(&name, true);
+        let result = zpool.export(&name, ExportMode::Force);
         assert!(result.is_ok());
         let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
         assert_eq!(list.len(), 1);
