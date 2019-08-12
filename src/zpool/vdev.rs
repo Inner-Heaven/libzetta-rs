@@ -1,3 +1,29 @@
+//! Consumer friendly structure representing vdev.
+//!
+//! Everything that goes into vdev is in this module.
+//!
+//! ### Examples
+//!
+//! ##### Create a mirror with 2 disks
+//!
+//! ```rust
+//! use libzfs::zpool::CreateVdevRequest;
+//! use std::path::PathBuf;
+//!
+//! // Create an `Vec` with two disks
+//! let drives = vec![PathBuf::from("nvd0p4.eli"), PathBuf::from("nvd1p4.eli")];
+//! let vdev = CreateVdevRequest::Mirror(drives);
+//! ```
+//! ##### Create a single disk vdev with sparse file
+//!
+//! ```rust
+//! use libzfs::zpool::CreateVdevRequest;
+//! use std::path::PathBuf;
+//! // (file needs to exist prior)
+//! let path = PathBuf::from("/tmp/sparseFile0");
+//! let vdev = CreateVdevRequest::SingleDisk(path);
+//! ```
+
 use std::{default::Default,
           ffi::OsString,
           path::{Path, PathBuf},
@@ -21,8 +47,9 @@ impl Default for ErrorStatistics {
     fn default() -> ErrorStatistics { ErrorStatistics { read: 0, write: 0, checksum: 0 } }
 }
 
-/// This is the most basic building block of vdev. It can be backed by a entire
-/// block device, a partition or a file. This particular structure represents
+/// Basic building block of vdev.
+///
+/// It can be backed by a entire block device, a partition or a file. This particular structure represents
 /// backing of existing vdev. If disk is part of active zpool then it will also
 /// have error counts.
 #[derive(Debug, Clone, Getters, Eq, Builder)]
@@ -68,8 +95,7 @@ impl PartialEq<Disk> for Path {
     fn eq(&self, other: &Disk) -> bool { other == self }
 }
 
-/// Basic building block of
-/// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
+/// A [type](https://www.freebsd.org/doc/handbook/zfs-term.html) of Vdev.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VdevType {
     /// Just a single disk or file.
@@ -100,8 +126,7 @@ impl FromStr for VdevType {
     }
 }
 
-/// Basic building block of
-/// [Zpool](https://www.freebsd.org/doc/handbook/zfs-term.html).
+/// Consumer friendly wrapper to configure vdev to zpol.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CreateVdevRequest {
     /// The most basic type of vdev is a standard block device. This can be an
@@ -196,6 +221,8 @@ impl PartialEq<Vdev> for CreateVdevRequest {
     fn eq(&self, other: &Vdev) -> bool { other == self }
 }
 
+/// Basic zpool building block.
+///
 /// A pool is made up of one or more vdevs, which themselves can be a single
 /// disk or a group of disks, in the case of a RAID transform. When multiple
 /// vdevs are used, ZFS spreads data across the vdevs to increase performance
