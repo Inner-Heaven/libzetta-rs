@@ -576,7 +576,6 @@ mod test {
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
 
-        // TODO(#49): add regexp for this too
         let vdev_reuse_text = b"invalid vdev specification\nuse '-f' to override the following errors:\n/vdevs/vdev0 is part of exported pool 'test'\n";
         let err = ZpoolError::from_stderr(vdev_reuse_text);
         assert_eq!(ZpoolErrorKind::VdevReuse, err.kind());
