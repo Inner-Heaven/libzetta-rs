@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzetta-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzetta-rs)
 [![Crates.io](https://img.shields.io/crates/v/libzetta.svg)](https://crates.io/crates/libzetta)
 [![docs.rs](https://docs.rs/libzetta/badge.svg)](https://docs.rs/libzetta)
-> libzfs-rs is a stable interface for programmatic administration of ZFS
+> libzetta-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
 Not yet. It won't destroy your pool, but API might change any moment. Wait until 1.0.0. I have a pretty decent roadmap to 1.0.0.
@@ -23,7 +23,7 @@ ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be 
 
 ## Running tests
 
-Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file. 
+Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file.
 
 ## Current feature status
 

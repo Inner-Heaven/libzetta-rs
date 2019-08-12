@@ -100,7 +100,7 @@ impl Zpool {
                 _ => unreachable!(),
             }
         }
-        zpool.build().expect("Can't build zpool out of pair. Please report at: https://github.com/Inner-Heaven/libzfs-rs")
+        zpool.build().expect("Can't build zpool out of pair. Please report at: https://github.com/Inner-Heaven/libzetta-rs")
     }
 }
 

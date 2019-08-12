@@ -3,7 +3,7 @@
 //! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of
 //! multiple parts:
 //!
-//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to
+//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzetta-rs/issues/45) to
 //!    switch to pest at one point
 //!  - Error enums: [ZpoolError](enum.ZpoolError.html) and
 //!    [ZpoolErrorKind](enum.ZpoolErrorKind.html)
