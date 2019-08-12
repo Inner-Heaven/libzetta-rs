@@ -1,6 +1,6 @@
-# Contributing to libzfs-rs
+# Contributing to libzetta-rs
 
-First and foremost, thank you! We appreciate that you want to contribute to libzfs-rs, your time is valuable, and your contributions mean a lot to us.
+First and foremost, thank you! We appreciate that you want to contribute to libzetta-rs, your time is valuable, and your contributions mean a lot to us.
 
 ## Important!
 
@@ -23,14 +23,14 @@ Creating an issue is the simplest form of contributing to a project. But there a
 
 If you'd like to learn more about contributing in general, the [Guide to Idiomatic Contributing](https://github.com/jonschlinkert/idiomatic-contributing) has a lot of useful information.
 
-**Showing support for libzfs-rs**
+**Showing support for libzetta-rs**
 
 Please keep in mind that open source software is built by people like you, who spend their free time creating things the rest the community can use.
 
-Don't have time to contribute? No worries, here are some other ways to show your support for libzfs-rs:
+Don't have time to contribute? No worries, here are some other ways to show your support for libzetta-rs:
 
-- star the [project](https://github.com/andoriyu/libzfs-rs)
-- tweet your support for libzfs-rs
+- star the [project](https://github.com/Inner-Heaven/libzetta-rs)
+- tweet your support for libzetta-rs
 
 ## Issues
 
@@ -49,13 +49,13 @@ Try to follow these guidelines
 
 Please be as descriptive as possible when creating an issue. Give us the information we need to successfully answer your question or address your issue by answering the following in your issue:
 
-- **version**: please note the version of libzfs-rs are you using
+- **version**: please note the version of libzetta-rs are you using
 - **extensions, plugins, helpers, etc** (if applicable): please list any extensions you're using
 - **error messages**: please paste any error messages into the issue, or a [gist](https://gist.github.com/)
 
 ### Closing issues
 
-The original poster or the maintainer's of libzfs-rs may close an issue at any time. Typically, but not exclusively, issues are closed when:
+The original poster or the maintainer's of libzetta-rs may close an issue at any time. Typically, but not exclusively, issues are closed when:
 
 - The issue is resolved
 - The project's maintainers have determined the issue is out of scope
@@ -82,4 +82,4 @@ At the very least, please try to:
 - When applicable, use syntax highlighting by adding the correct language name after the first "code fence"
 
 
-[so]: http://stackoverflow.com/questions/tagged/libzfs-rs
+[so]: http://stackoverflow.com/questions/tagged/libzetta-rs

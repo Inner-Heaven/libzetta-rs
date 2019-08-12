@@ -8,7 +8,7 @@
 //!
 //! ### Usage
 //! ```rust,no_run
-//! use libzfs::zpool::{ZpoolEngine, ZpoolOpen3};
+//! use libzetta::zpool::{ZpoolEngine, ZpoolOpen3};
 //! let engine = ZpoolOpen3::default();
 //!
 //! // Check that pool with name z exists.
@@ -272,7 +272,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         if zpools.is_empty() {
             return Err(ZpoolError::PoolNotFound);
         }
-        let zpool = zpools.into_iter().next().expect("Can't build zpool out of pair. Please report at: https://github.com/Inner-Heaven/libzfs-rs");
+        let zpool = zpools.into_iter().next().expect("Can't build zpool out of pair. Please report at: https://github.com/Inner-Heaven/libzetta-rs");
         if zpool.name().as_str() != name.as_ref() {
             unreachable!();
         }

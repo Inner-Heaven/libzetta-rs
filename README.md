@@ -1,16 +1,16 @@
 ![RsFreeBSD](libzfs.png)
 
-[![Build Status](https://dev.azure.com/andoriyu/libpandemonium/_apis/build/status/Inner-Heaven.libzfs-rs?branchName=master)](https://dev.azure.com/andoriyu/libpandemonium/_build/latest?definitionId=1&branchName=master)
-[![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
+[![Build Status](https://dev.azure.com/andoriyu/libpandemonium/_apis/build/status/libzetta-rs?branchName=master)](https://dev.azure.com/andoriyu/libpandemonium/_build/latest?definitionId=4&branchName=master)
+[![codecov](https://codecov.io/gh/Inner-Heaven/libzetta-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzetta-rs)
 [![Crates.io](https://img.shields.io/crates/v/libzetta.svg)](https://crates.io/crates/libzetta)
 [![docs.rs](https://docs.rs/libzetta/badge.svg)](https://docs.rs/libzetta)
-> libzfs-rs is a stable interface for programmatic administration of ZFS
+> libzetta-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
 Not yet. It won't destroy your pool, but API might change any moment. Wait until 1.0.0. I have a pretty decent roadmap to 1.0.0.
- 
+
 ## Usage
-Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable. 
+Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable.
 
 ### FreeBSD
 This library mostly focused on FreeBSD support. This should work on any FreeBSD version since 9.2. However, I have no intention on supporting anything other than current releases. Yes, I know FreeBSD is switching to ZOL branch.
@@ -23,7 +23,7 @@ ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be 
 
 ## Running tests
 
-Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file. 
+Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file.
 
 ## Current feature status
 

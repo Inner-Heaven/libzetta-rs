@@ -11,7 +11,7 @@ use std::{fs::{self, DirBuilder},
 use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
-use libzfs::{slog::*,
+use libzetta::{slog::*,
              zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
                      ExportMode, FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine,
                      ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};

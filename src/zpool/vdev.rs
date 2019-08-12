@@ -7,7 +7,7 @@
 //! ##### Create a mirror with 2 disks
 //!
 //! ```rust
-//! use libzfs::zpool::CreateVdevRequest;
+//! use libzetta::zpool::CreateVdevRequest;
 //! use std::path::PathBuf;
 //!
 //! // Create an `Vec` with two disks
@@ -17,7 +17,7 @@
 //! ##### Create a single disk vdev with sparse file
 //!
 //! ```rust
-//! use libzfs::zpool::CreateVdevRequest;
+//! use libzetta::zpool::CreateVdevRequest;
 //! use std::path::PathBuf;
 //! // (file needs to exist prior)
 //! let path = PathBuf::from("/tmp/sparseFile0");
