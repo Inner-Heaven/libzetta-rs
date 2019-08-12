@@ -1,5 +1,5 @@
-
-//! Structure representing what zpool consist of. This structure is used in zpool creation and when new drives are attached.
+//! Structure representing what zpool consist of. This structure is used in zpool creation and when
+//! new drives are attached.
 //!
 //! ### Examples
 //!
@@ -39,9 +39,7 @@
 //!     .unwrap();
 //! ```
 
-
-use std::ffi::OsString;
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 
 use crate::zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, CreateMode};
 #[derive(Default, Builder, Debug, Clone, Getters, PartialEq, Eq)]

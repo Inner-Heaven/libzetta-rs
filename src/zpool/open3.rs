@@ -33,8 +33,9 @@ use slog_stdlog::StdLog;
 use crate::{parsers::{Rule, StdoutParser},
             zpool::description::Zpool};
 
-use super::{CreateMode, CreateZpoolRequest, OfflineMode, OnlineMode, PropPair, ZpoolEngine,
-            ZpoolError, ZpoolProperties, ZpoolResult, DestroyMode, ExportMode, CreateVdevRequest};
+use super::{CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode,
+            OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties,
+            ZpoolResult};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -49,14 +50,16 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger.into().new(o!("module" => "zpool", "impl" => "open3", "version" => "0.1.0"))
 }
 
-/// Open3 implementation of [`ZpoolEngine`](../trait.ZpoolEngine.html). You can use `ZpoolOpen3::default` to create it.
+/// Open3 implementation of [`ZpoolEngine`](../trait.ZpoolEngine.html). You can use
+/// `ZpoolOpen3::default` to create it.
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
     logger:   Logger,
 }
 
 impl Default for ZpoolOpen3 {
-    /// Uses `log` crate as drain for `Slog`. Tries to use `ZPOOL_CMD` from environment if variable is missing then it uses `zpool` from `$PATH`.
+    /// Uses `log` crate as drain for `Slog`. Tries to use `ZPOOL_CMD` from environment if variable
+    /// is missing then it uses `zpool` from `$PATH`.
     fn default() -> ZpoolOpen3 {
         let cmd_name = match env::var_os("ZPOOL_CMD") {
             Some(val) => val,

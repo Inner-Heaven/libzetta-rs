@@ -1,18 +1,21 @@
 //! Generic interface to work with zpools.
 //!
-//! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of multiple parts:
+//! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of
+//! multiple parts:
 //!
-//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to switch to pest at one point
-//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and [ZpoolErrorKind](enum.ZpoolErrorKind.html)
+//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to
+//!    switch to pest at one point
+//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and
+//!    [ZpoolErrorKind](enum.ZpoolErrorKind.html)
 //!     - First used as actual error
 //!     - Second used for easy comparision because `io::Error` cannot into `Eq`
 //!  - Some enums for various fields to avoid using boring `bool`
 //!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related
 //!     - It's implemented as trait for easy mocking
 //!
-use std::io;
 use std::{default::Default,
           ffi::OsStr,
+          io,
           num::{ParseFloatError, ParseIntError},
           path::PathBuf};
 
@@ -123,8 +126,9 @@ impl ZpoolError {
     }
 }
 
-/// This is a hack to allow doing `Eq` on errors because `std::io::Error` doesn't implement `PartialEq`.
-/// Error descriptions are copied from [ZpoolError](enum.ZpoolError.html). Might be out of date.
+/// This is a hack to allow doing `Eq` on errors because `std::io::Error` doesn't implement
+/// `PartialEq`. Error descriptions are copied from [ZpoolError](enum.ZpoolError.html). Might be out
+/// of date.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ZpoolErrorKind {
     /// `zpool` not found in path. Open3 specific error.
@@ -269,7 +273,8 @@ pub enum CreateMode {
 /// Strategy to use when destroying Zpool.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DestroyMode {
-    /// Forces any active datasets contained within the pool to be unmounted. Might result in corruption.
+    /// Forces any active datasets contained within the pool to be unmounted. Might result in
+    /// corruption.
     Force,
     /// Do not use force mode.
     Gentle,
@@ -299,7 +304,8 @@ pub trait ZpoolEngine {
 
     /// Create new zpool.
     ///
-    /// * request - A request to create a zpool. Consult documentation for [`CreateZpoolRequest`](vdev/enum.CreateVdevRequest.html) for more information.
+    /// * request - A request to create a zpool. Consult documentation for
+    ///   [`CreateZpoolRequest`](vdev/enum.CreateVdevRequest.html) for more information.
     fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()>;
 
     /// Destroy zpool. NOTE: returns `Ok(())` if pool doesn't exist.
@@ -357,7 +363,8 @@ pub trait ZpoolEngine {
         self.read_properties(name)
     }
 
-    /// Internal function used to set values. Prefer [`update_properties`](#method.update_properties) when possible.
+    /// Internal function used to set values. Prefer
+    /// [`update_properties`](#method.update_properties) when possible.
     ///
     /// * `name` - Name of the zpool.
     /// * `key` - Key for the property.
@@ -380,7 +387,8 @@ pub trait ZpoolEngine {
 
     /// List of pools available in `dir`.
     ///
-    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created from files.
+    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created
+    ///   from files.
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>>;
 
     /// Import pool from `/dev/`.
@@ -388,7 +396,8 @@ pub trait ZpoolEngine {
 
     /// Import pool from `dir`.
     ///
-    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created from files.
+    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created
+    ///   from files.
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 
     /// Get the detailed status of the given pools.
@@ -431,7 +440,6 @@ pub trait ZpoolEngine {
         device: D,
         mode: OfflineMode,
     ) -> ZpoolResult<()>;
-
 
     /// Brings the specified physical device online.
     ///

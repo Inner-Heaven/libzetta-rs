@@ -49,8 +49,8 @@ impl Default for ErrorStatistics {
 
 /// Basic building block of vdev.
 ///
-/// It can be backed by a entire block device, a partition or a file. This particular structure represents
-/// backing of existing vdev. If disk is part of active zpool then it will also
+/// It can be backed by a entire block device, a partition or a file. This particular structure
+/// represents backing of existing vdev. If disk is part of active zpool then it will also
 /// have error counts.
 #[derive(Debug, Clone, Getters, Eq, Builder)]
 #[builder(setter(into))]

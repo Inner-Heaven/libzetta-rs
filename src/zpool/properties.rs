@@ -1,7 +1,6 @@
 //! Consumer friendly representation of Zpool's properties.
 
-use std::ffi::OsString;
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 
 use super::{ZpoolError, ZpoolResult};
 
@@ -201,9 +200,7 @@ pub struct ZpoolPropertiesWrite {
 
 impl ZpoolPropertiesWrite {
     /// A preferred way to create this structure.
-    pub fn builder() -> ZpoolPropertiesWriteBuilder  {
-        ZpoolPropertiesWriteBuilder::default()
-    }
+    pub fn builder() -> ZpoolPropertiesWriteBuilder { ZpoolPropertiesWriteBuilder::default() }
 
     #[doc(hidden)]
     pub fn into_args(self) -> Vec<OsString> {
@@ -239,7 +236,8 @@ impl ZpoolPropertiesWriteBuilder {
     }
 }
 
-/// All pre-defined properties of Zpool - both immutable and mutable. Majority of this documentation lifted from manual page.
+/// All pre-defined properties of Zpool - both immutable and mutable. Majority of this documentation
+/// lifted from manual page.
 #[derive(Debug, Clone, PartialEq, Getters)]
 #[get = "pub"]
 pub struct ZpoolProperties {
@@ -644,7 +642,6 @@ mod test {
         let result = props.into_args();
         assert_eq!(expected, result);
     }
-
 
     #[test]
     fn write_builder() {

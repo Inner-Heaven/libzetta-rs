@@ -1,10 +1,7 @@
-
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate lazy_static;
 
 use rand;
 use slog_term;
-
 
 use std::{fs::{self, DirBuilder},
           panic,
@@ -15,9 +12,9 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzfs::{slog::*,
-             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, FailMode, Health,
-                     OfflineMode, OnlineMode, ZpoolEngine, ZpoolError, ZpoolErrorKind,
-                     ZpoolOpen3, ZpoolPropertiesWriteBuilder, DestroyMode, ExportMode}};
+             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
+                     ExportMode, FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine,
+                     ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {

@@ -9,13 +9,15 @@
 //!
 //! # Overview
 //! ## zpool
-//! Library has a feature complete wrapper around `zpool(8)` with somewhat stable api. I can't guarantee
-//! that API won't change any moment, but I don't see a reason for it be changes at the moment.
+//! Library has a feature complete wrapper around `zpool(8)` with somewhat stable api. I can't
+//! guarantee that API won't change any moment, but I don't see a reason for it be changes at the
+//! moment.
 //!
 //! Refer to [zpool module documentation](zpool/index.html) for more information.
 //!
 //! ## zfs
-//! Work on bindings to `libzfs_core` is just starting, so support for it is non-existent at the moment.
+//! Work on bindings to `libzfs_core` is just starting, so support for it is non-existent at the
+//! moment.
 //!
 //! # Usage
 //! Right now there is no "library usage" instruction, but zpool module can be used directly.
@@ -32,22 +34,16 @@
 //! ### zfs
 //! Doesn't exist yet. I don't what will go there.
 
-
 #[macro_use] extern crate derive_builder;
 #[macro_use] extern crate getset;
 
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate lazy_static;
 
 use pest;
 
-#[macro_use]
-extern crate quick_error;
+#[macro_use] extern crate quick_error;
 
-#[macro_use]
-pub extern crate slog;
-
-
+#[macro_use] pub extern crate slog;
 
 // library modules
 pub mod parsers;
