@@ -1,10 +1,10 @@
-extern crate cavity;
+
 #[macro_use]
 extern crate lazy_static;
-extern crate libzfs;
-extern crate rand;
-extern crate slog_term;
-extern crate tempdir;
+
+use rand;
+use slog_term;
+
 
 use std::{fs::{self, DirBuilder},
           panic,

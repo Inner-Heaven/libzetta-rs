@@ -32,22 +32,22 @@
 //! ### zfs
 //! Doesn't exist yet. I don't what will go there.
 
-#[cfg(test)] extern crate cavity;
+
 #[macro_use] extern crate derive_builder;
 #[macro_use] extern crate getset;
 
 #[macro_use]
 extern crate lazy_static;
-extern crate libc;
-extern crate pest;
-extern crate pest_derive;
+
+use pest;
+
 #[macro_use]
 extern crate quick_error;
-extern crate regex;
+
 #[macro_use]
 pub extern crate slog;
-extern crate slog_stdlog;
-#[cfg(test)] extern crate tempdir;
+
+
 
 // library modules
 pub mod parsers;

@@ -2,6 +2,8 @@
 authors = ["Andrey Cherkashin <with.out@me.com>"]
 name = "libzfs"
 version = "0.1.0"
+edition = "2018"
+
 [dependencies]
 getset = "0.0.7"
 derive_builder = "0.7"

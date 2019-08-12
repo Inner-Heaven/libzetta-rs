@@ -55,7 +55,7 @@ impl Zpool {
     /// Create a builder - a preferred way to created a structure.
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
 
-    pub(crate) fn from_pest_pair(pair: Pair<Rule>) -> Zpool {
+    pub(crate) fn from_pest_pair(pair: Pair<'_, Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
         let mut zpool = ZpoolBuilder::default();
@@ -115,7 +115,7 @@ impl PartialEq<Zpool> for CreateZpoolRequest {
 }
 
 #[inline]
-fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
+fn get_error_statistics_from_pair(pair: Pair<'_, Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
@@ -126,7 +126,7 @@ fn get_error_statistics_from_pair(pair: Pair<Rule>) -> ErrorStatistics {
 }
 
 #[inline]
-fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolBuilder) {
+fn set_stats_and_reason_from_pool_line(pool_line: Pair<'_, Rule>, zpool: &mut ZpoolBuilder) {
     debug_assert_eq!(pool_line.as_rule(), Rule::pool_line);
 
     for pair in pool_line.into_inner() {
@@ -143,28 +143,28 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<Rule>, zpool: &mut ZpoolB
 }
 
 #[inline]
-fn get_vdev_type(raid_name: Pair<Rule>) -> VdevType {
+fn get_vdev_type(raid_name: Pair<'_, Rule>) -> VdevType {
     let raid_enum = raid_name.into_inner().next().expect("Failed to parse raid_enum");
     debug_assert!(raid_enum.as_rule() == Rule::raid_enum);
     VdevType::from_str(raid_enum.as_str()).expect("Failed to parse raid type")
 }
 
 #[inline]
-fn get_path_from_path(path: Option<Pair<Rule>>) -> PathBuf {
+fn get_path_from_path(path: Option<Pair<'_, Rule>>) -> PathBuf {
     let path = path.expect("Missing path from disk line");
     debug_assert!(path.as_rule() == Rule::path);
     PathBuf::from(path.as_span().as_str())
 }
 
 #[inline]
-fn get_health_from_health(health: Option<Pair<Rule>>) -> Health {
+fn get_health_from_health(health: Option<Pair<'_, Rule>>) -> Health {
     let health = health.expect("Missing health from disk line");
     debug_assert!(health.as_rule() == Rule::state_enum);
     Health::try_from_str(Some(health.as_span().as_str())).expect("Failed to parse Health")
 }
 
 #[inline]
-fn get_disk_from_disk_line(disk_line: Pair<Rule>) -> Disk {
+fn get_disk_from_disk_line(disk_line: Pair<'_, Rule>) -> Disk {
     debug_assert!(disk_line.as_rule() == Rule::disk_line);
 
     let mut inner = disk_line.into_inner();
@@ -183,7 +183,7 @@ fn get_disk_from_disk_line(disk_line: Pair<Rule>) -> Disk {
 }
 
 #[inline]
-fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Option<Reason>) {
+fn get_stats_and_reason_from_pairs(pairs: Pairs<'_, Rule>) -> (ErrorStatistics, Option<Reason>) {
     let mut stats = None;
     let mut reason = None;
     for pair in pairs {
@@ -199,7 +199,7 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<Rule>) -> (ErrorStatistics, Opti
 }
 
 #[inline]
-fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
+fn get_vdevs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
     debug_assert!(pair.as_rule() == Rule::vdevs);
 
     pair.into_inner()
@@ -245,29 +245,29 @@ fn get_vdevs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
 }
 
 #[inline]
-fn get_health_from_pair(pair: Pair<Rule>) -> Health {
+fn get_health_from_pair(pair: Pair<'_, Rule>) -> Health {
     let health = get_string_from_pair(pair);
     Health::try_from_str(Some(&health)).expect("Failed to unwrap health")
 }
 
 #[inline]
-fn get_u64_from_pair(pair: Pair<Rule>) -> u64 {
+fn get_u64_from_pair(pair: Pair<'_, Rule>) -> u64 {
     get_value_from_pair(pair).as_str().parse().expect("Failed to unwrap u64")
 }
 
 #[inline]
-fn get_string_from_pair(pair: Pair<Rule>) -> String {
+fn get_string_from_pair(pair: Pair<'_, Rule>) -> String {
     String::from(get_value_from_pair(pair).as_str())
 }
 
 #[inline]
-fn get_value_from_pair(pair: Pair<Rule>) -> Pair<Rule> {
+fn get_value_from_pair(pair: Pair<'_, Rule>) -> Pair<'_, Rule> {
     let mut pairs = pair.into_inner();
     pairs.next().expect("Failed to unwrap value")
 }
 
 #[inline]
-fn get_error_from_pair(pair: Pair<Rule>) -> Option<String> {
+fn get_error_from_pair(pair: Pair<'_, Rule>) -> Option<String> {
     let mut pairs = pair.into_inner();
     let error_pair = pairs.next().expect("Failed to unwrap error");
     match error_pair.as_rule() {
@@ -277,7 +277,7 @@ fn get_error_from_pair(pair: Pair<Rule>) -> Option<String> {
 }
 
 #[inline]
-fn get_logs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
+fn get_logs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
     debug_assert!(pair.as_rule() == Rule::logs);
     if let Some(vdevs) = pair.into_inner().next() {
         get_vdevs_from_pair(vdevs)
@@ -287,12 +287,12 @@ fn get_logs_from_pair(pair: Pair<Rule>) -> Vec<Vdev> {
 }
 
 #[inline]
-fn get_caches_from_pair(pair: Pair<Rule>) -> Vec<Disk> {
+fn get_caches_from_pair(pair: Pair<'_, Rule>) -> Vec<Disk> {
     debug_assert!(pair.as_rule() == Rule::caches);
     pair.into_inner().map(get_disk_from_disk_line).collect()
 }
 #[inline]
-fn get_spares_from_pair(pair: Pair<Rule>) -> Vec<Disk> {
+fn get_spares_from_pair(pair: Pair<'_, Rule>) -> Vec<Disk> {
     debug_assert!(pair.as_rule() == Rule::spares);
     pair.into_inner().map(get_disk_from_disk_line).collect()
 }
