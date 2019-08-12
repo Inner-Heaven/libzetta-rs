@@ -11,8 +11,8 @@ edition = "2018"
 
 [badges]
 maintenance = { status = "actively-developed" }
-is-it-maintained-open-issues = { repository = "https://github.com/Inner-Heaven/libzfs-rs" }
-is-it-maintained-issue-resolution = { repository = "https://github.com/Inner-Heaven/libzfs-rs" }
+is-it-maintained-open-issues = { repository = "Inner-Heaven/libzfs-rs" }
+is-it-maintained-issue-resolution = { repository = "Inner-Heaven/libzfs-rs" }
 azure-devops = { project = "andoriyu/libpandemonium", pipeline = "Inner-Heaven.libzfs-rs", build="1" }
 
 [dependencies]
