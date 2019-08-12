@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 #![deny(nonstandard_style, future_incompatible, clippy::all, clippy::restriction, clippy::nursery)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::module_name_repetitions, clippy::multiple_inherent_impl, clippy::implicit_return, clippy::missing_inline_in_public_items, clippy::missing_docs_in_private_items)]
 
 //! Rust bindings to libzfs_core and wrapper around `zpool(8).
 //!

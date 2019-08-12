@@ -181,7 +181,7 @@ impl CreateVdevRequest {
 
     #[inline]
     fn conv_to_args<T: Into<OsString>>(vdev_type: T, disks: Vec<PathBuf>) -> Vec<OsString> {
-        let mut ret = Vec::with_capacity(disks.len() + 1);
+        let mut ret = Vec::with_capacity(disks.len());
         ret.push(vdev_type.into());
         for disk in disks {
             ret.push(disk.into_os_string());
@@ -260,7 +260,7 @@ impl PartialEq<CreateVdevRequest> for Vdev {
     fn eq(&self, other: &CreateVdevRequest) -> bool {
         self.kind() == &other.kind() && {
             match other {
-                CreateVdevRequest::SingleDisk(ref d) => &self.disks()[0] == d,
+                CreateVdevRequest::SingleDisk(ref d) => self.disks().first().map(Disk::path) == Some(d),
                 CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,

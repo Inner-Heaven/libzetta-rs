@@ -103,6 +103,7 @@ quick_error! {
 }
 
 impl ZpoolError {
+    /// Convert into `ZpoolErrorKind`.
     pub fn kind(&self) -> ZpoolErrorKind {
         match *self {
             ZpoolError::CmdNotFound => ZpoolErrorKind::CmdNotFound,
@@ -178,6 +179,7 @@ pub enum ZpoolErrorKind {
 }
 
 impl From<io::Error> for ZpoolError {
+    #[allow(clippy::wildcard_enum_match_arm)]
     fn from(err: io::Error) -> ZpoolError {
         match err.kind() {
             io::ErrorKind::NotFound => ZpoolError::CmdNotFound,
@@ -188,6 +190,7 @@ impl From<io::Error> for ZpoolError {
 
 impl ZpoolError {
     /// Try to convert stderr into internal error type.
+    #[allow(clippy::option_unwrap_used)]
     pub fn from_stderr(stderr_raw: &[u8]) -> ZpoolError {
         let stderr = String::from_utf8_lossy(stderr_raw);
         if RE_REUSE_VDEV.is_match(&stderr) {

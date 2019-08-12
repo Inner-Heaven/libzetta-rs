@@ -58,6 +58,7 @@ impl Zpool {
     /// Create a builder - a preferred way to created a structure.
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
 
+    #[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
     pub(crate) fn from_pest_pair(pair: Pair<'_, Rule>) -> Zpool {
         debug_assert!(pair.as_rule() == Rule::zpool);
         let pairs = pair.into_inner();
@@ -99,7 +100,7 @@ impl Zpool {
                 _ => unreachable!(),
             }
         }
-        zpool.build().unwrap()
+        zpool.build().expect("Can't build zpool out of pair. Please report at: https://github.com/Inner-Heaven/libzfs-rs")
     }
 }
 
@@ -118,6 +119,7 @@ impl PartialEq<Zpool> for CreateZpoolRequest {
 }
 
 #[inline]
+#[allow(clippy::option_unwrap_used, clippy::result_unwrap_used, clippy::wildcard_enum_match_arm)]
 fn get_error_statistics_from_pair(pair: Pair<'_, Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
@@ -129,6 +131,7 @@ fn get_error_statistics_from_pair(pair: Pair<'_, Rule>) -> ErrorStatistics {
 }
 
 #[inline]
+#[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
 fn set_stats_and_reason_from_pool_line(pool_line: Pair<'_, Rule>, zpool: &mut ZpoolBuilder) {
     debug_assert_eq!(pool_line.as_rule(), Rule::pool_line);
 
@@ -186,6 +189,7 @@ fn get_disk_from_disk_line(disk_line: Pair<'_, Rule>) -> Disk {
 }
 
 #[inline]
+#[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
 fn get_stats_and_reason_from_pairs(pairs: Pairs<'_, Rule>) -> (ErrorStatistics, Option<Reason>) {
     let mut stats = None;
     let mut reason = None;
@@ -202,6 +206,7 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<'_, Rule>) -> (ErrorStatistics, 
 }
 
 #[inline]
+#[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
 fn get_vdevs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
     debug_assert!(pair.as_rule() == Rule::vdevs);
 
@@ -270,6 +275,7 @@ fn get_value_from_pair(pair: Pair<'_, Rule>) -> Pair<'_, Rule> {
 }
 
 #[inline]
+#[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
 fn get_error_from_pair(pair: Pair<'_, Rule>) -> Option<String> {
     let mut pairs = pair.into_inner();
     let error_pair = pairs.next().expect("Failed to unwrap error");
