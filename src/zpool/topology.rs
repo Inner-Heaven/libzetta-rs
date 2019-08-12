@@ -6,7 +6,7 @@
 //! Let's create simple topology: 2 drives in mirror, no l2arc, no zil.
 //!
 //! ```rust
-//! use libzfs::zpool::{CreateVdevRequest, CreateZpoolRequest};
+//! use libzetta::zpool::{CreateVdevRequest, CreateZpoolRequest};
 //! use std::path::PathBuf;
 //!
 //! let drives = vec![PathBuf::from("sd0"), PathBuf::from("sd1")];
@@ -20,7 +20,7 @@
 //! mirror and 2 l2rc.
 //!
 //! ```rust, norun
-//! use libzfs::zpool::{CreateZpoolRequest, CreateVdevRequest};
+//! use libzetta::zpool::{CreateZpoolRequest, CreateVdevRequest};
 //! use std::path::PathBuf;
 //!
 //! let zil_drives = vec![PathBuf::from("hd0"), PathBuf::from("hd1")];

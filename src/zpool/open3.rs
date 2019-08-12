@@ -8,7 +8,7 @@
 //!
 //! ### Usage
 //! ```rust,no_run
-//! use libzfs::zpool::{ZpoolEngine, ZpoolOpen3};
+//! use libzetta::zpool::{ZpoolEngine, ZpoolOpen3};
 //! let engine = ZpoolOpen3::default();
 //!
 //! // Check that pool with name z exists.
