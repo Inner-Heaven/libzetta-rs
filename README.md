@@ -6,8 +6,8 @@
 > libzfs-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
-Not yet. Won't be on crate.io until 0.2.0. Even then it will be very alpha. Wait for 1.0.1 which when it will have stable API, integrated into another libpandemonium project, properly documented, etc.
-
+Not yet. It won't destroy your pool, but API might change any moment. Wait until 1.0.0. I have a pretty decent roadmap to 1.0.0.
+ 
 ## Usage
 Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable. 
 

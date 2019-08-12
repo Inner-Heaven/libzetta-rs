@@ -1,10 +1,7 @@
-extern crate cavity;
-#[macro_use]
-extern crate lazy_static;
-extern crate libzfs;
-extern crate rand;
-extern crate slog_term;
-extern crate tempdir;
+#[macro_use] extern crate lazy_static;
+
+use rand;
+use slog_term;
 
 use std::{fs::{self, DirBuilder},
           panic,
@@ -15,9 +12,9 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzfs::{slog::*,
-             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, FailMode, Health,
-                     OfflineMode, OnlineMode, ZpoolEngine, ZpoolError, ZpoolErrorKind,
-                     ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
+             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
+                     ExportMode, FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine,
+                     ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -73,7 +70,7 @@ where
     });
 
     let zpool = ZpoolOpen3::default();
-    let _ = zpool.destroy(&name, true);
+    let _ = zpool.destroy(&name, DestroyMode::Force);
     drop(lock);
 
     result.unwrap();
@@ -119,19 +116,19 @@ fn create_check_update_delete() {
 
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(true, props.auto_replace);
-        assert_eq!(Some(String::from("Wat")), props.comment);
-        assert_eq!(FailMode::Panic, props.fail_mode);
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&true, props.auto_replace());
+        assert_eq!(&Some(String::from("Wat")), props.comment());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
 
         let updated_props =
             ZpoolPropertiesWriteBuilder::from_props(&props).comment("Wat").build().unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(true, props.auto_replace);
-        assert_eq!(Some(String::from("Wat")), props.comment);
-        assert_eq!(FailMode::Panic, props.fail_mode);
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&true, props.auto_replace());
+        assert_eq!(&Some(String::from("Wat")), props.comment());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
 
         let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
             .comment(String::new())
@@ -140,10 +137,10 @@ fn create_check_update_delete() {
             .unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(None, props.comment);
-        assert_eq!(true, props.delegation);
+        assert_eq!(&None, props.comment());
+        assert_eq!(&true, props.delegation());
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.exists(&name).unwrap();
         assert!(!result);
@@ -199,7 +196,7 @@ fn reuse_vdev() {
             assert_eq!(vdev_file, vdev);
             assert_eq!(name_1, pool);
         }
-        zpool.destroy(&name_1, true).unwrap();
+        zpool.destroy(&name_1, DestroyMode::Force).unwrap();
     });
 }
 #[test]
@@ -224,10 +221,6 @@ fn pool_not_found() {
     let zpool = ZpoolOpen3::default();
     let name = get_zpool_name();
 
-    let err = zpool.destroy(&name, true).unwrap_err();
-
-    assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
-
     let err = zpool.read_properties(&name).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 
@@ -235,7 +228,7 @@ fn pool_not_found() {
     let err = zpool.update_properties(&name, props).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 
-    let err = zpool.export("fake", true).unwrap_err();
+    let err = zpool.export("fake", ExportMode::Gentle).unwrap_err();
     assert_eq!(ZpoolErrorKind::PoolNotFound, err.kind());
 }
 
@@ -256,7 +249,7 @@ fn read_args() {
         let props = zpool.read_properties(&name);
 
         assert!(props.is_ok());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -279,7 +272,7 @@ fn create_mount() {
         let result = zpool.create(topo);
         result.unwrap();
         assert!(mount_point.exists());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -308,10 +301,10 @@ fn create_mount_and_alt_root() {
         result.unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(props.alt_root, Some(PathBuf::from("/mnt")));
+        assert_eq!(&Some(PathBuf::from("/mnt")), props.alt_root());
 
         assert!(expected.exists());
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 #[test]
@@ -341,10 +334,10 @@ fn create_with_props() {
         zpool.create(topo).unwrap();
 
         let props = zpool.read_properties(&name).unwrap();
-        assert_eq!(true, props.auto_expand);
-        assert_eq!(FailMode::Panic, props.fail_mode);
-        assert_eq!(Some(comment.clone()), props.comment);
-        zpool.destroy(&name, true).unwrap();
+        assert_eq!(&true, props.auto_expand());
+        assert_eq!(&FailMode::Panic, props.fail_mode());
+        assert_eq!(&Some(comment.clone()), props.comment());
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
     });
 }
 
@@ -363,7 +356,7 @@ fn test_export_import() {
             .unwrap();
         zpool.create(topo).expect("Failed to create pool for export");
 
-        let result = zpool.export(&name, false);
+        let result = zpool.export(&name, ExportMode::Gentle);
         assert!(result.is_ok());
         let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
         assert_eq!(list.len(), 1);
@@ -371,7 +364,7 @@ fn test_export_import() {
         let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
         assert!(result.is_ok());
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.available().unwrap();
         assert!(result.is_empty());
@@ -393,7 +386,7 @@ fn test_export_import_force() {
             .unwrap();
         zpool.create(topo).expect("Failed to create pool for export");
 
-        let result = zpool.export(&name, true);
+        let result = zpool.export(&name, ExportMode::Force);
         assert!(result.is_ok());
         let list = zpool.available_in_dir(PathBuf::from(&vdev_dir)).unwrap();
         assert_eq!(list.len(), 1);
@@ -401,7 +394,7 @@ fn test_export_import_force() {
         let result = zpool.import_from_dir(&name, PathBuf::from(vdev_dir));
         assert!(result.is_ok());
 
-        zpool.destroy(&name, true).unwrap();
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
 
         let result = zpool.available().unwrap();
         assert!(result.is_empty());

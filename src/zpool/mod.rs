@@ -1,9 +1,21 @@
-/// Everything you need to work with zpools. Since there is no public library
-/// to work with zpool —
-/// the default impl will call to `zpool(8)`.
-use std::io;
+//! Generic interface to work with zpools.
+//!
+//! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of
+//! multiple parts:
+//!
+//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzfs-rs/issues/45) to
+//!    switch to pest at one point
+//!  - Error enums: [ZpoolError](enum.ZpoolError.html) and
+//!    [ZpoolErrorKind](enum.ZpoolErrorKind.html)
+//!     - First used as actual error
+//!     - Second used for easy comparision because `io::Error` cannot into `Eq`
+//!  - Some enums for various fields to avoid using boring `bool`
+//!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related
+//!     - It's implemented as trait for easy mocking
+//!
 use std::{default::Default,
           ffi::OsStr,
+          io,
           num::{ParseFloatError, ParseIntError},
           path::PathBuf};
 
@@ -40,12 +52,12 @@ lazy_static! {
 }
 
 quick_error! {
-    /// Error kinds. This type will be used across zpool module.
+    ///  Zpool sub-module errors. Every error returned by this module is wrapped into `ZpoolError`.
     #[derive(Debug)]
     pub enum ZpoolError {
         /// `zpool` not found in path. Open3 specific error.
         CmdNotFound {}
-        /// zpool executable not found in path.
+        /// Any other Io related error. Exists just in case. Presence of this error is a bug.
         Io(err: io::Error) {
             cause(err)
         }
@@ -62,13 +74,13 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
-        /// Device used in CreateZpoolRequest is smaller than 64M
+        /// Device used in CreateZpoolRequest is smaller than 64M or 128M on some platforms.
         DeviceTooSmall {}
         /// Permission denied to create zpool. This might happened because:
         /// a) you running it as not root
         /// b) you running it inside jail that isn't allowed to operate zfs
         PermissionDenied {}
-        /// Trying to pause/stop scrub thas either never stared or already completed
+        /// Trying to pause/stop scrub that is either never stared or already completed
         NoActiveScrubs {}
         /// Trying to take only device offline.
         NoValidReplicas {}
@@ -83,7 +95,7 @@ quick_error! {
         /// Trying to add vdev with wring replication level to existing zpool with different replication level.
         /// For example: mirror to zpool.
         MismatchedReplicationLevel {}
-        /// Cache device must a disk or disk slice.
+        /// Cache device must a disk or disk slice/partition.
         InvalidCacheDevice {}
         /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
         Other(err: String) {}
@@ -91,6 +103,7 @@ quick_error! {
 }
 
 impl ZpoolError {
+    /// Convert into `ZpoolErrorKind`.
     pub fn kind(&self) -> ZpoolErrorKind {
         match *self {
             ZpoolError::CmdNotFound => ZpoolErrorKind::CmdNotFound,
@@ -114,13 +127,14 @@ impl ZpoolError {
     }
 }
 
-/// This is a hack to allow error identification without 100500 lines of code
-/// because
-/// `std::io::Error` doesn't implement `PartialEq`.
+/// This is a hack to allow doing `Eq` on errors because `std::io::Error` doesn't implement
+/// `PartialEq`. Error descriptions are copied from [ZpoolError](enum.ZpoolError.html). Might be out
+/// of date.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ZpoolErrorKind {
     /// `zpool` not found in path. Open3 specific error.
     CmdNotFound,
+    /// Any other Io related error. Exists just in case. Presence of this error is a bug.
     Io,
     /// Trying to manipulate non-existent pool.
     PoolNotFound,
@@ -165,6 +179,7 @@ pub enum ZpoolErrorKind {
 }
 
 impl From<io::Error> for ZpoolError {
+    #[allow(clippy::wildcard_enum_match_arm)]
     fn from(err: io::Error) -> ZpoolError {
         match err.kind() {
             io::ErrorKind::NotFound => ZpoolError::CmdNotFound,
@@ -175,6 +190,7 @@ impl From<io::Error> for ZpoolError {
 
 impl ZpoolError {
     /// Try to convert stderr into internal error type.
+    #[allow(clippy::option_unwrap_used)]
     pub fn from_stderr(stderr_raw: &[u8]) -> ZpoolError {
         let stderr = String::from_utf8_lossy(stderr_raw);
         if RE_REUSE_VDEV.is_match(&stderr) {
@@ -226,6 +242,7 @@ impl ZpoolError {
 /// Type alias to `Result<T, ZpoolError>`.
 pub type ZpoolResult<T> = Result<T, ZpoolError>;
 
+/// Strategy to use when bringing device offline.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OfflineMode {
     /// Device will be taken offline until operator manually bring it back
@@ -236,6 +253,7 @@ pub enum OfflineMode {
     UntilReboot,
 }
 
+/// Strategy to use when bringing device online.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OnlineMode {
     /// Bring device online as is.
@@ -246,11 +264,31 @@ pub enum OnlineMode {
     Expand,
 }
 
+/// Strategy to use when creating Zpool.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum CreateMode {
     /// Forces use of vdevs, even if they appear in use or specify a conflicting
-    /// replication level.  Not all devices can be overridden in this manner
+    /// replication level. Not all devices can be overridden in this manner.
     Force,
+    /// Do not use force mode.
+    Gentle,
+}
+/// Strategy to use when destroying Zpool.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum DestroyMode {
+    /// Forces any active datasets contained within the pool to be unmounted. Might result in
+    /// corruption.
+    Force,
+    /// Do not use force mode.
+    Gentle,
+}
+
+/// Strategy to use when exporting Zpool.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ExportMode {
+    /// Forcefully unmount all datasets. Might result in corruption.
+    Force,
+    /// Do not use force mode.
     Gentle,
 }
 
@@ -258,38 +296,36 @@ impl Default for CreateMode {
     fn default() -> CreateMode { CreateMode::Gentle }
 }
 
-/// Bring device online as is.
-/// Generic interface to manage zpools. End goal is to cover most of `zpool(8)`.
-/// Using trait here, so I can mock it in unit tests.
+/// Interface to manage zpools. This documentation implies that you know how to use [`zpool(8)`](https://www.freebsd.org/cgi/man.cgi?zpool(8)).
 pub trait ZpoolEngine {
-    /// Check if pool with given name exists. This should not return
-    /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html) error, instead
-    /// it should return `Ok(false)`.
+    /// Check if pool with given name exists. NOTE: this won't return
+    /// [`ZpoolError::PoolNotFound`](enum.ZpoolError.html), instead
+    /// it will return `Ok(false)`.
+    ///
+    /// * `name` - Name of the zpool.
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool>;
-    /// Create new zpool.
-    fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()>;
-    /// Version of destroy that doesn't verify if pool exists before removing
-    /// it.
-    fn destroy_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
-    /// Destroy zpool.
-    fn destroy<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
 
-        self.destroy_unchecked(name, force)
-    }
-    /// Read properties of the pool.
-    fn read_properties_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
-    /// Read properties of the pool.
-    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.read_properties_unchecked(name)
-    }
+    /// Create new zpool.
+    ///
+    /// * request - A request to create a zpool. Consult documentation for
+    ///   [`CreateZpoolRequest`](vdev/enum.CreateVdevRequest.html) for more information.
+    fn create(&self, request: CreateZpoolRequest) -> ZpoolResult<()>;
+
+    /// Destroy zpool. NOTE: returns `Ok(())` if pool doesn't exist.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `mode` - Strategy to use when destroying the pool.
+    fn destroy<N: AsRef<str>>(&self, name: N, mode: DestroyMode) -> ZpoolResult<()>;
+
+    /// Read properties of the pool. NOTE: doesn't support custom properties.
+    ///
+    /// * `name` - Name of the zpool.
+    fn read_properties<N: AsRef<str>>(&self, name: N) -> ZpoolResult<ZpoolProperties>;
 
     /// Update zpool properties.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `props` - Set of new properties for the pool.
     fn update_properties<N: AsRef<str>>(
         &self,
         name: N,
@@ -299,96 +335,120 @@ pub trait ZpoolEngine {
             return Err(ZpoolError::PoolNotFound);
         }
 
-        let current = self.read_properties_unchecked(&name)?;
+        let current = self.read_properties(&name)?;
 
-        if current.auto_expand != *props.auto_expand() {
-            self.set_unchecked(&name, "autoexpand", props.auto_expand())?;
+        if current.auto_expand() != props.auto_expand() {
+            self.set_property(&name, "autoexpand", props.auto_expand())?;
         }
 
-        if current.auto_replace != *props.auto_replace() {
-            self.set_unchecked(&name, "autoreplace", props.auto_replace())?;
+        if current.auto_replace() != props.auto_replace() {
+            self.set_property(&name, "autoreplace", props.auto_replace())?;
         }
 
-        if current.cache_file != *props.cache_file() {
-            self.set_unchecked(&name, "cachefile", props.cache_file())?;
+        if current.cache_file() != props.cache_file() {
+            self.set_property(&name, "cachefile", props.cache_file())?;
         }
 
         // remove comment
         let desired = if props.comment().is_empty() { None } else { Some(props.comment().clone()) };
-        if current.comment != desired {
-            self.set_unchecked(&name, "comment", props.comment())?;
+        if current.comment() != &desired {
+            self.set_property(&name, "comment", props.comment())?;
         }
 
-        if current.delegation != *props.delegation() {
-            self.set_unchecked(&name, "delegation", props.delegation())?;
+        if current.delegation() != props.delegation() {
+            self.set_property(&name, "delegation", props.delegation())?;
         }
 
-        if current.fail_mode != *props.fail_mode() {
-            self.set_unchecked(&name, "failmode", props.fail_mode())?;
+        if current.fail_mode() != props.fail_mode() {
+            self.set_property(&name, "failmode", props.fail_mode())?;
         }
 
-        self.read_properties_unchecked(name)
+        self.read_properties(name)
     }
 
-    /// Internal function used to set values. Should be avoided.
-    fn set_unchecked<N: AsRef<str>, P: PropPair>(
+    /// Internal function used to set values. Prefer
+    /// [`update_properties`](#method.update_properties) when possible.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `key` - Key for the property.
+    /// * `value` - Any [supported](properties/trait.PropPair.html) value.
+    fn set_property<N: AsRef<str>, P: PropPair>(
         &self,
         name: N,
         key: &str,
         value: &P,
     ) -> ZpoolResult<()>;
-    /// Export Pool.
-    fn export<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.export_unchecked(name, force)
-    }
 
-    fn export_unchecked<N: AsRef<str>>(&self, name: N, force: bool) -> ZpoolResult<()>;
+    /// Exports the given pools from the system.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `mode` - Strategy to use when destroying the pool.
+    fn export<N: AsRef<str>>(&self, name: N, mode: ExportMode) -> ZpoolResult<()>;
+
     /// List of pools available for import in `/dev/` directory.
     fn available(&self) -> ZpoolResult<Vec<Zpool>>;
-    /// List of pools available
+
+    /// List of pools available in `dir`.
+    ///
+    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created
+    ///   from files.
     fn available_in_dir(&self, dir: PathBuf) -> ZpoolResult<Vec<Zpool>>;
 
-    /// Import pool
+    /// Import pool from `/dev/`.
+    fn import<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+
+    /// Import pool from `dir`.
+    ///
+    /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created
+    ///   from files.
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 
-    /// Get the detailed health status for the given pools.
-    fn status_unchecked<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
+    /// Get the detailed status of the given pools.
+    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
 
-    /// Get the detailed health status for the given pool.
-    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
-        if !self.exists(&name)? {
-            return Err(ZpoolError::PoolNotFound);
-        }
-        self.status_unchecked(name)
-    }
-    /// Get a status of each pool active in the system
+    /// Get a status of each active (imported) pool in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>>;
 
-    ///  Begins a scrub or resumes a paused scrub.  The scrub examines all data
-    /// in the specified  pools to verify that it checksums correctly. For
-    /// replicated (mirror or raidz) devices, ZFS  automatically repairs any
+    /// Begins a scrub or resumes a paused scrub. The scrub examines all data
+    /// in the specified pools to verify that it checksums correctly. For
+    /// replicated (mirror or raidz) devices, ZFS automatically repairs any
     /// damage discovered during the scrub.
+    ///
+    /// * `name` - Name of the zpool.
     fn scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
-    ///  Pause scrubbing. Scrub pause state and progress are periodically synced
-    /// to disk. If the  system is restarted or pool is exported during a
+
+    /// Pause scrubbing. Scrub pause state and progress are periodically synced
+    /// to disk. If the system is restarted or pool is exported during a
     /// paused scrub, even after import, scrub  will remain paused until it
-    /// is resumed.  Once resumed the scrub will pick up from the
-    ///  place where it was last checkpointed to disk.
+    /// is resumed. Once resumed the scrub will pick up from the
+    /// place where it was last checkpointed to disk.
+    ///
+    /// * `name` - Name of the zpool.
     fn pause_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+
     ///  Stop scrubbing.
+    ///
+    /// * `name` - Name of the zpool.
     fn stop_scrub<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
+
     /// Takes the specified physical device offline. While the device is
     /// offline, no attempt is made to read or write to the device.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `device` - Name of the device or path to sparse file.
+    /// * `mode` - Strategy to use when taking device offline
     fn take_offline<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         device: D,
         mode: OfflineMode,
     ) -> ZpoolResult<()>;
+
     /// Brings the specified physical device online.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `device` - Name of the device or path to sparse file.
+    /// * `mode` - Strategy to use when taking device online
     fn bring_online<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
@@ -401,13 +461,18 @@ pub trait ZpoolEngine {
     /// is not currently part of a mirrored configuration,
     /// device automatically transforms into a two-way mirror of device and
     /// new_device.
+    ///
+    /// * `name` - Name of the zpool.
+    /// * `device` - Name of the device that you want to replace.
+    /// * `new_device` - Name of the device that you want to use in place of old device.
     fn attach<N: AsRef<str>, D: AsRef<OsStr>>(
         &self,
         name: N,
         device: D,
         new_device: D,
     ) -> ZpoolResult<()>;
-    ///Detaches device from a mirror. The operation is refused if there are no
+
+    /// Detaches device from a mirror. The operation is refused if there are no
     /// other valid replicas of the data.
     ///
     /// * `name` - Name of the zpool
