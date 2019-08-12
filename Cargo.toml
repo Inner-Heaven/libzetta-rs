@@ -2,7 +2,7 @@
 authors = ["Andrey Cherkashin <andoriyu@gmail.com>"]
 version = "0.1.1"
 description = "libzetta is a stable interface for programmatic administration of ZFS"
-repository = "https://github.com/Inner-Heaven/libzfs-rs"
+repository = "https://github.com/Inner-Heaven/libzetta-rs"
 keywords = ["zfs", "freebsd", "zol", "os", "open3"]
 categories = ["os", "filesystem", "external-ffi-bindings"]
 license = "BSD-2-Clause"
@@ -11,9 +11,9 @@ edition = "2018"
 
 [badges]
 maintenance = { status = "actively-developed" }
-is-it-maintained-open-issues = { repository = "Inner-Heaven/libzfs-rs" }
-is-it-maintained-issue-resolution = { repository = "Inner-Heaven/libzfs-rs" }
-azure-devops = { project = "andoriyu/libpandemonium", pipeline = "Inner-Heaven.libzfs-rs", build="1" }
+is-it-maintained-open-issues = { repository = "Inner-Heaven/libzetta-rs" }
+is-it-maintained-issue-resolution = { repository = "Inner-Heaven/libzetta-rs" }
+azure-devops = { project = "andoriyu/libpandemonium", pipeline = "libzetta-rs", build="4" }
 
 [dependencies]
 getset = "0.0.7"
