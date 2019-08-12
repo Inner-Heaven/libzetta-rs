@@ -1,8 +1,19 @@
 [package]
-authors = ["Andrey Cherkashin <with.out@me.com>"]
-name = "libzfs"
+authors = ["Andrey Cherkashin <andoriyu@gmail.com>"]
 version = "0.1.0"
+description = "libzfs is a stable interface for programmatic administration of ZFS"
+repository = "https://github.com/Inner-Heaven/libzfs-rs"
+keywords = ["zfs", "freebsd", "zol", "os", "open3"]
+categories = ["os", "filesystem", "external-ffi-bindings"]
+license = "BSD-2-Clause"
+name = "libzfs"
 edition = "2018"
+
+[badges]
+maintenance = { status = "actively-developed" }
+is-it-maintained-open-issues = { repository = "https://github.com/Inner-Heaven/libzfs-rs" }
+is-it-maintained-issue-resolution = { repository = "https://github.com/Inner-Heaven/libzfs-rs" }
+azure-devops = { project = "andoriyu/libpandemonium", pipeline = "Inner-Heaven.libzfs-rs", build="1" }
 
 [dependencies]
 getset = "0.0.7"
