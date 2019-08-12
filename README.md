@@ -2,7 +2,7 @@
 
 [![Build Status](https://dev.azure.com/andoriyu/libpandemonium/_apis/build/status/Inner-Heaven.libzfs-rs?branchName=master)](https://dev.azure.com/andoriyu/libpandemonium/_build/latest?definitionId=1&branchName=master)
 [![codecov](https://codecov.io/gh/Inner-Heaven/libzfs-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/Inner-Heaven/libzfs-rs)
-
+[![Crates.io](https://img.shields.io/crates/v/libwhisper.svg)](https://crates.io/crates/libzfs)
 > libzfs-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation

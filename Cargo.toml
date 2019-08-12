@@ -1,12 +1,12 @@
 [package]
 authors = ["Andrey Cherkashin <andoriyu@gmail.com>"]
 version = "0.1.0"
-description = "libzfs is a stable interface for programmatic administration of ZFS"
+description = "libzetta is a stable interface for programmatic administration of ZFS"
 repository = "https://github.com/Inner-Heaven/libzfs-rs"
 keywords = ["zfs", "freebsd", "zol", "os", "open3"]
 categories = ["os", "filesystem", "external-ffi-bindings"]
 license = "BSD-2-Clause"
-name = "libzfs"
+name = "libzetta"
 edition = "2018"
 
 [badges]
