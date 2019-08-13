@@ -1,27 +1,20 @@
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate lazy_static;
 
 use rand;
 use slog_term;
 
-use std::{
-    fs::{self, DirBuilder},
-    panic,
-    path::{Path, PathBuf},
-    sync::Mutex,
-};
+use std::{fs::{self, DirBuilder},
+          panic,
+          path::{Path, PathBuf},
+          sync::Mutex};
 
 use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
-use libzetta::{
-    slog::*,
-    zpool::{
-        CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode, ExportMode,
-        FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine, ZpoolError, ZpoolErrorKind,
-        ZpoolOpen3, ZpoolPropertiesWriteBuilder,
-    },
-};
+use libzetta::{slog::*,
+             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
+                     ExportMode, FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine,
+                     ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests";
 lazy_static! {
@@ -84,14 +77,10 @@ where
 }
 
 #[cfg(target_os = "freebsd")]
-fn get_virtual_device() -> PathBuf {
-    PathBuf::from("md1")
-}
+fn get_virtual_device() -> PathBuf { PathBuf::from("md1") }
 
 #[cfg(target_os = "linux")]
-fn get_virtual_device() -> PathBuf {
-    PathBuf::from("loop0")
-}
+fn get_virtual_device() -> PathBuf { PathBuf::from("loop0") }
 
 // Only used for debugging
 #[allow(dead_code)]
@@ -461,9 +450,7 @@ fn test_all_empty() {
 }
 
 #[test]
-fn test_zpool_with_logger() {
-    let _zpool = ZpoolOpen3::with_logger(get_logger());
-}
+fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
 
 #[test]
 fn test_zpool_scrub_not_found() {
@@ -577,8 +564,7 @@ fn test_zpool_take_device_from_mirror_offline_expand() {
 #[test]
 fn test_zpool_attach_then_detach_single() {
     run_test(|name| {
-        // let zpool = ZpoolOpen3::default();
-        let zpool = ZpoolOpen3::with_logger(get_logger());
+        let zpool = ZpoolOpen3::default();
         let vdev0_path = setup_vdev("/vdevs/vdev1", &Bytes::MegaBytes(64 + 10));
         let vdev1_path = setup_vdev("/vdevs/vdev2", &Bytes::MegaBytes(64 + 10));
         let topo = CreateZpoolRequestBuilder::default()
@@ -587,11 +573,11 @@ fn test_zpool_attach_then_detach_single() {
             .vdev(CreateVdevRequest::SingleDisk(vdev0_path.clone()))
             .build()
             .unwrap();
-        zpool.create(topo.clone()).expect("Failed to create zpool");
+        zpool.create(topo.clone()).unwrap();
 
-        zpool.attach(&name, &vdev0_path, &vdev1_path).expect("Fialed to attach device");
+        zpool.attach(&name, &vdev0_path, &vdev1_path).unwrap();
 
-        let z = zpool.status(&name).expect("Failed to read status");
+        let z = zpool.status(&name).unwrap();
         let topo_actual = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
@@ -600,8 +586,8 @@ fn test_zpool_attach_then_detach_single() {
             .unwrap();
         assert_eq!(&z, &topo_actual);
 
-        zpool.detach(&name, &vdev1_path).expect("Failed to detach");
-        let z = zpool.status(&name).expect("Failed to read status again");
+        zpool.detach(&name, &vdev1_path).unwrap();
+        let z = zpool.status(&name).unwrap();
         assert_eq!(&z, &topo);
 
         let err = zpool.detach(&name, &vdev0_path).unwrap_err();
