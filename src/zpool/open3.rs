@@ -21,21 +21,26 @@
 //!
 //! It's called [open3](https://docs.ruby-lang.org/en/2.0.0/Open3.html) because it opens `stdin`, `stdout`, `stderr`.
 
-use std::{env,
-          ffi::{OsStr, OsString},
-          path::PathBuf,
-          process::{Command, Output, Stdio}};
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    path::PathBuf,
+    process::{Command, Output, Stdio},
+};
 
 use pest::Parser;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 
-use crate::{parsers::{Rule, StdoutParser},
-            zpool::description::Zpool};
+use crate::{
+    parsers::{Rule, StdoutParser},
+    zpool::description::Zpool,
+};
 
-use super::{CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode,
-            OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties,
-            ZpoolResult};
+use super::{
+    CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode, OfflineMode,
+    OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult,
+};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -54,7 +59,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 /// `ZpoolOpen3::default` to create it.
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger:   Logger,
+    logger: Logger,
 }
 
 impl Default for ZpoolOpen3 {
@@ -86,7 +91,9 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
+    fn zpool(&self) -> Command {
+        Command::new(&self.cmd_name)
+    }
 
     #[allow(dead_code)]
     /// Force disable logging by using `/dev/null` as drain.
@@ -267,6 +274,7 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
+        debug!(self.logger, "executing"; "out" => format_args!("{:?}", &out));
         let zpools =
             self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
         if zpools.is_empty() {
