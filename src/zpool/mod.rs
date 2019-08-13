@@ -1,14 +1,14 @@
 //! Generic interface to work with zpools.
 //!
-//! Somewhat poorly organized, but I'm afraid to do another refactoring here. Module consists of
+//! Somewhat poorly organized, but I'm afraid to do more refactoring here. The module consists of
 //! multiple parts:
 //!
-//!  - Regexps for error parsing. I [want](https://github.com/Inner-Heaven/libzetta-rs/issues/45) to
+//!  - Regular expressions for error parsing. I [want](https://github.com/Inner-Heaven/libzetta-rs/issues/45) to
 //!    switch to pest at one point
 //!  - Error enums: [ZpoolError](enum.ZpoolError.html) and
 //!    [ZpoolErrorKind](enum.ZpoolErrorKind.html)
-//!     - First used as actual error
-//!     - Second used for easy comparision because `io::Error` cannot into `Eq`
+//!     - ZPoolError is used as an actual error
+//!     - ZPoolErrorKind is used for easy comparision because `io::Error` doesn't implement `Eq`
 //!  - Some enums for various fields to avoid using boring `bool`
 //!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related
 //!     - It's implemented as trait for easy mocking
@@ -57,7 +57,7 @@ quick_error! {
     pub enum ZpoolError {
         /// `zpool` not found in path. Open3 specific error.
         CmdNotFound {}
-        /// Any other Io related error. Exists just in case. Presence of this error is a bug.
+        /// Any other Io related error. Exists as a fallback. Presence of this error is a bug.
         Io(err: io::Error) {
             cause(err)
         }
@@ -65,7 +65,7 @@ quick_error! {
         PoolNotFound {}
         /// Given topology failed validation.
         InvalidTopology {}
-        /// Trying to create new Zpool, but one or more vdevs already used in another pool.
+        /// Trying to create new Zpool, but one or more vdevs are lready used in another pool.
         VdevReuse(vdev: String, pool: String) {
             display("{} is part of {}", vdev, pool)
         }
@@ -74,30 +74,30 @@ quick_error! {
             from(ParseIntError)
             from(ParseFloatError)
         }
-        /// Device used in CreateZpoolRequest is smaller than 64M or 128M on some platforms.
+        /// Device used in CreateZpoolRequest is smaller than 64M (or 128M on some platforms).
         DeviceTooSmall {}
         /// Permission denied to create zpool. This might happened because:
-        /// a) you running it as not root
-        /// b) you running it inside jail that isn't allowed to operate zfs
+        /// a) you are not running it as root
+        /// b) you are running it inside jail that isn't allowed to operate zfs
         PermissionDenied {}
-        /// Trying to pause/stop scrub that is either never stared or already completed
+        /// Trying to pause/stop a scrub that either never started or has already completed
         NoActiveScrubs {}
-        /// Trying to take only device offline.
+        /// Trying to take the only device offline.
         NoValidReplicas {}
         /// Couldn't parse string to raid type.
         UnknownRaidType(source: String) {}
         /// Cannot attach a device to device that is part of raidz. It can only be attached to mirrors and top-level disks.
         CannotAttach {}
-        /// Operation on device that was not found in the pool.
+        /// Operation on a device that was not found in the pool.
         NoSuchDevice {}
         /// Trying to detach a device from vdev without any valid replicas left.
         OnlyDevice {}
-        /// Trying to add vdev with wring replication level to existing zpool with different replication level.
+        /// Trying to add vdev with wrong replication level to existing zpool with different replication level.
         /// For example: mirror to zpool.
         MismatchedReplicationLevel {}
         /// Cache device must a disk or disk slice/partition.
         InvalidCacheDevice {}
-        /// Don't know (yet) how to categorize this error. If you see this error - open an issues.
+        /// Don't know (yet) how to categorize this error. If you see this error - open an issue.
         Other(err: String) {}
     }
 }
@@ -134,14 +134,14 @@ impl ZpoolError {
 pub enum ZpoolErrorKind {
     /// `zpool` not found in path. Open3 specific error.
     CmdNotFound,
-    /// Any other Io related error. Exists just in case. Presence of this error is a bug.
+    /// Any other Io related error. Exists as a fallback. Presence of this error is a bug.
     Io,
     /// Trying to manipulate non-existent pool.
     PoolNotFound,
     /// At least one vdev points to incorrect location.
     /// If vdev type is File then it means file not found.
     DeviceNotFound,
-    /// Trying to create new Zpool, but one or more vdevs already used in
+    /// Trying to create a new Zpool, but one or more vdevs already used in
     /// another pool.
     VdevReuse,
     /// Given topology failed validation.
@@ -149,15 +149,15 @@ pub enum ZpoolErrorKind {
     /// Failed to parse value. Ideally you never see it, if you see it - it's a
     /// bug.
     ParseError,
-    /// Device used in CreateZpoolRequest is smaller than 64M
+    /// Device used in CreateZpoolRequest is smaller than 64M (or 128M on some platforms)
     DeviceTooSmall,
     /// Permission denied to create zpool. This might happened because:
-    /// a) you running it as not root
-    /// b) you running it inside jail that isn't allowed to operate zfs
+    /// a) you are not running it as root
+    /// b) you are running it inside jail that isn't allowed to operate zfs
     PermissionDenied,
-    /// Trying to pause/stop scrub that either never stared or already completed
+    /// Trying to pause/stop a scrub that either never started or has already completed
     NoActiveScrubs,
-    /// Trying to take only device offline.
+    /// Trying to take the only device offline.
     NoValidReplicas,
     /// Couldn't parse string to raid type.
     UnknownRaidType,
@@ -168,13 +168,13 @@ pub enum ZpoolErrorKind {
     NoSuchDevice,
     /// Trying to detach a device from vdev without any valid replicas left.
     OnlyDevice,
-    /// Trying to add vdev with wring replication level to existing zpool with
+    /// Trying to add vdev with wrong replication level to existing zpool with
     /// different replication level. For example: mirror to zpool.
     MismatchedReplicationLevel,
-    /// Cache device must a disk or disk slice.
+    /// Cache device must be a disk or disk slice/partition.
     InvalidCacheDevice,
     /// Don't know (yet) how to categorize this error. If you see this error -
-    /// open an issues.
+    /// open an issue.
     Other,
 }
 

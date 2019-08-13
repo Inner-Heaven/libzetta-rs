@@ -9,8 +9,8 @@ use crate::{parsers::Rule,
             zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
                     CreateZpoolRequest, Disk, Health}};
 
-/// Reason why zpool in this state. Right now it's just a wrapper around `String` in the future
-/// there _might_ be more machine friendly format.
+/// The reason why zpool is in this state. Right now it's just a wrapper around `String`, but in the future
+/// there _might_ be a more machine friendly format.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Reason {
     /// Not yet classified reason.
@@ -34,7 +34,7 @@ pub struct Zpool {
     /// List of cache devices.
     #[builder(default)]
     caches: Vec<Disk>,
-    /// Zfs Intent Log devices.
+    /// ZFS Intent Log (ZIL) devices.
     #[builder(default)]
     logs: Vec<Vdev>,
     /// Spare devices.
@@ -55,7 +55,7 @@ pub struct Zpool {
 }
 
 impl Zpool {
-    /// Create a builder - a preferred way to created a structure.
+    /// Create a builder - the preferred way to create a structure.
     pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
 
     #[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
