@@ -3,6 +3,7 @@ task:
     matrix:
       image: freebsd-12-0-release-amd64
       image: freebsd-11-2-release-amd64
+
   env:
     CIRRUS_SHELL: /bin/sh
   install_script: |
@@ -12,5 +13,5 @@ task:
   cargo_cache:
     folder: $HOME/.cargo/registry
   build_script: env PATH="$HOME/.cargo/bin:$PATH" cargo build --all-features
-  test_script: env PATH="$HOME/.cargo/bin:$PATH" cargo test --all-features
+  test_script: mdconfig -a -s 96m -u1; env PATH="$HOME/.cargo/bin:$PATH" cargo test --all-features
   before_cache_script: rm -rf $HOME/.cargo/registry/index
