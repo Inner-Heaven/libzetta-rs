@@ -25,7 +25,7 @@ pest_derive = "2.1"
 quick-error = "1.2"
 regex = "1.1"
 slog = "2"
-slog-stdlog = "3"
+slog-stdlog = "4"
 
 [dev-dependencies]
 cavity = "1.1"
