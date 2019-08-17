@@ -15,6 +15,17 @@ mod test {
                         CreateZpoolRequestBuilder, Health, Reason, Zpool}};
 
     #[test]
+    fn test_issue_78_minimal() {
+        let line = "  scan: resilver in progress since Tue Aug 13 23:03:11 2019\n\t42.5K scanned at 42.5K/s, 80K issued at 80K/s, 83K total\n\t512 resilvered, 96.39% done, no estimated completion time\n";
+        let mut pairs = StdoutParser::parse(Rule::scan_line, line).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let inner = pair.into_inner().next().unwrap().as_span();
+        let span = inner.as_str();
+        let expected = "resilver in progress since Tue Aug 13 23:03:11 2019\n\t42.5K scanned at 42.5K/s, 80K issued at 80K/s, 83K total\n\t512 resilvered, 96.39% done, no estimated completion time\n";
+        assert_eq!(expected, span);
+    }
+
+    #[test]
     fn test_action_single_line() {
         let one_line = " action: The pool can be imported using its name or numeric identifier.\n";
         parses_to! {

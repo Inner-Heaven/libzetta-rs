@@ -3,7 +3,7 @@ whitespace = _{ " " | "\t" }
 digit = _{ '0'..'9' }
 digits =  { digit ~ (digit | "_")* }
 alpha = _{ 'a'..'z' | 'A'..'Z' }
-symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" | "\'" | "\"" | "(" | ")" | "-" }
+symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" | "\'" | "\"" | "(" | ")" | "-"  | "%" }
 alpha_num = _{ digit | alpha }
 alpha_nums = _{ alpha_num+ }
 text = _{ (alpha_num | whitespace |symbol)+ }
@@ -29,7 +29,7 @@ pool_line = { whitespace* ~ name ~ whitespace* ~ state_enum ~ whitespace? ~ erro
 raid_line = { whitespace* ~ raid_name ~ whitespace* ~ state_enum ~ whitespace? ~ error_statistics? ~ whitespace* ~ reason? ~ "\n"? }
 disk_line = { whitespace* ~ path ~ whitespace* ~ state_enum ~ whitespace? ~ error_statistics? ~ whitespace* ~ reason? ~ "\n"? }
 
-scan_line = { whitespace* ~ "scan:" ~ whitespace* ~ text_line }
+scan_line = { whitespace* ~ "scan:" ~ whitespace* ~ multi_line_text }
 pool_headers = _{ whitespace* ~ "NAME" ~ whitespace* ~ "STATE"  ~ whitespace* ~ "READ" ~ whitespace* ~ "WRITE" ~ whitespace* ~ "CKSUM" ~ "\n" }
 no_errors = { "No known data errors" }
 errors = { whitespace* ~ "errors:" ~ whitespace* ~ (no_errors | multi_line_text) }
@@ -47,4 +47,4 @@ zpools = _{ zpool*  ~ whitespace* }
 
 text_line = _{ text ~ "\n" }
 aligned_text_line = _{ (whitespace{8} | "\t") ~ text ~ "\n" }
-multi_line_text = { text_line ~ aligned_text_line{, 4} }
+multi_line_text = { text_line ~ aligned_text_line{, 5} }
