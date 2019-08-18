@@ -47,7 +47,9 @@ lazy_static! {
     };
 }
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger.into().new(o!("zetta_module" => "zpool", "zetta_version" => crate::VERSION))
+    logger.into().new(
+        o!("zetta_module" => "zpool", "zpool_impl" => "open3", "zetta_version" => crate::VERSION),
+    )
 }
 
 /// Open3 implementation of [`ZpoolEngine`](../trait.ZpoolEngine.html). You can use
