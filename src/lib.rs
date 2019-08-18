@@ -44,3 +44,5 @@ use pest;
 // library modules
 pub mod parsers;
 pub mod zpool;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");

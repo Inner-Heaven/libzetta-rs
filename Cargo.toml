@@ -26,15 +26,12 @@ quick-error = "1.2"
 regex = "1.1"
 slog = "2"
 slog-stdlog = "4"
+nvpair = "0.3.0"
+zfs-core-sys= "0.1.0"
+snafu = "0.4.4"
 
 [dev-dependencies]
 cavity = "1.1"
 rand = "0.7"
 slog-term = "2"
 tempdir = "0.3"
-
-[target]
-[target."cfg(freebsd)"]
-[target."cfg(freebsd)".dependencies]
-libnv-sys = "0.1"
-libzfs_core-sys = "0.1"
