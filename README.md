@@ -16,10 +16,13 @@ Not yet. It won't destroy your pool, but API might change any moment. Wait until
 Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable.
 
 ### FreeBSD
-This library mostly focused on FreeBSD support. This should work on any FreeBSD version since 9.2. However, I have no intention on supporting anything other than current releases. Yes, I know FreeBSD is switching to ZOL branch.
+This library mostly focused on FreeBSD support. This should work on any FreeBSD version since 9.2.
+However, I have no intention on supporting legacy versions. Supported versions:
+ - 11.3
+ - 12.0
 
 ### Linux
-Right now it definitely works with `0.7.2` maybe entire `0.7.x` branch. Linux support is minimum effort - if I upgrade zfs to the version and suddenly all tests are failing - I'm going to rollback and lock previous version.
+Right now it definitely works with `0.7.13` and entire `0.7.x` branch. However, only latest version used for tests.
 
 ## How it works
 ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be it, but it really isn't. While `libzfs_core` is somewhat stable `libnvpair` used in it isn't and `libnv` isn't available on Linux. I might embed portable `libnv`. Now the tricky part — `libzfs_core` is just for zfs, there is not `libzpool_core` which means you either have to rely on unstable (in terms of API) `libzpool` or use `zpool(8)`. I decided to use `zpool(8)` because that's a recommended way of doing it.
@@ -42,6 +45,16 @@ Note that integration tests do a lot of zpool and zfs operations on live system.
 ### zfs
 
 Literally nothing works.
+
+## Alternatives
+
+### https://github.com/whamcloud/rust-libzfs
+
+Unlike them LibZetta doesn't link against private libraries no one supposed to link against. I also have docs and more sugar.
+
+### https://github.com/jmesmon/rust-libzfs
+
+LibZetta has zpool APIs. LibZetta shares `-sys` crates with this library. LibZetta also will delegate certain features of `zfs(8)` to open3 implementation.
 
 ## LICENSE
 

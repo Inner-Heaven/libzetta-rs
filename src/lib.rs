@@ -1,10 +1,17 @@
 #![recursion_limit = "256"]
 #![deny(nonstandard_style, future_incompatible, clippy::all, clippy::restriction, clippy::nursery)]
-#![allow(clippy::module_name_repetitions, clippy::multiple_inherent_impl, clippy::implicit_return, clippy::missing_inline_in_public_items, clippy::missing_docs_in_private_items)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::multiple_inherent_impl,
+    clippy::implicit_return,
+    clippy::missing_inline_in_public_items,
+    clippy::missing_docs_in_private_items
+)]
 
 //! Rust bindings to libzfs_core and wrapper around `zpool(8)`.
 //!
-//! This library intends to provide a safe, low-level interface to ZFS operator tools. As such, not much will be sugar coated here.
+//! This library intends to provide a safe, low-level interface to ZFS operator tools. As such, not
+//! much will be sugar coated here.
 //!
 //! # Overview
 //! ## zpool
@@ -28,7 +35,6 @@
 //!
 //! ### zpool
 //! This module contains everything you need to work with zpools.
-//!
 
 #[macro_use] extern crate derive_builder;
 #[macro_use] extern crate getset;
@@ -43,6 +49,7 @@ use pest;
 
 // library modules
 pub mod parsers;
+pub mod zfs;
 pub mod zpool;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");

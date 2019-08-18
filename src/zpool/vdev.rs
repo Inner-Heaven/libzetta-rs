@@ -260,7 +260,9 @@ impl PartialEq<CreateVdevRequest> for Vdev {
     fn eq(&self, other: &CreateVdevRequest) -> bool {
         self.kind() == &other.kind() && {
             match other {
-                CreateVdevRequest::SingleDisk(ref d) => self.disks().first().map(Disk::path) == Some(d),
+                CreateVdevRequest::SingleDisk(ref d) => {
+                    self.disks().first().map(Disk::path) == Some(d)
+                },
                 CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,

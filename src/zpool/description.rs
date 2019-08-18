@@ -9,8 +9,8 @@ use crate::{parsers::Rule,
             zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
                     CreateZpoolRequest, Disk, Health}};
 
-/// The reason why zpool is in this state. Right now it's just a wrapper around `String`, but in the future
-/// there _might_ be a more machine friendly format.
+/// The reason why zpool is in this state. Right now it's just a wrapper around `String`, but in the
+/// future there _might_ be a more machine friendly format.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Reason {
     /// Not yet classified reason.
@@ -18,7 +18,7 @@ pub enum Reason {
 }
 /// Consumer friendly Zpool representation. It has generic health status information, structure of
 /// vdevs, devices used to create said vdevs as well as error statistics.
-#[derive(Getters, Builder, Debug, Eq, PartialEq)]
+#[derive(Getters, Builder, Debug, Eq, PartialEq, Clone)]
 #[builder(setter(into))]
 #[get = "pub"]
 pub struct Zpool {

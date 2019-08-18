@@ -12,11 +12,11 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-             zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
-                     ExportMode, FailMode, Health, OfflineMode, OnlineMode, ZpoolEngine,
-                     ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
+               zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
+                       ExportMode, FailMode, Health, OfflineMode, OnlineMode, Zpool, ZpoolEngine,
+                       ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
 
-static ZPOOL_NAME_PREFIX: &'static str = "tests";
+static ZPOOL_NAME_PREFIX: &'static str = "tests-zpool-";
 lazy_static! {
     static ref SHARED: Mutex<u8> = Mutex::new(0);
 }
@@ -431,7 +431,13 @@ fn test_all() {
             .unwrap();
         zpool.create(topo.clone()).unwrap();
 
-        let result = zpool.all().unwrap();
+        let result: Vec<Zpool> = zpool
+            .all()
+            .unwrap()
+            .iter()
+            .cloned()
+            .filter(|z| z.name().starts_with(ZPOOL_NAME_PREFIX))
+            .collect();
         assert_eq!(1, result.len());
         let result = result.into_iter().next().unwrap();
         assert_eq!(&name, result.name());
@@ -444,7 +450,13 @@ fn test_all_empty() {
     run_test(|_name| {
         let zpool = ZpoolOpen3::default();
 
-        let result = zpool.all().unwrap();
+        let result: Vec<Zpool> = zpool
+            .all()
+            .unwrap()
+            .iter()
+            .cloned()
+            .filter(|z| z.name().starts_with(ZPOOL_NAME_PREFIX))
+            .collect();
         assert!(result.is_empty());
     });
 }
