@@ -29,7 +29,7 @@ jobs:
     - script: |
         sudo add-apt-repository ppa:jonathonf/zfs-0.7
         sudo apt-get update
-        sudo apt-get install zfs-dkms libzfs-dev
+        sudo apt-get install zfs-dkms zfs-linux
       displayName: Install ZFS on Linux
     - script: |
         dd if=/dev/zero of=loop0 bs=1M count=96

@@ -28,6 +28,7 @@ slog = "2"
 slog-stdlog = "4"
 nvpair = "0.3.0"
 zfs-core-sys= "0.1.0"
+snafu = "0.4.4"
 
 [dev-dependencies]
 cavity = "1.1"
