@@ -27,9 +27,9 @@ jobs:
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
     - script: |
-        sudo add-apt-repository ppa:jonathonf/zfs-0.7
+        sudo add-apt-repository ppa:zfs-native/daily
         sudo apt-get update
-        sudo apt-get install zfs-dkms
+        sudo apt-get install ubuntu-zfs
       displayName: Install ZFS on Linux
     - script: |
         dd if=/dev/zero of=loop0 bs=1M count=96
