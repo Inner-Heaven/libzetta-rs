@@ -1,4 +1,4 @@
-# [](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v) (2019-08-24)
+# [Unreleased](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v) (2019-08-24)
 
 
 ### Features
