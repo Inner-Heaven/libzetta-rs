@@ -8,6 +8,7 @@ categories = ["os", "filesystem", "external-ffi-bindings"]
 license = "BSD-2-Clause"
 name = "libzetta"
 edition = "2018"
+readme = "README.md"
 
 [badges]
 maintenance = { status = "actively-developed" }

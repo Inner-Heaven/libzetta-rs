@@ -7,6 +7,8 @@
 [![Crates.io](https://img.shields.io/crates/v/libzetta.svg)](https://crates.io/crates/libzetta)
 [![Cirrus CI - Base Branch Build Status](https://img.shields.io/cirrus/github/Inner-Heaven/libzetta-rs?label=cirrus-ci)](https://cirrus-ci.com/github/Inner-Heaven/libzetta-rs)
 [![docs.rs](https://docs.rs/libzetta/badge.svg)](https://docs.rs/libzetta)
+[![license](https://github.com/Inner-Heaven/libzetta-rs/blob/master/LICENSE)](https://img.shields.io/github/license/Inner-Heaven/libzetta-rs)
+
 > libzetta-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
