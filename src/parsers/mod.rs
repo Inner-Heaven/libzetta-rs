@@ -448,4 +448,13 @@ errors: No known data errors
 
         assert_eq!(&topo, &zpool);
     }
+
+    #[test]
+    fn test_zpool_int_overflow() {
+        let stdout = include_str!("fixtures/SIGABRT.PID.84191.TIME.2019-08-21.20.04.09.fuzz");
+        let mut pairs =
+            StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+    }
 }

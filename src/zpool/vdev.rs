@@ -32,13 +32,15 @@ use std::{default::Default,
 use crate::zpool::{Health, Reason, ZpoolError};
 
 /// Error statistics.
+///
+/// NOTE: Due to imperfections of our world number of errors limited to [`std::u64::MAX`](https://doc.rust-lang.org/std/u64/constant.MAX.html).
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ErrorStatistics {
     /// I/O errors that occurred while issuing a read request
     pub read: u64,
     /// I/O errors that occurred while issuing a write request
     pub write: u64,
-    /// Checksum errors, meaning that the device returned corrupted data as the
+    /// Checksum errors, meaning the device returned corrupted data as the
     /// result of a read request
     pub checksum: u64,
 }

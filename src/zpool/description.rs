@@ -124,9 +124,9 @@ fn get_error_statistics_from_pair(pair: Pair<'_, Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read:     inner.next().unwrap().as_span().as_str().parse().unwrap(),
-        write:    inner.next().unwrap().as_span().as_str().parse().unwrap(),
-        checksum: inner.next().unwrap().as_span().as_str().parse().unwrap(),
+        read:     inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
+        write:    inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
+        checksum: inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
     }
 }
 
