@@ -1,9 +1,11 @@
-use crate::zfs::{Error, Result, ZfsEngine};
+use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest};
 use cstr_argument::CStrArgument;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
+use nvpair::{self, NvEncode};
 
 use zfs_core_sys as sys;
+use std::ffi::{CStr, CString};
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -48,4 +50,16 @@ impl ZfsEngine for ZfsLzc {
             Ok(false)
         }
     }
+
+    fn create(&self, request: CreateDatasetRequest) -> Result<(), Error> {
+        let mut nv = nvpair::NvList::new()?;
+
+        unimplemented!()
+    }
 }
+
+fn insert_str_into_nv_list(key: &str, value: &str, nv: &mut nvpair::NvListRef) -> Result<()> {
+    let value_c_string = CString::new(value).unwrap();
+    nvpair::NvEncode::insert(value_c_string.as_c_str(), key, nv).map_err(|e| Error::from(e))
+}
+

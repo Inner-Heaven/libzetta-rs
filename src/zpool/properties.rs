@@ -261,7 +261,7 @@ pub struct ZpoolProperties {
     /// Amount of uninitialized space within the pool or device that
     /// can be used to increase the total capacity of the pool.
     /// Uninitialized space consists of any space on an EFI labeled
-    /// vdev which has not been brought online (i.e. zpool online
+    /// vdev, which has not been brought online (i.e. zpool online
     /// -e).  This space occurs when a LUN is dynamically expanded.
     expand_size: Option<usize>,
     /// The amount of fragmentation in the pool. In percents.

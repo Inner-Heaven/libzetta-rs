@@ -191,7 +191,27 @@ impl Default for SnapDir {
     fn default() -> Self { SnapDir::Hidden }
 }
 
-/// All pre-defined properties of dataset - both immutable and mutable.
+
+#[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone)]
+pub enum CanMount {
+    /// Allowed to be mounted
+    #[strum(serialize = "on")]
+    On,
+    /// Can't be mounted
+    #[strum(serialize = "off")]
+    Off,
+    /// Can be mounted, but only explicitly
+    #[strum(serialize = "noauto")]
+    NoAuto,
+}
+
+impl Default for CanMount {
+    fn default() -> Self {
+        CanMount::On
+    }
+}
+
+/// Most of native properties of dataset - both immutable and mutable.
 ///
 /// Notable missing properties:
 ///  - shareiscsi
@@ -214,7 +234,7 @@ pub struct DatasetProperties {
     /// quotas, reservations, and other datasets within the pool.
     available: i64,
     /// Controls whether a file system can be mounted.
-    can_mount: bool,
+    can_mount: CanMount,
     /// Controls the checksum used to verify data integrity.
     checksum: Checksum,
     /// Enables or disables compression for a dataset.
@@ -251,8 +271,8 @@ pub struct DatasetProperties {
     /// Controls whether a dataset can be modified.
     readonly: bool,
     /// Specifies a suggested block size for files in a file system in bytes. The size specified
-    /// must be a power of two greater than or equal to 512 and less than or equal to 128 Kbytes.
-    /// If the large_blocks feature is enabled on the pool, the size may be up to 1 Mbyte.
+    /// must be a power of two greater than or equal to 512 and less than or equal to 128 KiB.
+    /// If the large_blocks feature is enabled on the pool, the size may be up to 1 MiB.
     record_size: u64,
     /// Read-only property that identifies the amount of data accessible by a dataset, which might
     /// or might not be shared with other datasets in the pool.
