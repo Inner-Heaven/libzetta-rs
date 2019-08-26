@@ -30,6 +30,8 @@ slog-stdlog = "4"
 nvpair = "0.3.0"
 zfs-core-sys= "0.1.0"
 cstr-argument = "0.1.1"
+strum = "0.15.0"
+strum_macros = "0.15.0"
 
 [dev-dependencies]
 cavity = "1.1"

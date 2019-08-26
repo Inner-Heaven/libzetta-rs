@@ -6,6 +6,8 @@ pub use description::{Dataset, DatasetKind};
 pub mod lzc;
 pub use lzc::ZfsLzc;
 
+pub mod properties;
+
 quick_error! {
     #[derive(Debug)]
     pub enum Error {

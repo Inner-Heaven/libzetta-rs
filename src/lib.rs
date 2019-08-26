@@ -38,14 +38,12 @@
 
 #[macro_use] extern crate derive_builder;
 #[macro_use] extern crate getset;
-
 #[macro_use] extern crate lazy_static;
-
-use pest;
-
 #[macro_use] extern crate quick_error;
+use strum;
 
 #[macro_use] pub extern crate slog;
+pub use pest;
 
 // library modules
 pub mod parsers;
