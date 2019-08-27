@@ -52,4 +52,7 @@ pub mod parsers;
 pub mod zfs;
 pub mod zpool;
 
+#[cfg(fuzzing)]
+pub mod fuzzy;
+
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
