@@ -18,6 +18,13 @@ impl Default for DatasetKind {
 }
 
 impl DatasetKind {
+    pub fn as_c_uint(&self) -> zfs_core_sys::lzc_dataset_type::Type {
+        match self {
+            DatasetKind::Filesystem => zfs_core_sys::lzc_dataset_type::LZC_DATSET_TYPE_ZFS,
+            DatasetKind::Volume => zfs_core_sys::lzc_dataset_type::LZC_DATSET_TYPE_ZVOL,
+            _ => panic!("Not supported"),
+        }
+    }
     pub fn as_nvpair_value(&self) -> &str {
         match &self {
             DatasetKind::Filesystem => "zfs",

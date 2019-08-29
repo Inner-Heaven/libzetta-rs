@@ -1,8 +1,8 @@
-use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest};
+use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest, DatasetKind};
 use cstr_argument::CStrArgument;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
-use nvpair::{self, NvEncode};
+use libnv::nvpair::{NvList,NvTypeOp};
 
 use zfs_core_sys as sys;
 use std::ffi::{CStr, CString};
@@ -25,7 +25,7 @@ impl ZfsLzc {
 
         if errno != 0 {
             let io_error = std::io::Error::from_raw_os_error(errno);
-            return Err(Error::ZFSInitializationFailed(io_error));
+            return Err(Error::LZCInitializationFailed(io_error));
         }
         let logger = {
             if let Some(slog) = root_logger {
@@ -52,14 +52,35 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn create(&self, request: CreateDatasetRequest) -> Result<(), Error> {
-        let mut nv = nvpair::NvList::new()?;
+        //let mut props = nvpair::NvList::new()?;
+        let mut props = NvList::default();
+        let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
 
-        unimplemented!()
+        dbg!(&name_c_string);
+
+        /*
+        if let Some(user_props) = request.user_properties() {
+            for (key, value) in user_props {
+                insert_str_into_nv_list(&key, &value, &mut props)?;
+            }
+        }
+        */
+        //insert_str_into_nv_list("copies", &request.copies().as_ref(), &mut props)?;
+        props.insert("copies", request.copies().as_u64());
+        dbg!("inserted");
+        //nvpair::NvEncode::insert(&request.copies().as_u32(), "copies", &mut props)?;
+        let errno = unsafe {
+            zfs_core_sys::lzc_create(name_c_string.as_ref().as_ptr(), request.kind().as_c_uint(), props.as_ptr())
+        };
+
+        match errno {
+            0  => Ok(()),
+            22 => Err(Error::InvalidInput),
+            _  => {
+
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            }
+        }
     }
 }
-
-fn insert_str_into_nv_list(key: &str, value: &str, nv: &mut nvpair::NvListRef) -> Result<()> {
-    let value_c_string = CString::new(value).unwrap();
-    nvpair::NvEncode::insert(value_c_string.as_c_str(), key, nv).map_err(|e| Error::from(e))
-}
-

@@ -12,7 +12,7 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{ZfsEngine, ZfsLzc},
+               zfs::{ZfsEngine, ZfsLzc, Copies, DatasetKind, CreateDatasetRequest},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zfs-";
@@ -46,7 +46,7 @@ fn setup_zpool(name: &str) {
         setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::default();
         let topo = CreateZpoolRequest::builder()
-            .name(name.clone())
+            .name(name)
             .vdev(CreateVdevRequest::SingleDisk("/vdevs/zfs/vdev0".into()))
             .build()
             .unwrap();
@@ -92,4 +92,25 @@ fn exists_on_fake() {
     let result = zfs.exists(fake_dataset).unwrap();
 
     assert!(!result);
+}
+
+#[test]
+fn create_dumb() {
+    let zpool = SHARED_ZPOOL.clone();
+    let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
+
+    let zfs = ZfsLzc::new(None).expect("Failed to initialize ZfsLzc");
+
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Filesystem)
+        .copies(Copies::Three)
+        .build()
+        .unwrap();
+
+    zfs.create(request).expect("Failed to create dataset");
+
+    let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
+    assert!(res);
 }

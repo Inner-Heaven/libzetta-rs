@@ -160,6 +160,16 @@ pub enum Copies {
 impl Default for Copies {
     fn default() -> Self { Copies::One }
 }
+
+impl Copies {
+    pub fn as_u64(&self) -> u64 {
+        match self {
+            Copies::One => 1,
+            Copies::Two => 2,
+            Copies::Three => 3,
+        }
+    }
+}
 /// What is cached in the primary cache (ARC).
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone)]
 pub enum CacheMode {
