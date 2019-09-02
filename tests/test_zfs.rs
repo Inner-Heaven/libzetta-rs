@@ -12,8 +12,10 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{ZfsEngine, ZfsLzc, Copies, DatasetKind, CreateDatasetRequest},
+               zfs::{ZfsEngine, ZfsLzc, Copies, DatasetKind, CreateDatasetRequest, Error},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
+
+use libzetta::zfs::DelegatingZfsEngine;
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zfs-";
 lazy_static! {
@@ -113,4 +115,80 @@ fn create_dumb() {
 
     let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
     assert!(res);
+}
+
+#[test]
+fn easy_invalid_zfs() {
+    let zpool = SHARED_ZPOOL.clone();
+    let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
+
+    let zfs = ZfsLzc::new(None).expect("Failed to initialize ZfsLzc");
+
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Filesystem)
+        .volume_size(2)
+        .build()
+        .unwrap();
+
+    let res = zfs.create(request).unwrap_err();
+    assert_eq!(Error::InvalidInput, res);
+
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Filesystem)
+        .volume_block_size(2)
+        .build()
+        .unwrap();
+
+    let res = zfs.create(request).unwrap_err();
+    assert_eq!(Error::InvalidInput, res);
+
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Filesystem)
+        .volume_size(2)
+        .volume_block_size(2)
+        .build()
+        .unwrap();
+
+    let res = zfs.create(request).unwrap_err();
+    assert_eq!(Error::InvalidInput, res);
+
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Volume)
+        .build()
+        .unwrap();
+
+    let res = zfs.create(request).unwrap_err();
+    assert_eq!(Error::InvalidInput, res);
+}
+
+#[test]
+fn create_and_destroy() {
+
+    let zpool = SHARED_ZPOOL.clone();
+    let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
+
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let request = CreateDatasetRequest::builder()
+        .name(dataset_path.clone())
+        .user_properties(std::collections::HashMap::new())
+        .kind(DatasetKind::Filesystem)
+        .build()
+        .unwrap();
+
+    zfs.create(request).expect("Failed to create dataset");
+
+    let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
+    assert!(res);
+
+    zfs.destroy(dataset_path.clone()).unwrap();
+    let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
+    assert!(!res);
 }

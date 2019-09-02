@@ -1,11 +1,13 @@
-use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest, DatasetKind};
+use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest, Checksum, Compression, Copies, SnapDir, DatasetKind};
 use cstr_argument::CStrArgument;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
-use libnv::nvpair::{NvList,NvTypeOp};
+use libnv::nvpair::{NvList};
 
 use zfs_core_sys as sys;
-use std::ffi::{CStr, CString};
+use std::ffi::{CString};
+use crate::zfs::properties::{AclInheritMode, ZfsProp, AclMode};
+use std::path::{PathBuf};
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -13,6 +15,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
         .new(o!("zetta_module" => "zfs", "zfs_impl" => "lzc", "zetta_version" => crate::VERSION))
 }
 
+#[derive(Debug)]
 pub struct ZfsLzc {
     logger: Logger,
 }
@@ -37,11 +40,16 @@ impl ZfsLzc {
         };
         Ok(ZfsLzc { logger })
     }
+
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
 }
 
 impl ZfsEngine for ZfsLzc {
-    fn exists<D: CStrArgument>(&self, name: D) -> Result<bool, Error> {
-        let n = name.into_cstr();
+    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
+        let path = name.into();
+        let n = path.to_str().expect("Invalid Path").into_cstr();
         let ret = unsafe { sys::lzc_exists(n.as_ref().as_ptr()) };
 
         if ret == 1 {
@@ -56,19 +64,56 @@ impl ZfsEngine for ZfsLzc {
         let mut props = NvList::default();
         let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
 
-        dbg!(&name_c_string);
+        // LZC wants _everything_ as u64 even booleans.
+        props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
+        props.insert_u64(AclMode::as_nv_key(), request.acl_mode.as_nv_value())?;
+        props.insert_u64("atime", bool_to_u64(request.atime))?;
+        props.insert_u64(Checksum::as_nv_key(), request.checksum.as_nv_value())?;
+        props.insert_u64(Compression::as_nv_key(), request.compression.as_nv_value())?;
+        props.insert_u64(Copies::as_nv_key(), request.copies().as_nv_value())?;
+        props.insert_u64("devices", bool_to_u64(request.devices))?;
+        props.insert_u64("exec", bool_to_u64(request.exec))?;
+        // saved fore mount point
+        props.insert_u64("primarycache", request.primary_cache.as_nv_value())?;
+        if let Some(quota) = request.quota {
+            props.insert_u64("quota", quota)?;
+        }
+        props.insert_u64("readonly", bool_to_u64(request.readonly))?;
+        if let Some(record_size) = request.record_size {
+            props.insert_u64("recordsize", record_size)?;
+        }
+        if let Some(ref_quota) = request.ref_quota {
+            props.insert_u64("refquota", ref_quota)?;
+        }
+        if let Some(ref_reservation) = request.ref_reservation {
+            props.insert_u64("refreservation", ref_reservation)?;
+        }
+        props.insert_u64("secondarycache", request.secondary_cache.as_nv_value())?;
+        props.insert_u64("setuid", bool_to_u64(request.setuid))?;
+        props.insert_u64(SnapDir::as_nv_key(), request.snap_dir.as_nv_value())?;
 
-        /*
+        if request.kind == DatasetKind::Filesystem && (request.volume_size.is_some() || request.volume_block_size.is_some()) {
+            return Err(Error::InvalidInput);
+        }
+
+        if request.kind == DatasetKind::Volume && request.volume_size.is_none() {
+            return Err(Error::InvalidInput);
+        }
+
+        if let Some(vol_size) = request.volume_size {
+            props.insert_u64("volsize", vol_size)?;
+        }
+        if let Some(vol_block_size) = request.volume_block_size {
+           props.insert_u64("volblocksize", vol_block_size)?;
+        }
+
+        props.insert("xattr", bool_to_u64(request.xattr))?;
+
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
-                insert_str_into_nv_list(&key, &value, &mut props)?;
+                props.insert_string(&key, &value)?;
             }
         }
-        */
-        //insert_str_into_nv_list("copies", &request.copies().as_ref(), &mut props)?;
-        props.insert("copies", request.copies().as_u64());
-        dbg!("inserted");
-        //nvpair::NvEncode::insert(&request.copies().as_u32(), "copies", &mut props)?;
         let errno = unsafe {
             zfs_core_sys::lzc_create(name_c_string.as_ref().as_ptr(), request.kind().as_c_uint(), props.as_ptr())
         };
@@ -82,5 +127,18 @@ impl ZfsEngine for ZfsLzc {
                 Err(Error::Io(io_error))
             }
         }
+    }
+
+    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+// This should be mapped to values from nvpair.
+fn bool_to_u64(src: bool) -> u64 {
+    if src {
+        0
+    } else {
+        1
     }
 }

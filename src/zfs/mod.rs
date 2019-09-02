@@ -1,9 +1,13 @@
-use cstr_argument::CStrArgument;
 use std::path::PathBuf;
 use std::io;
 
 pub mod description;
 pub use description::{Dataset, DatasetKind};
+
+pub mod delegating;
+pub use delegating::DelegatingZfsEngine;
+pub mod open3;
+pub use open3::ZfsOpen3;
 
 pub mod lzc;
 pub use lzc::ZfsLzc;
@@ -21,10 +25,15 @@ quick_error! {
         LZCInitializationFailed(err: std::io::Error) {
             cause(err)
         }
+        NvOpError(err: libnv::NvError) {
+            cause(err)
+            from()
+        }
         InvalidInput {}
         Io(err: std::io::Error) {
             cause(err)
         }
+        Unknown {}
     }
 }
 
@@ -41,15 +50,47 @@ impl From<io::Error> for Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        match self {
+            Error::CmdNotFound => ErrorKind::CmdNotFound,
+            Error::LZCInitializationFailed(_) => ErrorKind::LZCInitializationFailed,
+            Error::NvOpError(_) => ErrorKind::NvOpError,
+            Error::InvalidInput => ErrorKind::InvalidInput,
+            Error::Io(_) => ErrorKind::Io,
+            Error::Unknown => ErrorKind::Unknown,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum ErrorKind {
+    CmdNotFound,
+    LZCInitializationFailed,
+    NvOpError,
+    InvalidInput,
+    Io,
+    Unknown,
+}
+
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind() == other.kind()
+    }
+}
+
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
-    fn exists<D: CStrArgument>(&self, name: D) -> Result<bool>;
+    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool>;
 
     /// Create a new dataset.
     fn create(&self, request: CreateDatasetRequest) -> Result<()>;
+
+    /// Deletes the dataset
+    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()>;
 
     //fn list(pool: Option<String>) -> Result<Vec<Dataset>>;
 }
