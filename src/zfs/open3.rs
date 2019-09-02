@@ -1,5 +1,4 @@
 use crate::zfs::{CreateDatasetRequest, Error, Result, ZfsEngine};
-use cstr_argument::CStrArgument;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::{ffi::OsString,

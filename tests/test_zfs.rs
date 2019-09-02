@@ -16,6 +16,7 @@ use libzetta::{slog::*,
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::zfs::DelegatingZfsEngine;
+use libzetta::zpool::CreateMode;
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zfs-";
 lazy_static! {
@@ -50,6 +51,7 @@ fn setup_zpool(name: &str) {
         let topo = CreateZpoolRequest::builder()
             .name(name)
             .vdev(CreateVdevRequest::SingleDisk("/vdevs/zfs/vdev0".into()))
+            .create_mode(CreateMode::Force)
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
