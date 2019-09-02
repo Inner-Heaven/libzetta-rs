@@ -61,10 +61,11 @@ impl ZfsEngine for ZfsLzc {
         //let mut props = nvpair::NvList::new()?;
         let mut props = NvList::default();
         let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
-
         // LZC wants _everything_ as u64 even booleans.
         props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
-        props.insert_u64(AclMode::as_nv_key(), request.acl_mode.as_nv_value())?;
+        if let Some(acl_mode) = request.acl_mode {
+            props.insert_u64(AclMode::as_nv_key(), acl_mode.as_nv_value())?;
+        }
         props.insert_u64("atime", bool_to_u64(request.atime))?;
         props.insert_u64(Checksum::as_nv_key(), request.checksum.as_nv_value())?;
         props.insert_u64(Compression::as_nv_key(), request.compression.as_nv_value())?;
@@ -108,7 +109,6 @@ impl ZfsEngine for ZfsLzc {
         }
 
         props.insert("xattr", bool_to_u64(request.xattr))?;
-
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
                 props.insert_string(&key, &value)?;

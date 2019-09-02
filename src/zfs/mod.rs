@@ -120,7 +120,7 @@ pub struct CreateDatasetRequest {
     acl_inherit: AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
     #[builder(default)]
-    acl_mode: AclMode,
+    acl_mode: Option<AclMode>,
     /// Controls whether the access time for files updated when they are read.
     #[builder(default = "true")]
     atime: bool,

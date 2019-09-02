@@ -56,8 +56,11 @@ impl Default for AclInheritMode {
     fn default() -> AclInheritMode { AclInheritMode::Restricted }
 }
 
+
 /// This property modifies ACL behavior when a file initially created or whenever a file or
 /// directory's permissions modified by the chmod command.
+///
+/// NODE: Not available on ZOL
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum AclMode {
