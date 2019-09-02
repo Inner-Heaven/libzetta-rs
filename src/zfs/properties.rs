@@ -6,14 +6,11 @@ use crate::zfs::description::DatasetKind;
 macro_rules! impl_zfs_prop {
     ($type_:ty, $as_str:literal) => {
         impl ZfsProp for $type_ {
-            fn as_nv_key() -> &'static str {
-                $as_str
-            }
-            fn as_nv_value(&self) -> u64 {
-                *self as u64
-            }
+            fn as_nv_key() -> &'static str { $as_str }
+
+            fn as_nv_value(&self) -> u64 { *self as u64 }
         }
-    }
+    };
 }
 pub trait ZfsProp {
     /// String representation of ZFS Property
@@ -28,28 +25,28 @@ pub enum AclInheritMode {
     /// For new objects, no ACL entries inherited when a file or directory created. The ACL on the
     /// new file or directory is equal to the permissions of the file or directory.
     #[strum(serialize = "discard")]
-    Discard = 0,
+    Discard      = 0,
 
     /// For new objects, only inheritable ACL entries that have an access type of `deny` are
     /// inherited.
     #[strum(serialize = "noallow")]
-    Noallow = 1,
+    Noallow      = 1,
 
     /// For new objects, the `write_owner` and `write_acl` permissions removed when an ACL entry
     /// inherited.
     #[strum(serialize = "restricted")]
-    Restricted = 4,
+    Restricted   = 4,
 
-    /// (Deprecated, might not work on all platforms) For new objects, the `write_owner` and `write_acl` permissions removed when an ACL entry
-    /// inherited.
+    /// (Deprecated, might not work on all platforms) For new objects, the `write_owner` and
+    /// `write_acl` permissions removed when an ACL entry inherited.
     #[strum(serialize = "secure")]
-    Secure = 2,
+    Secure       = 2,
 
     /// When the property value set to passthrough, files created with permissions determined by
     /// the inheritable ACEs. If no inheritable ACEs exist that affect the permissions, then the
     /// permissions set in accordance to the requested permissions from the application.
     #[strum(serialize = "passthrough")]
-    Passthrough = 3,
+    Passthrough  = 3,
 
     #[strum(serialize = "passthrough-x")]
     PassthroughX = 5,
@@ -67,13 +64,13 @@ pub enum AclMode {
     /// All ACL entries removed except for the entries needed to define the mode of the file or
     /// directory.
     #[strum(serialize = "discard")]
-    Discard = 0,
+    Discard     = 0,
     /// User or group ACL permissions reduced so that they are no greater than the group
     /// permissions, unless it is a user entry that has the same UID as the owner of the file or
     /// directory. Then, the ACL permissions reduced so that they are no greater than the owner
     /// permissions.
     #[strum(serialize = "groupmask")]
-    GroupMask = 2,
+    GroupMask   = 2,
 
     /// During a `chmod` operation, ACEs other than `owner@`, `group@`, or `everyone@` are not
     /// modified in any way. ACEs with `owner@`, `group@`, or `everyone@` are disabled to set the
@@ -82,7 +79,7 @@ pub enum AclMode {
     Passthrough = 3,
 
     #[strum(serialize = "restricted")]
-    Restricted = 4,
+    Restricted  = 4,
 }
 
 impl Default for AclMode {
@@ -98,30 +95,29 @@ impl Default for AclMode {
 pub enum Checksum {
     /// Use value from the parent
     #[strum(serialize = "inherit")]
-    Inherit = 0,
+    Inherit   = 0,
     /// Auto-select most appropriate algorithm. Currently, it is `fletcher4`.
     #[strum(serialize = "on")]
-    On = 1,
+    On        = 1,
     /// Disable integrity check. Not recommended at all.
     #[strum(serialize = "off")]
-    Off = 2,
+    Off       = 2,
     /// Not only disables integrity but also disables maintaining parity for user data. This
     /// setting used internally by a dump device residing on a RAID-Z pool and should not be used
     /// by any other dataset.
     #[strum(serialize = "noparity")]
-    NoParity = 10,
+    NoParity  = 10,
     #[strum(serialize = "fletcher2")]
-    Fletcher2 = 6 ,
+    Fletcher2 = 6,
     #[strum(serialize = "fletcher4")]
     Fletcher4 = 7,
     #[strum(serialize = "sha256")]
-    SHA256 = 8,
+    SHA256    = 8,
     #[strum(serialize = "sha512")]
-    SHA512 = 11,
+    SHA512    = 11,
     #[strum(serialize = "skein")]
-    Skein = 12,
+    Skein     = 12,
 }
-
 
 impl Default for Checksum {
     fn default() -> Self { Checksum::On }
@@ -139,38 +135,38 @@ pub enum Compression {
     Inherit = 0,
     /// Auto-select most appropriate algorithm. If possible uses LZ4, if not then LZJB.
     #[strum(serialize = "on")]
-    On = 1,
+    On      = 1,
     /// Disables compression.
     #[strum(serialize = "off")]
-    Off = 2,
+    Off     = 2,
     #[strum(serialize = "lzjb")]
-    LZJB = 3,
+    LZJB    = 3,
     /// The lz4 compression algorithm is a high-performance replacement for the lzjb algorithm.
     #[strum(serialize = "lz4")]
-    LZ4 = 15,
+    LZ4     = 15,
     /// The zle compression algorithm compresses runs of zeros.
     #[strum(serialize = "lze")]
-    LZE = 14,
+    LZE     = 14,
     /// Fastest gzip level
     #[strum(serialize = "gzip-1")]
-    Gzip1 = 5,
+    Gzip1   = 5,
     #[strum(serialize = "gzip-2")]
-    Gzip2 = 6,
+    Gzip2   = 6,
     #[strum(serialize = "gzip-3")]
-    Gzip3 = 7,
+    Gzip3   = 7,
     #[strum(serialize = "gzip-4")]
-    Gzip4 = 8,
+    Gzip4   = 8,
     #[strum(serialize = "gzip-5")]
-    Gzip5 = 9,
+    Gzip5   = 9,
     #[strum(serialize = "gzip-6")]
-    Gzip6 = 10,
+    Gzip6   = 10,
     #[strum(serialize = "gzip-7")]
-    Gzip7 = 11,
+    Gzip7   = 11,
     #[strum(serialize = "gzip-8")]
-    Gzip8 = 12,
+    Gzip8   = 12,
     /// Slowest gzip level
     #[strum(serialize = "gzip-9")]
-    Gzip9 = 13,
+    Gzip9   = 13,
 }
 
 impl Default for Compression {
@@ -199,23 +195,19 @@ impl Default for Copies {
 pub enum CacheMode {
     /// Both user data and metadata.
     #[strum(serialize = "all")]
-    All = 2,
+    All      = 2,
     /// Just the metadata.
     #[strum(serialize = "metadata")]
     Metadata = 1,
     /// Neither user data nor metadata is cached.
     #[strum(serialize = "none")]
-    None = 0,
+    None     = 0,
 }
 
 impl ZfsProp for CacheMode {
-    fn as_nv_key() -> &'static str {
-        unimplemented!()
-    }
+    fn as_nv_key() -> &'static str { unimplemented!() }
 
-    fn as_nv_value(&self) -> u64 {
-        *self as u64
-    }
+    fn as_nv_value(&self) -> u64 { *self as u64 }
 }
 
 impl Default for CacheMode {
@@ -227,7 +219,7 @@ impl Default for CacheMode {
 #[repr(u64)]
 pub enum SnapDir {
     #[strum(serialize = "hidden")]
-    Hidden = 0,
+    Hidden  = 0,
     #[strum(serialize = "visible")]
     Visible = 1,
 }
@@ -236,28 +228,26 @@ impl Default for SnapDir {
     fn default() -> Self { SnapDir::Hidden }
 }
 
-
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum CanMount {
     /// Allowed to be mounted
     #[strum(serialize = "on")]
-    On = 1,
+    On     = 1,
     /// Can't be mounted
     #[strum(serialize = "off")]
-    Off = 0,
+    Off    = 0,
     /// Can be mounted, but only explicitly
     #[strum(serialize = "noauto")]
     NoAuto = 2,
 }
 
 impl Default for CanMount {
-    fn default() -> Self {
-        CanMount::On
-    }
+    fn default() -> Self { CanMount::On }
 }
 
-/// Most of native properties of dataset - both immutable and mutable. Default values taken from FreeBSD 12.
+/// Most of native properties of dataset - both immutable and mutable. Default values taken from
+/// FreeBSD 12.
 ///
 /// Notable missing properties:
 ///  - shareiscsi

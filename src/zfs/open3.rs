@@ -1,10 +1,10 @@
-use crate::zfs::{ZfsEngine, Result,CreateDatasetRequest, Error};
-use slog::{Drain, Logger};
+use crate::zfs::{CreateDatasetRequest, Error, Result, ZfsEngine};
 use cstr_argument::CStrArgument;
+use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
-use std::ffi::OsString;
-use std::process::{Command, Stdio};
-use std::path::{PathBuf};
+use std::{ffi::OsString,
+          path::PathBuf,
+          process::{Command, Stdio}};
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -14,7 +14,7 @@ fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
 
 pub struct ZfsOpen3 {
     cmd_name: OsString,
-    logger: Logger,
+    logger:   Logger,
 }
 
 impl ZfsOpen3 {
@@ -34,12 +34,11 @@ impl ZfsOpen3 {
             None => "zfs".into(),
         };
 
-        ZfsOpen3 { logger, cmd_name}
+        ZfsOpen3 { logger, cmd_name }
     }
 
-    pub fn logger(&self) -> &Logger {
-        &self.logger
-    }
+    pub fn logger(&self) -> &Logger { &self.logger }
+
     fn zfs(&self) -> Command { Command::new(&self.cmd_name) }
 
     #[allow(dead_code)]
@@ -50,17 +49,12 @@ impl ZfsOpen3 {
         z.stderr(Stdio::null());
         z
     }
-
 }
 
 impl ZfsEngine for ZfsOpen3 {
-    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
-        unimplemented!()
-    }
+    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> { unimplemented!() }
 
-    fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
-        unimplemented!()
-    }
+    fn create(&self, _request: CreateDatasetRequest) -> Result<()> { unimplemented!() }
 
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
         let mut z = self.zfs_mute();

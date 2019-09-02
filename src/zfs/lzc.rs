@@ -1,13 +1,13 @@
-use crate::zfs::{Error, Result, ZfsEngine, CreateDatasetRequest, Checksum, Compression, Copies, SnapDir, DatasetKind};
+use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, Error, Result,
+                 SnapDir, ZfsEngine};
 use cstr_argument::CStrArgument;
+use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
-use libnv::nvpair::{NvList};
 
+use crate::zfs::properties::{AclInheritMode, AclMode, ZfsProp};
+use std::{ffi::CString, path::PathBuf};
 use zfs_core_sys as sys;
-use std::ffi::{CString};
-use crate::zfs::properties::{AclInheritMode, ZfsProp, AclMode};
-use std::path::{PathBuf};
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -41,9 +41,7 @@ impl ZfsLzc {
         Ok(ZfsLzc { logger })
     }
 
-    pub fn logger(&self) -> &Logger {
-        &self.logger
-    }
+    pub fn logger(&self) -> &Logger { &self.logger }
 }
 
 impl ZfsEngine for ZfsLzc {
@@ -92,7 +90,9 @@ impl ZfsEngine for ZfsLzc {
         props.insert_u64("setuid", bool_to_u64(request.setuid))?;
         props.insert_u64(SnapDir::as_nv_key(), request.snap_dir.as_nv_value())?;
 
-        if request.kind == DatasetKind::Filesystem && (request.volume_size.is_some() || request.volume_block_size.is_some()) {
+        if request.kind == DatasetKind::Filesystem
+            && (request.volume_size.is_some() || request.volume_block_size.is_some())
+        {
             return Err(Error::InvalidInput);
         }
 
@@ -104,7 +104,7 @@ impl ZfsEngine for ZfsLzc {
             props.insert_u64("volsize", vol_size)?;
         }
         if let Some(vol_block_size) = request.volume_block_size {
-           props.insert_u64("volblocksize", vol_block_size)?;
+            props.insert_u64("volblocksize", vol_block_size)?;
         }
 
         props.insert("xattr", bool_to_u64(request.xattr))?;
@@ -115,23 +115,24 @@ impl ZfsEngine for ZfsLzc {
             }
         }
         let errno = unsafe {
-            zfs_core_sys::lzc_create(name_c_string.as_ref().as_ptr(), request.kind().as_c_uint(), props.as_ptr())
+            zfs_core_sys::lzc_create(
+                name_c_string.as_ref().as_ptr(),
+                request.kind().as_c_uint(),
+                props.as_ptr(),
+            )
         };
 
         match errno {
-            0  => Ok(()),
+            0 => Ok(()),
             22 => Err(Error::InvalidInput),
-            _  => {
-
+            _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            }
+            },
         }
     }
 
-    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<(), Error> {
-        unimplemented!()
-    }
+    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<(), Error> { unimplemented!() }
 }
 
 // This should be mapped to values from nvpair.

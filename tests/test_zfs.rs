@@ -12,7 +12,7 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{ZfsEngine, ZfsLzc, Copies, DatasetKind, CreateDatasetRequest, Error},
+               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error, ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::zfs::DelegatingZfsEngine;
@@ -171,7 +171,6 @@ fn easy_invalid_zfs() {
 
 #[test]
 fn create_and_destroy() {
-
     let zpool = SHARED_ZPOOL.clone();
     let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
 

@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-use std::io;
+use std::{io, path::PathBuf};
 
 pub mod description;
 pub use description::{Dataset, DatasetKind};
@@ -10,12 +9,13 @@ pub mod open3;
 pub use open3::ZfsOpen3;
 
 pub mod lzc;
-pub use lzc::ZfsLzc;
-use std::collections::{HashMap};
 use crate::zfs::properties::{AclInheritMode, AclMode};
+pub use lzc::ZfsLzc;
+use std::collections::HashMap;
 
 pub mod properties;
-pub use properties::{CanMount, SnapDir, DatasetProperties, Checksum, Copies, Compression, CacheMode};
+pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
+                     SnapDir};
 
 quick_error! {
     #[derive(Debug)]
@@ -74,9 +74,7 @@ pub enum ErrorKind {
 }
 
 impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind() == other.kind()
-    }
+    fn eq(&self, other: &Self) -> bool { self.kind() == other.kind() }
 }
 
 pub trait ZfsEngine {
@@ -98,24 +96,25 @@ pub trait ZfsEngine {
 #[derive(Default, Builder, Debug, Clone, Getters)]
 #[builder(setter(into))]
 #[get = "pub"]
-/// Consumer friendly builder for NvPair. Use this to create your datasets. Some properties only work on filesystems, some only on volumes.
+/// Consumer friendly builder for NvPair. Use this to create your datasets. Some properties only
+/// work on filesystems, some only on volumes.
 pub struct CreateDatasetRequest {
     /// Name of the dataset. First crumb of path is name of zpool.
     name: PathBuf,
     /// Filesystem or Volume.
     kind: DatasetKind,
-    /// Optional user defined properties. User property names must conform to the following characteristics:
+    /// Optional user defined properties. User property names must conform to the following
+    /// characteristics:
     ///
     ///  - Contain a colon (':') character to distinguish them from native properties.
-    ///  - Contain lowercase letters, numbers, and the following punctuation characters: ':', '+','.', '_'.
+    ///  - Contain lowercase letters, numbers, and the following punctuation characters: ':',
+    ///    '+','.', '_'.
     ///  - Maximum user property name is 256 characters.
     #[builder(default)]
     user_properties: Option<HashMap<String, String>>,
 
     //
     // the rest is zfs native properties
-    //
-
     /// Controls how ACL entries inherited when files and directories created.
     #[builder(default)]
     acl_inherit: AclInheritMode,
@@ -202,7 +201,5 @@ pub struct CreateDatasetRequest {
 }
 
 impl CreateDatasetRequest {
-    pub fn builder() -> CreateDatasetRequestBuilder {
-        CreateDatasetRequestBuilder::default()
-    }
+    pub fn builder() -> CreateDatasetRequestBuilder { CreateDatasetRequestBuilder::default() }
 }
