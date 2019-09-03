@@ -46,6 +46,7 @@ jobs:
         sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
       displayName: Run Tests
     - script: |
+        sudo sh -c "zpool list -H -oname | grep test | xargs zpool destroy"
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
         sudo RUSTFLAGS="-C link-dead-code" $(which cargo) tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash)
@@ -61,4 +62,3 @@ jobs:
         testRunner: JUnit
         testResultsFiles: 'test-results/default.xml'
         failTaskOnFailedTests: true
-

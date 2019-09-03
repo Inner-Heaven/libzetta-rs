@@ -1,4 +1,15 @@
 codecov:
   token: 4fb4f3a3-27d6-4d17-ac96-852e234d1519
+  notify:
+    require_ci_to_pass: yes
+
 ignore:
   - "tests/"
+coverage:
+  range: 50..90
+  round: down
+  precision: 3
+  status:
+    project:
+      target: 90
+      threshold: 3

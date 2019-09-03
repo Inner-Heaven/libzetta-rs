@@ -445,7 +445,6 @@ errors: No known data errors
             ]))
             .build()
             .unwrap();
-
         assert_eq!(&topo, &zpool);
     }
 
