@@ -39,7 +39,7 @@ features = ["nvpair"]
 [dependencies.regex]
 version = "1.3.0"
 default-features = false
-features = ["std", "perf"]
+features = ["std", "perf", "unicode-perl"]
 
 [dev-dependencies]
 cavity = "1.1"
