@@ -109,18 +109,32 @@ pub trait ZfsEngine {
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
-    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool>;
+    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
+        unimplemented!();
+    }
 
     /// Create a new dataset.
-    fn create(&self, request: CreateDatasetRequest) -> Result<()>;
+    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+        unimplemented!();
+    }
 
     /// Deletes the dataset
-    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()>;
+    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
+        unimplemented!();
+    }
 
-    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>>;
-    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>>;
-    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>>;
-    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>>;
+    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+        unimplemented!();
+    }
+    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
 }
 
 #[derive(Default, Builder, Debug, Clone, Getters)]

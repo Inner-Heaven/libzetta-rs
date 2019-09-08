@@ -54,10 +54,6 @@ impl ZfsOpen3 {
 }
 
 impl ZfsEngine for ZfsOpen3 {
-    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> { unimplemented!() }
-
-    fn create(&self, _request: CreateDatasetRequest) -> Result<()> { unimplemented!() }
-
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
         let mut z = self.zfs_mute();
         z.arg("destroy");
