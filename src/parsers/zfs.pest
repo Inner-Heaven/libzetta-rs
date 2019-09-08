@@ -1,0 +1,28 @@
+//
+// Created by intellij-pest on 2019-09-07
+// errors
+// Author: andoriyu
+//
+
+whitespace = _{ " " | "\t" }
+
+digit = _{ '0'..'9' }
+digits =  { digit ~ (digit | "_")* }
+alpha = _{ 'a'..'z' | 'A'..'Z' }
+symbol = _{ "!" | "@" | "," | "." | ";" | ":" | "/" | "\'" | "\"" | "(" | ")" | "-"  | "%" }
+alpha_num = _{ digit | alpha }
+alpha_nums = _{ alpha_num+ }
+text = _{ (alpha_num | whitespace |symbol)+ }
+path_segment = _{ ("_" | "-" | "."| alpha_num)+ }
+snapshot_segment = _{ "@" ~ path_segment}
+dataset_name = { path_segment ~ ( "/" ~ path_segment)* ~ snapshot_segment? }
+
+
+
+dataset_not_found = { "cannot open '" ~ dataset_name ~ "': dataset does not exist"}
+
+error = {
+    dataset_not_found
+}
+
+datasets = { (dataset_name ~ "\n"?)* }

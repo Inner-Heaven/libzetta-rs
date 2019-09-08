@@ -133,6 +133,22 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<(), Error> { unimplemented!() }
+
+    fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+        unimplemented!();
+    }
+
+    fn list_filesystems<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+
+    fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+
+    fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
 }
 
 // This should be mapped to values from nvpair.
