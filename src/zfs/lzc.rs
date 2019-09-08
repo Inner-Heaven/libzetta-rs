@@ -131,8 +131,6 @@ impl ZfsEngine for ZfsLzc {
             },
         }
     }
-
-    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<(), Error> { unimplemented!() }
 }
 
 // This should be mapped to values from nvpair.

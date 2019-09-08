@@ -1,5 +1,6 @@
 use crate::{slog::Logger,
-            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, Result, ZfsEngine}};
+            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, DatasetKind, Result,
+                  ZfsEngine}};
 use std::path::PathBuf;
 
 /// Handy wrapper that delegates your call to correct implementation.
@@ -22,4 +23,20 @@ impl ZfsEngine for DelegatingZfsEngine {
     fn create(&self, request: CreateDatasetRequest) -> Result<()> { self.lzc.create(request) }
 
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> { self.open3.destroy(name) }
+
+    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+        self.open3.list(pool)
+    }
+
+    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        self.open3.list_filesystems(pool)
+    }
+
+    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        self.open3.list_snapshots(pool)
+    }
+
+    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        self.open3.list_volumes(pool)
+    }
 }

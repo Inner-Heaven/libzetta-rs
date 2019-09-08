@@ -15,8 +15,9 @@ use libzetta::{slog::*,
                zfs::{Copies, CreateDatasetRequest, DatasetKind, Error, ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
-use libzetta::zfs::DelegatingZfsEngine;
-use libzetta::zpool::CreateMode;
+use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
+
+static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zfs-";
 lazy_static! {
@@ -81,9 +82,9 @@ fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
 }
 // Only used for debugging
 #[allow(dead_code)]
-fn get_logger() -> Logger {
+fn get_logger() -> Option<Logger> {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    Logger::root(slog_term::FullFormat::new(plain).use_original_order().build().fuse(), o!())
+    Some(Logger::root(slog_term::FullFormat::new(plain).use_original_order().build().fuse(), o!()))
 }
 
 #[test]
@@ -184,7 +185,7 @@ fn create_and_destroy() {
         .build()
         .unwrap();
 
-    zfs.create(request).expect("Failed to create dataset");
+    zfs.create(request).expect("Failed to create the dataset");
 
     let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
     assert!(res);
@@ -192,4 +193,58 @@ fn create_and_destroy() {
     zfs.destroy(dataset_path.clone()).unwrap();
     let res = zfs.exists(dataset_path.to_str().unwrap()).unwrap();
     assert!(!res);
+}
+
+#[test]
+fn create_and_list() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
+    let mut expected_filesystems = vec![root.clone()];
+    let mut expected_volumes = Vec::with_capacity(2);
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+
+    for idx in 0..2 {
+        let mut path = root.clone();
+        path.push(format!("{}", idx));
+        expected_filesystems.push(path.clone());
+        let request = CreateDatasetRequest::builder()
+            .name(path)
+            .kind(DatasetKind::Filesystem)
+            .build()
+            .unwrap();
+        zfs.create(request).expect("Failed to create a dataset");
+    }
+    let datasets = zfs.list_filesystems(root.clone()).unwrap();
+    assert_eq!(3, datasets.len());
+    assert_eq!(expected_filesystems, datasets);
+
+    for idx in 2..4 {
+        let mut path = root.clone();
+        path.push(format!("{}", idx));
+        expected_volumes.push(path.clone());
+        let request = CreateDatasetRequest::builder()
+            .name(path)
+            .kind(DatasetKind::Volume)
+            .volume_size(ONE_MB_IN_BYTES)
+            .build()
+            .unwrap();
+        zfs.create(request).expect("Failed to create a dataset");
+    }
+    let datasets = zfs.list_volumes(root.clone()).unwrap();
+    assert_eq!(2, datasets.len());
+    assert_eq!(expected_volumes, datasets);
+    let expected: Vec<(DatasetKind, PathBuf)> = expected_filesystems
+        .into_iter()
+        .map(|e| (DatasetKind::Filesystem, e))
+        .chain(expected_volumes.into_iter().map(|e| (DatasetKind::Volume, e)))
+        .collect();
+    let datasets = zfs.list(root.clone()).unwrap();
+    assert_eq!(5, datasets.len());
+    assert_eq!(expected, datasets);
 }

@@ -1,5 +1,8 @@
 use pest_derive::Parser;
 
+pub mod zfs;
+pub use zfs::{Rule as ZfsRule, ZfsParser};
+
 #[derive(Parser)]
 #[grammar = "parsers/stdout.pest"] // relative to src
 pub struct StdoutParser;
@@ -454,6 +457,6 @@ errors: No known data errors
         let mut pairs =
             StdoutParser::parse(Rule::zpools, stdout).unwrap_or_else(|e| panic!("{}", e));
         let pair = pairs.next().unwrap();
-        let zpool = Zpool::from_pest_pair(pair);
+        let _zpool = Zpool::from_pest_pair(pair);
     }
 }

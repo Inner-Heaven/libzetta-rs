@@ -17,6 +17,10 @@ pub mod properties;
 pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
                      SnapDir};
 
+use crate::parsers::zfs::{Rule, ZfsParser};
+use pest::Parser;
+use std::borrow::Cow;
+
 quick_error! {
     #[derive(Debug)]
     pub enum Error {
@@ -34,6 +38,8 @@ quick_error! {
             cause(err)
         }
         Unknown {}
+        UnknownSoFar(err: String) {}
+        DatasetNotFound(dataset: PathBuf) {}
     }
 }
 
@@ -58,7 +64,27 @@ impl Error {
             Error::NvOpError(_) => ErrorKind::NvOpError,
             Error::InvalidInput => ErrorKind::InvalidInput,
             Error::Io(_) => ErrorKind::Io,
-            Error::Unknown => ErrorKind::Unknown,
+            Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
+            Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
+        }
+    }
+
+    fn unknown_so_far(stderr: Cow<'_, str>) -> Self { Error::UnknownSoFar(stderr.into()) }
+
+    pub(crate) fn from_stderr(stderr_raw: &[u8]) -> Self {
+        let stderr = String::from_utf8_lossy(stderr_raw);
+        if let Ok(mut pairs) = ZfsParser::parse(Rule::error, &stderr) {
+            // Pest: error > dataset_not_found > dataset_name: "s/asd/asd"
+            let error_pair = pairs.next().unwrap().into_inner().next().unwrap();
+            match error_pair.as_rule() {
+                Rule::dataset_not_found => {
+                    let dataset_name_pair = error_pair.into_inner().next().unwrap();
+                    return Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()));
+                },
+                _ => return Self::unknown_so_far(stderr),
+            }
+        } else {
+            Self::unknown_so_far(stderr)
         }
     }
 }
@@ -71,6 +97,7 @@ pub enum ErrorKind {
     InvalidInput,
     Io,
     Unknown,
+    DatasetNotFound,
 }
 
 impl PartialEq for Error {
@@ -82,15 +109,32 @@ pub trait ZfsEngine {
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
-    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool>;
+    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
+        unimplemented!();
+    }
 
     /// Create a new dataset.
-    fn create(&self, request: CreateDatasetRequest) -> Result<()>;
+    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+        unimplemented!();
+    }
 
     /// Deletes the dataset
-    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()>;
+    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
+        unimplemented!();
+    }
 
-    //fn list(pool: Option<String>) -> Result<Vec<Dataset>>;
+    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+        unimplemented!();
+    }
+    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
+    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        unimplemented!();
+    }
 }
 
 #[derive(Default, Builder, Debug, Clone, Getters)]
@@ -202,4 +246,29 @@ pub struct CreateDatasetRequest {
 
 impl CreateDatasetRequest {
     pub fn builder() -> CreateDatasetRequestBuilder { CreateDatasetRequestBuilder::default() }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Error, ErrorKind};
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_error_ds_not_found() {
+        let stderr = b"cannot open 's/asd/asd': dataset does not exist";
+
+        let err = Error::from_stderr(stderr);
+        assert_eq!(Error::DatasetNotFound(PathBuf::from("s/asd/asd")), err);
+        assert_eq!(ErrorKind::DatasetNotFound, err.kind());
+    }
+
+    #[test]
+    fn test_error_rubbish() {
+        let stderr = b"there is no way there is an error like this";
+        let stderr_string = String::from_utf8_lossy(stderr).to_string();
+
+        let err = Error::from_stderr(stderr);
+        assert_eq!(Error::UnknownSoFar(stderr_string), err);
+        assert_eq!(ErrorKind::Unknown, err.kind());
+    }
 }
