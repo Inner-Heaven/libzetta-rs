@@ -72,12 +72,41 @@ impl ZfsEngine for ZfsOpen3 {
         }
     }
 
-    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+    fn list<N: Into<PathBuf>>(&self, prefix: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
         let mut z = self.zfs();
-        z.args(&["list", "-t", "all", "-o", "name,type", "-Hpr"]);
-        z.arg(pool.into().as_os_str());
+        z.args(&["list", "-t", "all", "-o", "type,name", "-Hpr"]);
+        z.arg(prefix.into().as_os_str());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
-        unimplemented!();
+
+        let out = z.output()?;
+        if out.status.success() {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            ZfsParser::parse(Rule::datasets_with_type, &stdout)
+                .map(|mut pairs| {
+                    pairs
+                        .next()
+                        .unwrap()
+                        .into_inner()
+                        .map(|pair| {
+                            // - datasets_with_type
+                            //   - dataset_with_type
+                            //     - dataset_type: "volume"
+                            //     - dataset_name: "z/iohyve/rancher/disk0"
+                            debug_assert_eq!(Rule::dataset_with_type, pair.as_rule());
+                            let mut inner = pair.into_inner();
+
+                            let dataset_type_pair = inner.next().unwrap();
+                            let dataset_name_pair = inner.next().unwrap();
+                            let dataset_type = dataset_type_pair.as_str().parse().unwrap();
+                            let dataset_name = PathBuf::from(dataset_name_pair.as_str());
+                            (dataset_type, dataset_name)
+                        })
+                        .collect()
+                })
+                .map_err(|_| Error::UnknownSoFar(String::from(stdout)))
+        } else {
+            Err(Error::from_stderr(&out.stderr))
+        }
     }
 
     fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {

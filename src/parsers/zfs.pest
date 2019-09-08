@@ -4,7 +4,7 @@
 // Author: andoriyu
 //
 
-whitespace = _{ " " | "\t" }
+whitespace = _{ " "+ | "\t" }
 
 digit = _{ '0'..'9' }
 digits =  { digit ~ (digit | "_")* }
@@ -15,8 +15,10 @@ alpha_nums = _{ alpha_num+ }
 text = _{ (alpha_num | whitespace |symbol)+ }
 path_segment = _{ ("_" | "-" | "."| alpha_num)+ }
 snapshot_segment = _{ "@" ~ path_segment}
-dataset_name = { path_segment ~ ( "/" ~ path_segment)* ~ snapshot_segment? }
-
+bookmark_segment = _{ "#" ~ path_segment}
+dataset_name = { path_segment ~ ( "/" ~ path_segment)* ~ ( snapshot_segment | bookmark_segment )? }
+dataset_type = { "filesystem" | "snapshot" | "volume" | "bookmark" }
+dataset_with_type = { dataset_type ~ whitespace ~ dataset_name  }
 
 
 dataset_not_found = { "cannot open '" ~ dataset_name ~ "': dataset does not exist"}
@@ -26,3 +28,4 @@ error = {
 }
 
 datasets = { (dataset_name ~ "\n"?)* }
+datasets_with_type = { (dataset_with_type ~ "\n"?)* }

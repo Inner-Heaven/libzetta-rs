@@ -8,6 +8,7 @@ pub struct ZfsParser;
 mod test {
     use super::{Rule, ZfsParser};
     use pest::{consumes_to, parses_to, Parser};
+    use crate::zfs::DatasetKind;
 
     #[test]
     fn test_parse_filesystem_name_root() {
@@ -96,6 +97,33 @@ mod test {
         for (idx, pair) in datasets_pairs.enumerate() {
             assert_eq!(Rule::dataset_name, pair.as_rule());
             assert_eq!(expected[idx], pair.as_str());
+        }
+    }
+
+    #[test]
+    fn test_parse_datasets_with_type() {
+        let lines = r#"volume  z/iohyve/rancher/disk0
+filesystem      z/var/mail
+snapshot        z/var/mail@backup-2019-08-08
+bookmark        z/var/mail#backup-2019-08-08
+        "#;
+        let expected = vec![
+            ("volume", "z/iohyve/rancher/disk0"),
+            ("filesystem", "z/var/mail"),
+            ("snapshot", "z/var/mail@backup-2019-08-08"),
+            ("bookmark", "z/var/mail#backup-2019-08-08")
+        ];
+
+        let mut pairs = ZfsParser::parse(Rule::datasets_with_type, lines).unwrap();
+        let datasets_pairs = pairs.next().unwrap().into_inner();
+        assert_eq!(4, datasets_pairs.clone().count());
+
+        for (idx, pair) in datasets_pairs.enumerate() {
+            assert_eq!(Rule::dataset_with_type, pair.as_rule());
+            let mut dataset_with_type_pair = pair.into_inner();
+            let dataset_type = dataset_with_type_pair.next().unwrap();
+            let dataset_name = dataset_with_type_pair.next().unwrap();
+            assert_eq!(expected[idx], (dataset_type.as_str(), dataset_name.as_str()));
         }
     }
 }
