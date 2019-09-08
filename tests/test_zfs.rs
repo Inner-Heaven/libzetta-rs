@@ -219,6 +219,9 @@ fn create_and_list() {
             .unwrap();
         zfs.create(request).expect("Failed to create a dataset");
     }
+    let datasets = zfs.list_volumes(root.clone()).unwrap();
+    assert_eq!(3, datasets.len());
+    assert_eq!(expected, datasets);
     for idx in 2..4 {
         let mut path = root.clone();
         path.push(format!("{}", idx));
