@@ -7,8 +7,8 @@ pub struct ZfsParser;
 #[cfg(test)]
 mod test {
     use super::{Rule, ZfsParser};
-    use pest::{consumes_to, parses_to, Parser};
     use crate::zfs::DatasetKind;
+    use pest::{consumes_to, parses_to, Parser};
 
     #[test]
     fn test_parse_filesystem_name_root() {
@@ -111,7 +111,7 @@ bookmark        z/var/mail#backup-2019-08-08
             ("volume", "z/iohyve/rancher/disk0"),
             ("filesystem", "z/var/mail"),
             ("snapshot", "z/var/mail@backup-2019-08-08"),
-            ("bookmark", "z/var/mail#backup-2019-08-08")
+            ("bookmark", "z/var/mail#backup-2019-08-08"),
         ];
 
         let mut pairs = ZfsParser::parse(Rule::datasets_with_type, lines).unwrap();

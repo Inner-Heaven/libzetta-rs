@@ -239,7 +239,8 @@ fn create_and_list() {
     let datasets = zfs.list_volumes(root.clone()).unwrap();
     assert_eq!(2, datasets.len());
     assert_eq!(expected_volumes, datasets);
-    let expected: Vec<(DatasetKind, PathBuf)> = expected_filesystems.into_iter()
+    let expected: Vec<(DatasetKind, PathBuf)> = expected_filesystems
+        .into_iter()
         .map(|e| (DatasetKind::Filesystem, e))
         .chain(expected_volumes.into_iter().map(|e| (DatasetKind::Volume, e)))
         .collect();
