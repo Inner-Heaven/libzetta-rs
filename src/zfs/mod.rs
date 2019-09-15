@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf};
+use std::path::PathBuf;
 
 pub mod description;
 pub use description::{Dataset, DatasetKind};
@@ -17,122 +17,41 @@ pub mod properties;
 pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
                      SnapDir};
 
-use crate::parsers::zfs::{Rule, ZfsParser};
-use pest::Parser;
-use std::borrow::Cow;
+pub static DATASET_NAME_MAX_LENGTH: usize = 255;
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        /// `zfs not found in the PATH. Open3 specific error.
-        CmdNotFound {}
-        LZCInitializationFailed(err: std::io::Error) {
-            cause(err)
-        }
-        NvOpError(err: libnv::NvError) {
-            cause(err)
-            from()
-        }
-        InvalidInput {}
-        Io(err: std::io::Error) {
-            cause(err)
-        }
-        Unknown {}
-        UnknownSoFar(err: String) {}
-        DatasetNotFound(dataset: PathBuf) {}
-    }
-}
+mod errors;
 
-impl From<io::Error> for Error {
-    #[allow(clippy::wildcard_enum_match_arm)]
-    fn from(err: io::Error) -> Error {
-        match err.kind() {
-            io::ErrorKind::NotFound => Error::CmdNotFound,
-            io::ErrorKind::InvalidInput => Error::InvalidInput,
-            _ => Error::Io(err),
-        }
-    }
-}
-
-type Result<T, E = Error> = std::result::Result<T, E>;
-
-impl Error {
-    pub fn kind(&self) -> ErrorKind {
-        match self {
-            Error::CmdNotFound => ErrorKind::CmdNotFound,
-            Error::LZCInitializationFailed(_) => ErrorKind::LZCInitializationFailed,
-            Error::NvOpError(_) => ErrorKind::NvOpError,
-            Error::InvalidInput => ErrorKind::InvalidInput,
-            Error::Io(_) => ErrorKind::Io,
-            Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
-            Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
-        }
-    }
-
-    fn unknown_so_far(stderr: Cow<'_, str>) -> Self { Error::UnknownSoFar(stderr.into()) }
-
-    pub(crate) fn from_stderr(stderr_raw: &[u8]) -> Self {
-        let stderr = String::from_utf8_lossy(stderr_raw);
-        if let Ok(mut pairs) = ZfsParser::parse(Rule::error, &stderr) {
-            // Pest: error > dataset_not_found > dataset_name: "s/asd/asd"
-            let error_pair = pairs.next().unwrap().into_inner().next().unwrap();
-            match error_pair.as_rule() {
-                Rule::dataset_not_found => {
-                    let dataset_name_pair = error_pair.into_inner().next().unwrap();
-                    return Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()));
-                },
-                _ => return Self::unknown_so_far(stderr),
-            }
-        } else {
-            Self::unknown_so_far(stderr)
-        }
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum ErrorKind {
-    CmdNotFound,
-    LZCInitializationFailed,
-    NvOpError,
-    InvalidInput,
-    Io,
-    Unknown,
-    DatasetNotFound,
-}
-
-impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool { self.kind() == other.kind() }
-}
+pub use errors::{Error,ErrorKind,Result};
 
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
-    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
+    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
         unimplemented!();
     }
 
     /// Create a new dataset.
-    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+    fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
         unimplemented!();
     }
 
     /// Deletes the dataset
-    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
+    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> {
         unimplemented!();
     }
 
-    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+    fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
         unimplemented!();
     }
-    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+    fn list_filesystems<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         unimplemented!();
     }
-    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+    fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         unimplemented!();
     }
-    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+    fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         unimplemented!();
     }
 }
@@ -248,9 +167,33 @@ impl CreateDatasetRequest {
     pub fn builder() -> CreateDatasetRequestBuilder { CreateDatasetRequestBuilder::default() }
 }
 
+pub(crate) mod validators {
+    use crate::zfs::{Result,CreateDatasetRequest, Error, DATASET_NAME_MAX_LENGTH};
+
+    pub fn validate_request(req: &CreateDatasetRequest) -> Result<()> {
+        validate_name(req)
+    }
+
+    pub fn validate_name(req: & CreateDatasetRequest) -> Result<()> {
+        let name = req.name();
+        if name.to_string_lossy().ends_with("/") {
+            return Err(Error::MissingName);
+        }
+        name
+            .file_name()
+            .ok_or(Error::MissingName)
+            .and_then(|name| {
+                if name.len() > DATASET_NAME_MAX_LENGTH {
+                    return Err(Error::NameTooLong);
+                }
+                Ok(())
+            })
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use super::{Error, ErrorKind};
+    use super::{Error, ErrorKind, validators, CreateDatasetRequest, DatasetKind};
     use std::path::PathBuf;
 
     #[test]
@@ -270,5 +213,28 @@ mod test {
         let err = Error::from_stderr(stderr);
         assert_eq!(Error::UnknownSoFar(stderr_string), err);
         assert_eq!(ErrorKind::Unknown, err.kind());
+    }
+
+    #[test]
+    fn test_name_validator() {
+        let path = PathBuf::from("z/asd/");
+        let request = CreateDatasetRequest::builder()
+            .name(path)
+            .kind(DatasetKind::Filesystem)
+            .build()
+            .unwrap();
+
+        let result = validators::validate_name(&request).unwrap_err();
+        assert_eq!(Error::MissingName, result);
+
+        let path = PathBuf::from("z/asd/jnmgyfklueiodyfryvopvyfidvdgxqxsesjmqeoevdgmzsqmesuqzqoxhjfltmsvltdyiilgkvklinlfhaanfqisdazjpfmwttnuosdfijickudhwegburxsoesvunamysaigtagymxcyfeyqiqphtalmbkskrjdndbbcjqiiwucsxzezqmvpzmkylrojumtvatfvrpfkxubfujyioyylmffvrvtfetnzghkwaqzxkqmialkaaekotuhgiivwvbsoqqa");
+        let request = CreateDatasetRequest::builder()
+            .name(path)
+            .kind(DatasetKind::Filesystem)
+            .build()
+            .unwrap();
+
+        let result = validators::validate_name(&request).unwrap_err();
+        assert_eq!(Error::NameTooLong, result);
     }
 }

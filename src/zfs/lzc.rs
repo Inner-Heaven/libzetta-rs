@@ -57,7 +57,9 @@ impl ZfsEngine for ZfsLzc {
         }
     }
 
-    fn create(&self, request: CreateDatasetRequest) -> Result<(), Error> {
+    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+        let _ = crate::zfs::validators::validate_request(&request)?;
+
         //let mut props = nvpair::NvList::new()?;
         let mut props = NvList::default();
         let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
