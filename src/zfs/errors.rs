@@ -23,8 +23,10 @@ quick_error! {
         Unknown {}
         UnknownSoFar(err: String) {}
         DatasetNotFound(dataset: PathBuf) {}
-        NameTooLong {}
-        MissingName {}
+        ValidationError(err: ValidationError) {
+            cause(err)
+            from()
+        }
     }
 }
 
@@ -50,9 +52,8 @@ impl Error {
             Error::InvalidInput => ErrorKind::InvalidInput,
             Error::Io(_) => ErrorKind::Io,
             Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
-            Error::NameTooLong => ErrorKind::NameTooLong,
-            Error::MissingName => ErrorKind::MissingName,
             Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
+            Error::ValidationError(_) => ErrorKind::ValidationError,
         }
     }
 
@@ -85,10 +86,31 @@ pub enum ErrorKind {
     Io,
     Unknown,
     DatasetNotFound,
-    NameTooLong,
-    MissingName
+    ValidationError,
 }
 
 impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool { self.kind() == other.kind() }
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Error::ValidationError(l), Error::ValidationError(r)) => l == r,
+            _ => self.kind() == other.kind()
+        }
+    }
+}
+quick_error! {
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum ValidationError {
+        MustBeSameDatabase(dataset: PathBuf) {}
+        NameTooLong(dataset: PathBuf) {}
+        MissingName(dataset: PathBuf) {}
+    }
+}
+
+impl PartialEq<Error> for ValidationError {
+    fn eq(&self, other: &Error) -> bool {
+        match other {
+            Error::ValidationError(r) => self == r,
+            _ => false
+        }
+    }
 }

@@ -21,7 +21,7 @@ pub static DATASET_NAME_MAX_LENGTH: usize = 255;
 
 mod errors;
 
-pub use errors::{Error,ErrorKind,Result};
+pub use errors::{Error,ErrorKind,ValidationError,Result};
 
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
@@ -168,7 +168,7 @@ impl CreateDatasetRequest {
 }
 
 pub(crate) mod validators {
-    use crate::zfs::{Result,CreateDatasetRequest, Error, DATASET_NAME_MAX_LENGTH};
+    use crate::zfs::{Result,CreateDatasetRequest,ValidationError, DATASET_NAME_MAX_LENGTH};
 
     pub fn validate_request(req: &CreateDatasetRequest) -> Result<()> {
         validate_name(req)
@@ -177,14 +177,14 @@ pub(crate) mod validators {
     pub fn validate_name(req: & CreateDatasetRequest) -> Result<()> {
         let name = req.name();
         if name.to_string_lossy().ends_with("/") {
-            return Err(Error::MissingName);
+            return Err(ValidationError::MissingName(req.name().clone()).into());
         }
         name
             .file_name()
-            .ok_or(Error::MissingName)
+            .ok_or_else(|| { ValidationError::MissingName(req.name().clone()).into()})
             .and_then(|name| {
                 if name.len() > DATASET_NAME_MAX_LENGTH {
-                    return Err(Error::NameTooLong);
+                    return Err(ValidationError::NameTooLong(req.name().clone()).into());
                 }
                 Ok(())
             })
@@ -193,7 +193,7 @@ pub(crate) mod validators {
 
 #[cfg(test)]
 mod test {
-    use super::{Error, ErrorKind, validators, CreateDatasetRequest, DatasetKind};
+    use super::{Error, ErrorKind, ValidationError, validators, CreateDatasetRequest, DatasetKind};
     use std::path::PathBuf;
 
     #[test]
@@ -219,22 +219,22 @@ mod test {
     fn test_name_validator() {
         let path = PathBuf::from("z/asd/");
         let request = CreateDatasetRequest::builder()
-            .name(path)
+            .name(path.clone())
             .kind(DatasetKind::Filesystem)
             .build()
             .unwrap();
 
         let result = validators::validate_name(&request).unwrap_err();
-        assert_eq!(Error::MissingName, result);
+        assert_eq!(ValidationError::MissingName(path.clone()), result);
 
         let path = PathBuf::from("z/asd/jnmgyfklueiodyfryvopvyfidvdgxqxsesjmqeoevdgmzsqmesuqzqoxhjfltmsvltdyiilgkvklinlfhaanfqisdazjpfmwttnuosdfijickudhwegburxsoesvunamysaigtagymxcyfeyqiqphtalmbkskrjdndbbcjqiiwucsxzezqmvpzmkylrojumtvatfvrpfkxubfujyioyylmffvrvtfetnzghkwaqzxkqmialkaaekotuhgiivwvbsoqqa");
         let request = CreateDatasetRequest::builder()
-            .name(path)
+            .name(path.clone())
             .kind(DatasetKind::Filesystem)
             .build()
             .unwrap();
 
         let result = validators::validate_name(&request).unwrap_err();
-        assert_eq!(Error::NameTooLong, result);
+       assert_eq!(ValidationError::NameTooLong(path.clone()), result);
     }
 }
