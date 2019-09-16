@@ -29,33 +29,41 @@ pub trait ZfsEngine {
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
+    #[cfg_attr(tarpaulin, skip)]
     fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
         Err(Error::Unimplemented)
     }
 
     /// Create a new dataset.
+    #[cfg_attr(tarpaulin, skip)]
     fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
         Err(Error::Unimplemented)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> {
         Err(Error::Unimplemented)
     }
 
     /// Deletes the dataset
+    #[cfg_attr(tarpaulin, skip)]
     fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> {
         Err(Error::Unimplemented)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
         Err(Error::Unimplemented)
     }
+    #[cfg_attr(tarpaulin, skip)]
     fn list_filesystems<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         Err(Error::Unimplemented)
     }
+    #[cfg_attr(tarpaulin, skip)]
     fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         Err(Error::Unimplemented)
     }
+    #[cfg_attr(tarpaulin, skip)]
     fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         Err(Error::Unimplemented)
     }
