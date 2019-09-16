@@ -12,7 +12,8 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error, ZfsEngine, ZfsLzc},
+               zfs::{Copies, CreateDatasetRequest, CreateSnapshotsRequest, DatasetKind, Error,
+                     ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
@@ -247,4 +248,27 @@ fn create_and_list() {
     let datasets = zfs.list(root.clone()).unwrap();
     assert_eq!(5, datasets.len());
     assert_eq!(expected, datasets);
+}
+
+#[test]
+fn easy_snapshot() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+    let expected_snapshots = vec![PathBuf::from(format!("{}/{}@snap-1", zpool, &root_name))];
+
+    let request =
+        CreateSnapshotsRequest::builder().snapshots(expected_snapshots.clone()).build().unwrap();
+    zfs.snapshot(request).expect("Failed to create snapshots");
+
+    let snapshots =
+        zfs.list_snapshots(PathBuf::from(root.clone())).expect("failed to list snapshots");
+    assert_eq!(expected_snapshots, snapshots);
 }

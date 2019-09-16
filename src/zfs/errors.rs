@@ -1,8 +1,9 @@
-use std::io;
-use std::borrow::Cow;
 use crate::parsers::zfs::{Rule, ZfsParser};
 use pest::Parser;
-use std::path::PathBuf;
+use std::{borrow::Cow, io, path::PathBuf};
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type ValidationResult<T = (), E = ValidationError> = std::result::Result<T, E>;
 
 quick_error! {
     #[derive(Debug)]
@@ -23,8 +24,7 @@ quick_error! {
         Unknown {}
         UnknownSoFar(err: String) {}
         DatasetNotFound(dataset: PathBuf) {}
-        ValidationError(err: ValidationError) {
-            cause(err)
+        ValidationErrors(errors: Vec<ValidationError>) {
             from()
         }
     }
@@ -40,8 +40,9 @@ impl From<io::Error> for Error {
         }
     }
 }
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+impl From<ValidationError> for Error {
+    fn from(err: ValidationError) -> Error { Error::ValidationErrors(vec![err]) }
+}
 
 impl Error {
     pub fn kind(&self) -> ErrorKind {
@@ -53,7 +54,7 @@ impl Error {
             Error::Io(_) => ErrorKind::Io,
             Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
             Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
-            Error::ValidationError(_) => ErrorKind::ValidationError,
+            Error::ValidationErrors(_) => ErrorKind::ValidationErrors,
         }
     }
 
@@ -86,31 +87,25 @@ pub enum ErrorKind {
     Io,
     Unknown,
     DatasetNotFound,
-    ValidationError,
+    ValidationErrors,
 }
 
 impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Error::ValidationError(l), Error::ValidationError(r)) => l == r,
-            _ => self.kind() == other.kind()
+            (Error::ValidationErrors(l), Error::ValidationErrors(r)) => l == r,
+            _ => self.kind() == other.kind(),
         }
     }
 }
 quick_error! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum ValidationError {
-        MustBeSameDatabase(dataset: PathBuf) {}
+        MultipleZpools(zpools: Vec<PathBuf>) {}
         NameTooLong(dataset: PathBuf) {}
         MissingName(dataset: PathBuf) {}
-    }
-}
-
-impl PartialEq<Error> for ValidationError {
-    fn eq(&self, other: &Error) -> bool {
-        match other {
-            Error::ValidationError(r) => self == r,
-            _ => false
-        }
+        MissingSnapshotName(dataset: PathBuf) {}
+        MissingPool(daset: PathBuf) {}
+        Unknown(dataset: PathBuf) {}
     }
 }
