@@ -27,6 +27,7 @@ quick_error! {
         ValidationErrors(errors: Vec<ValidationError>) {
             from()
         }
+        Unimplemented {}
     }
 }
 
@@ -55,11 +56,14 @@ impl Error {
             Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
             Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
             Error::ValidationErrors(_) => ErrorKind::ValidationErrors,
+            Error::Unimplemented => ErrorKind::Unimplemented,
         }
     }
 
     fn unknown_so_far(stderr: Cow<'_, str>) -> Self { Error::UnknownSoFar(stderr.into()) }
 
+    #[allow(clippy::option_unwrap_used)]
+    #[allow(clippy::wildcard_enum_match_arm)]
     pub(crate) fn from_stderr(stderr_raw: &[u8]) -> Self {
         let stderr = String::from_utf8_lossy(stderr_raw);
         if let Ok(mut pairs) = ZfsParser::parse(Rule::error, &stderr) {
@@ -68,9 +72,9 @@ impl Error {
             match error_pair.as_rule() {
                 Rule::dataset_not_found => {
                     let dataset_name_pair = error_pair.into_inner().next().unwrap();
-                    return Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()));
+                    Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()))
                 },
-                _ => return Self::unknown_so_far(stderr),
+                _ => Self::unknown_so_far(stderr),
             }
         } else {
             Self::unknown_so_far(stderr)
@@ -88,6 +92,7 @@ pub enum ErrorKind {
     Unknown,
     DatasetNotFound,
     ValidationErrors,
+    Unimplemented,
 }
 
 impl PartialEq for Error {

@@ -30,34 +30,34 @@ pub trait ZfsEngine {
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
     fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
 
     /// Create a new dataset.
     fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
 
     fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
 
     /// Deletes the dataset
     fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
 
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
     fn list_filesystems<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
     fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
     fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+        Err(Error::Unimplemented)
     }
 }
 
@@ -229,11 +229,11 @@ impl CreateSnapshotsRequest {
             let as_str = path.to_string_lossy();
             let mut parts = as_str.split('@');
             // Validate name part
-            if let None = parts.next() {
+            if parts.next().is_none() {
                 errors.push(ValidationError::Unknown(path.clone()));
             }
             // Validate snapshot name part
-            if let None = parts.next() {
+            if parts.next().is_none() {
                 errors.push(ValidationError::MissingSnapshotName(path.clone()));
             }
         }
@@ -275,10 +275,10 @@ pub(crate) mod validators {
 
     pub fn validate_name(dataset: &PathBuf) -> ValidationResult {
         let name = dataset.to_string_lossy();
-        if name.ends_with("/") {
+        if name.ends_with('/') {
             return Err(ValidationError::MissingName(dataset.clone()));
         }
-        if name.starts_with("/") {
+        if name.starts_with('/') {
             return Err(ValidationError::MissingPool(dataset.clone()));
         }
         dataset.file_name().ok_or_else(|| ValidationError::MissingName(dataset.clone())).and_then(

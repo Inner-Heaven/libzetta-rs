@@ -58,11 +58,11 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn create(&self, request: CreateDatasetRequest) -> Result<()> {
-        let _ = request.validate()?;
+        request.validate()?;
 
         //let mut props = nvpair::NvList::new()?;
         let mut props = NvList::default();
-        let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
+        let name_c_string = CString::new(request.name().to_str().expect("Non UTF-8 name")).expect("NULL in name");
         // LZC wants _everything_ as u64 even booleans.
         props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
         if let Some(acl_mode) = request.acl_mode {
@@ -113,7 +113,7 @@ impl ZfsEngine for ZfsLzc {
         props.insert("xattr", bool_to_u64(request.xattr))?;
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
-                props.insert_string(&key, &value)?;
+                props.insert_string(key, value)?;
             }
         }
         let errno = unsafe {
@@ -135,7 +135,7 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn snapshot(&self, request: CreateSnapshotsRequest) -> Result<()> {
-        let _ = request.validate()?;
+       request.validate()?;
 
         let mut snapshots = NvList::default();
         let mut props = NvList::default();
