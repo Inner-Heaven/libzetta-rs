@@ -1,12 +1,12 @@
-use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, Error, Result,
-                 SnapDir, ZfsEngine};
+use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, CreateSnapshotsRequest,
+                 DatasetKind, Error, Result, SnapDir, ZfsEngine};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 
 use crate::zfs::properties::{AclInheritMode, AclMode, ZfsProp};
-use std::{ffi::CString, path::PathBuf};
+use std::{ffi::CString, path::PathBuf, ptr::null_mut};
 use zfs_core_sys as sys;
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
@@ -57,10 +57,12 @@ impl ZfsEngine for ZfsLzc {
         }
     }
 
-    fn create(&self, request: CreateDatasetRequest) -> Result<(), Error> {
+    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+        request.validate()?;
+
         //let mut props = nvpair::NvList::new()?;
         let mut props = NvList::default();
-        let name_c_string = CString::new(request.name().to_str().unwrap()).unwrap();
+        let name_c_string = CString::new(request.name().to_str().expect("Non UTF-8 name")).expect("NULL in name");
         // LZC wants _everything_ as u64 even booleans.
         props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
         if let Some(acl_mode) = request.acl_mode {
@@ -111,7 +113,7 @@ impl ZfsEngine for ZfsLzc {
         props.insert("xattr", bool_to_u64(request.xattr))?;
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
-                props.insert_string(&key, &value)?;
+                props.insert_string(key, value)?;
             }
         }
         let errno = unsafe {
@@ -122,6 +124,31 @@ impl ZfsEngine for ZfsLzc {
             )
         };
 
+        match errno {
+            0 => Ok(()),
+            22 => Err(Error::InvalidInput),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
+    }
+
+    fn snapshot(&self, request: CreateSnapshotsRequest) -> Result<()> {
+       request.validate()?;
+
+        let mut snapshots = NvList::default();
+        let mut props = NvList::default();
+        for snap in request.snapshots() {
+            snapshots.insert(&snap.to_string_lossy(), true)?;
+        }
+        let mut errors_list = null_mut();
+        for (key, value) in request.user_properties() {
+            props.insert_string(key, value)?;
+        }
+        let errno = unsafe {
+            zfs_core_sys::lzc_snapshot(snapshots.as_ptr(), props.as_ptr(), &mut errors_list)
+        };
         match errno {
             0 => Ok(()),
             22 => Err(Error::InvalidInput),

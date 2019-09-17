@@ -207,6 +207,7 @@ pub enum CacheMode {
 }
 
 impl ZfsProp for CacheMode {
+    #[allow(clippy::unimplemented)]
     fn as_nv_key() -> &'static str { unimplemented!() }
 
     fn as_nv_value(&self) -> u64 { *self as u64 }

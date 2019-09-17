@@ -1,4 +1,4 @@
-use crate::zfs::{CreateDatasetRequest, DatasetKind, Error, Result, ZfsEngine};
+use crate::zfs::{DatasetKind, Error, Result, ZfsEngine};
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::{ffi::OsString,
@@ -67,7 +67,8 @@ impl ZfsEngine for ZfsOpen3 {
             Err(Error::Unknown)
         }
     }
-
+    #[allow(clippy::option_unwrap_used)]
+    #[allow(clippy::result_unwrap_used)]
     fn list<N: Into<PathBuf>>(&self, prefix: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
         let mut z = self.zfs();
         z.args(&["list", "-t", "all", "-o", "type,name", "-Hpr"]);
@@ -132,6 +133,7 @@ impl ZfsEngine for ZfsOpen3 {
 }
 
 impl ZfsOpen3 {
+    #[allow(clippy::option_unwrap_used)]
     fn stdout_to_list_of_datasets(z: &mut Command) -> Result<Vec<PathBuf>, Error> {
         let out = z.output()?;
         if out.status.success() {

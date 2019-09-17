@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf};
+use std::path::PathBuf;
 
 pub mod description;
 pub use description::{Dataset, DatasetKind};
@@ -17,123 +17,55 @@ pub mod properties;
 pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
                      SnapDir};
 
-use crate::parsers::zfs::{Rule, ZfsParser};
-use pest::Parser;
-use std::borrow::Cow;
+pub static DATASET_NAME_MAX_LENGTH: usize = 255;
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        /// `zfs not found in the PATH. Open3 specific error.
-        CmdNotFound {}
-        LZCInitializationFailed(err: std::io::Error) {
-            cause(err)
-        }
-        NvOpError(err: libnv::NvError) {
-            cause(err)
-            from()
-        }
-        InvalidInput {}
-        Io(err: std::io::Error) {
-            cause(err)
-        }
-        Unknown {}
-        UnknownSoFar(err: String) {}
-        DatasetNotFound(dataset: PathBuf) {}
-    }
-}
+mod errors;
 
-impl From<io::Error> for Error {
-    #[allow(clippy::wildcard_enum_match_arm)]
-    fn from(err: io::Error) -> Error {
-        match err.kind() {
-            io::ErrorKind::NotFound => Error::CmdNotFound,
-            io::ErrorKind::InvalidInput => Error::InvalidInput,
-            _ => Error::Io(err),
-        }
-    }
-}
-
-type Result<T, E = Error> = std::result::Result<T, E>;
-
-impl Error {
-    pub fn kind(&self) -> ErrorKind {
-        match self {
-            Error::CmdNotFound => ErrorKind::CmdNotFound,
-            Error::LZCInitializationFailed(_) => ErrorKind::LZCInitializationFailed,
-            Error::NvOpError(_) => ErrorKind::NvOpError,
-            Error::InvalidInput => ErrorKind::InvalidInput,
-            Error::Io(_) => ErrorKind::Io,
-            Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
-            Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
-        }
-    }
-
-    fn unknown_so_far(stderr: Cow<'_, str>) -> Self { Error::UnknownSoFar(stderr.into()) }
-
-    pub(crate) fn from_stderr(stderr_raw: &[u8]) -> Self {
-        let stderr = String::from_utf8_lossy(stderr_raw);
-        if let Ok(mut pairs) = ZfsParser::parse(Rule::error, &stderr) {
-            // Pest: error > dataset_not_found > dataset_name: "s/asd/asd"
-            let error_pair = pairs.next().unwrap().into_inner().next().unwrap();
-            match error_pair.as_rule() {
-                Rule::dataset_not_found => {
-                    let dataset_name_pair = error_pair.into_inner().next().unwrap();
-                    return Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()));
-                },
-                _ => return Self::unknown_so_far(stderr),
-            }
-        } else {
-            Self::unknown_so_far(stderr)
-        }
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum ErrorKind {
-    CmdNotFound,
-    LZCInitializationFailed,
-    NvOpError,
-    InvalidInput,
-    Io,
-    Unknown,
-    DatasetNotFound,
-}
-
-impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool { self.kind() == other.kind() }
-}
+pub use errors::{Error, ErrorKind, Result, ValidationError, ValidationResult};
+use std::ffi::OsStr;
 
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
     ///
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
-    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
+        Err(Error::Unimplemented)
     }
 
     /// Create a new dataset.
-    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> {
+        Err(Error::Unimplemented)
     }
 
     /// Deletes the dataset
-    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> {
+        Err(Error::Unimplemented)
     }
 
-    fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
+        Err(Error::Unimplemented)
     }
-    fn list_filesystems<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn list_filesystems<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        Err(Error::Unimplemented)
     }
-    fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        Err(Error::Unimplemented)
     }
-    fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
-        unimplemented!();
+    #[cfg_attr(tarpaulin, skip)]
+    fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        Err(Error::Unimplemented)
     }
 }
 
@@ -246,11 +178,132 @@ pub struct CreateDatasetRequest {
 
 impl CreateDatasetRequest {
     pub fn builder() -> CreateDatasetRequestBuilder { CreateDatasetRequestBuilder::default() }
+
+    pub fn validate(&self) -> Result<()> {
+        let mut errors = Vec::new();
+
+        if let Err(e) = validators::validate_name(self.name()) {
+            errors.push(e);
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.into())
+        }
+    }
+}
+
+#[derive(Default, Builder, Debug, Clone, Getters)]
+#[builder(setter(into))]
+#[get = "pub"]
+pub struct CreateSnapshotsRequest {
+    snapshots: Vec<PathBuf>,
+    #[builder(default)]
+    user_properties: HashMap<String, String>,
+}
+impl CreateSnapshotsRequest {
+    pub fn builder() -> CreateSnapshotsRequestBuilder { CreateSnapshotsRequestBuilder::default() }
+
+    pub fn validate(&self) -> Result<()> {
+        let mut errors = Vec::new();
+        // Check if all datasets belong to the same pool
+        {
+            let mut zpools: Vec<Option<&OsStr>> =
+                self.snapshots.iter().map(|path| path.iter().next()).collect();
+            zpools.sort();
+            zpools.dedup();
+            if zpools.len() > 1 {
+                let zpls = zpools
+                    .into_iter()
+                    .filter(Option::is_some)
+                    .map(Option::unwrap)
+                    .filter(|name| name.to_string_lossy() != "/")
+                    .map(PathBuf::from)
+                    .collect();
+                errors.push(ValidationError::MultipleZpools(zpls))
+            }
+        }
+        // Validate names
+        errors.extend(
+            self.snapshots
+                .iter()
+                .map(validators::validate_name)
+                .filter(ValidationResult::is_err)
+                .map(ValidationResult::unwrap_err),
+        );
+        // Validate that name is actually a snapshot
+        for path in self.snapshots.iter() {
+            let as_str = path.to_string_lossy();
+            let mut parts = as_str.split('@');
+            // Validate name part
+            if parts.next().is_none() {
+                errors.push(ValidationError::Unknown(path.clone()));
+            }
+            // Validate snapshot name part
+            if parts.next().is_none() {
+                errors.push(ValidationError::MissingSnapshotName(path.clone()));
+            }
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.into())
+        }
+    }
+}
+
+impl CreateSnapshotsRequestBuilder {
+    pub fn prop(&mut self, key: String, val: String) -> &mut Self {
+        match self.user_properties {
+            Some(ref mut props) => props.insert(key, val),
+            None => {
+                self.user_properties = Some(HashMap::new());
+                return self.prop(key, val);
+            },
+        };
+        self
+    }
+
+    pub fn snapshot(&mut self, snapshot: PathBuf) -> &mut Self {
+        match self.snapshots {
+            Some(ref mut snapshots) => snapshots.push(snapshot),
+            None => {
+                self.snapshots = Some(Vec::new());
+                return self.snapshot(snapshot);
+            },
+        }
+        self
+    }
+}
+
+pub(crate) mod validators {
+    use crate::zfs::{errors::ValidationResult, ValidationError, DATASET_NAME_MAX_LENGTH};
+    use std::path::PathBuf;
+
+    pub fn validate_name(dataset: &PathBuf) -> ValidationResult {
+        let name = dataset.to_string_lossy();
+        if name.ends_with('/') {
+            return Err(ValidationError::MissingName(dataset.clone()));
+        }
+        if name.starts_with('/') {
+            return Err(ValidationError::MissingPool(dataset.clone()));
+        }
+        dataset.file_name().ok_or_else(|| ValidationError::MissingName(dataset.clone())).and_then(
+            |name| {
+                if name.len() > DATASET_NAME_MAX_LENGTH {
+                    return Err(ValidationError::NameTooLong(dataset.clone()));
+                }
+                Ok(())
+            },
+        )
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Error, ErrorKind};
+    use super::{CreateDatasetRequest, DatasetKind, Error, ErrorKind, ValidationError};
+    use crate::zfs::{CreateSnapshotsRequest, ValidationResult};
     use std::path::PathBuf;
 
     #[test]
@@ -270,5 +323,48 @@ mod test {
         let err = Error::from_stderr(stderr);
         assert_eq!(Error::UnknownSoFar(stderr_string), err);
         assert_eq!(ErrorKind::Unknown, err.kind());
+    }
+
+    #[test]
+    fn test_name_validator() {
+        let path = PathBuf::from("z/asd/");
+        let request = CreateDatasetRequest::builder()
+            .name(path.clone())
+            .kind(DatasetKind::Filesystem)
+            .build()
+            .unwrap();
+
+        let result = request.validate().unwrap_err();
+        let expected = Error::from(vec![ValidationError::MissingName(path.clone())]);
+        assert_eq!(expected, result);
+
+        let path = PathBuf::from("z/asd/jnmgyfklueiodyfryvopvyfidvdgxqxsesjmqeoevdgmzsqmesuqzqoxhjfltmsvltdyiilgkvklinlfhaanfqisdazjpfmwttnuosdfijickudhwegburxsoesvunamysaigtagymxcyfeyqiqphtalmbkskrjdndbbcjqiiwucsxzezqmvpzmkylrojumtvatfvrpfkxubfujyioyylmffvrvtfetnzghkwaqzxkqmialkaaekotuhgiivwvbsoqqa");
+        let request = CreateDatasetRequest::builder()
+            .name(path.clone())
+            .kind(DatasetKind::Filesystem)
+            .build()
+            .unwrap();
+
+        let result = request.validate().unwrap_err();
+        let expected = Error::from(vec![ValidationError::NameTooLong(path.clone())]);
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_snapshot_validator() {
+        let req = CreateSnapshotsRequest::builder()
+            .snapshot(PathBuf::from("/a/b/"))
+            .snapshot(PathBuf::from("a/b@c"))
+            .snapshot(PathBuf::from("x/y/z"))
+            .build()
+            .unwrap();
+        let errors = req.validate().unwrap_err();
+        let expected = vec![
+            ValidationError::MultipleZpools(vec![PathBuf::from("a"), PathBuf::from("x")]),
+            ValidationError::MissingName(PathBuf::from("/a/b/")),
+            ValidationError::MissingSnapshotName(PathBuf::from("/a/b/")),
+            ValidationError::MissingSnapshotName(PathBuf::from("x/y/z")),
+        ];
+        assert_eq!(Error::from(expected), errors);
     }
 }

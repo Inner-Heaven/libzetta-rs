@@ -52,4 +52,4 @@ pub mod zpool;
 
 #[cfg(fuzzing)] pub mod fuzzy;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");

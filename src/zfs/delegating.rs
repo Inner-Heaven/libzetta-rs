@@ -1,6 +1,6 @@
 use crate::{slog::Logger,
-            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, DatasetKind, Result,
-                  ZfsEngine}};
+            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, CreateSnapshotsRequest,
+                  DatasetKind, Result, ZfsEngine}};
 use std::path::PathBuf;
 
 /// Handy wrapper that delegates your call to correct implementation.
@@ -21,6 +21,8 @@ impl ZfsEngine for DelegatingZfsEngine {
     fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> { self.lzc.exists(name) }
 
     fn create(&self, request: CreateDatasetRequest) -> Result<()> { self.lzc.create(request) }
+
+    fn snapshot(&self, request: CreateSnapshotsRequest) -> Result<()> { self.lzc.snapshot(request) }
 
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> { self.open3.destroy(name) }
 
