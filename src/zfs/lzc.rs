@@ -62,7 +62,8 @@ impl ZfsEngine for ZfsLzc {
 
         //let mut props = nvpair::NvList::new()?;
         let mut props = NvList::default();
-        let name_c_string = CString::new(request.name().to_str().expect("Non UTF-8 name")).expect("NULL in name");
+        let name_c_string =
+            CString::new(request.name().to_str().expect("Non UTF-8 name")).expect("NULL in name");
         // LZC wants _everything_ as u64 even booleans.
         props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
         if let Some(acl_mode) = request.acl_mode {
@@ -135,7 +136,7 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn snapshot(&self, request: CreateSnapshotsRequest) -> Result<()> {
-       request.validate()?;
+        request.validate()?;
 
         let mut snapshots = NvList::default();
         let mut props = NvList::default();

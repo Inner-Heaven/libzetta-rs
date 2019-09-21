@@ -67,6 +67,7 @@ impl ZfsEngine for ZfsOpen3 {
             Err(Error::Unknown)
         }
     }
+
     #[allow(clippy::option_unwrap_used)]
     #[allow(clippy::result_unwrap_used)]
     fn list<N: Into<PathBuf>>(&self, prefix: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
