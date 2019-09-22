@@ -271,4 +271,6 @@ fn easy_snapshot() {
     let snapshots =
         zfs.list_snapshots(PathBuf::from(root.clone())).expect("failed to list snapshots");
     assert_eq!(expected_snapshots, snapshots);
+
+    assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
 }

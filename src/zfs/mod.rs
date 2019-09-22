@@ -17,6 +17,9 @@ pub mod properties;
 pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
                      SnapDir};
 
+mod pathext;
+pub use pathext::PathExt;
+
 pub static DATASET_NAME_MAX_LENGTH: usize = 255;
 
 mod errors;
@@ -30,26 +33,18 @@ pub trait ZfsEngine {
     /// NOTE: Can't be used to check for existence of bookmarks.
     ///  * `name` - The dataset name to check.
     #[cfg_attr(tarpaulin, skip)]
-    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> {
-        Err(Error::Unimplemented)
-    }
+    fn exists<N: Into<PathBuf>>(&self, _name: N) -> Result<bool> { Err(Error::Unimplemented) }
 
     /// Create a new dataset.
     #[cfg_attr(tarpaulin, skip)]
-    fn create(&self, _request: CreateDatasetRequest) -> Result<()> {
-        Err(Error::Unimplemented)
-    }
+    fn create(&self, _request: CreateDatasetRequest) -> Result<()> { Err(Error::Unimplemented) }
 
     #[cfg_attr(tarpaulin, skip)]
-    fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> {
-        Err(Error::Unimplemented)
-    }
+    fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> { Err(Error::Unimplemented) }
 
     /// Deletes the dataset
     #[cfg_attr(tarpaulin, skip)]
-    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> {
-        Err(Error::Unimplemented)
-    }
+    fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> { Err(Error::Unimplemented) }
 
     #[cfg_attr(tarpaulin, skip)]
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
@@ -228,7 +223,7 @@ impl CreateSnapshotsRequest {
         errors.extend(
             self.snapshots
                 .iter()
-                .map(validators::validate_name)
+                .map(PathBuf::validate)
                 .filter(ValidationResult::is_err)
                 .map(ValidationResult::unwrap_err),
         );
@@ -279,31 +274,36 @@ impl CreateSnapshotsRequestBuilder {
 
 pub(crate) mod validators {
     use crate::zfs::{errors::ValidationResult, ValidationError, DATASET_NAME_MAX_LENGTH};
-    use std::path::PathBuf;
+    use std::path::Path;
 
-    pub fn validate_name(dataset: &PathBuf) -> ValidationResult {
+    pub fn validate_name<P: AsRef<Path>>(dataset: P) -> ValidationResult {
+        _validate_name(dataset.as_ref())
+    }
+
+    pub fn _validate_name(dataset: &Path) -> ValidationResult {
         let name = dataset.to_string_lossy();
         if name.ends_with('/') {
-            return Err(ValidationError::MissingName(dataset.clone()));
+            return Err(ValidationError::MissingName(dataset.to_owned()));
         }
-        if name.starts_with('/') {
-            return Err(ValidationError::MissingPool(dataset.clone()));
+        if dataset.has_root() || dataset.components().count() < 2 {
+            return Err(ValidationError::MissingPool(dataset.to_owned()));
         }
-        dataset.file_name().ok_or_else(|| ValidationError::MissingName(dataset.clone())).and_then(
-            |name| {
+        dataset
+            .file_name()
+            .ok_or_else(|| ValidationError::MissingName(dataset.to_owned()))
+            .and_then(|name| {
                 if name.len() > DATASET_NAME_MAX_LENGTH {
-                    return Err(ValidationError::NameTooLong(dataset.clone()));
+                    return Err(ValidationError::NameTooLong(dataset.to_owned()));
                 }
                 Ok(())
-            },
-        )
+            })
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::{CreateDatasetRequest, DatasetKind, Error, ErrorKind, ValidationError};
-    use crate::zfs::{CreateSnapshotsRequest, ValidationResult};
+    use crate::zfs::CreateSnapshotsRequest;
     use std::path::PathBuf;
 
     #[test]
