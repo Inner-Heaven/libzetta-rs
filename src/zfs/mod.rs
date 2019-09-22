@@ -303,7 +303,7 @@ pub(crate) mod validators {
 #[cfg(test)]
 mod test {
     use super::{CreateDatasetRequest, DatasetKind, Error, ErrorKind, ValidationError};
-    use crate::zfs::{CreateSnapshotsRequest, ValidationResult};
+    use crate::zfs::CreateSnapshotsRequest;
     use std::path::PathBuf;
 
     #[test]

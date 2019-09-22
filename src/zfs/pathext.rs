@@ -61,7 +61,7 @@ impl<P: AsRef<Path>> PathExt for P {
 
     fn get_snapshot(&self) -> Option<String> { self.as_ref().get_snapshot() }
 
-    fn get_bookmark(&self) -> Option<String> { self.as_ref().get_snapshot() }
+    fn get_bookmark(&self) -> Option<String> { self.as_ref().get_bookmark() }
 
     fn validate(&self) -> ValidationResult { self.as_ref().validate() }
 }

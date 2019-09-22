@@ -7,7 +7,6 @@ pub struct ZfsParser;
 #[cfg(test)]
 mod test {
     use super::{Rule, ZfsParser};
-    use crate::zfs::DatasetKind;
     use pest::{consumes_to, parses_to, Parser};
 
     #[test]
