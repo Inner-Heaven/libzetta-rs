@@ -1,5 +1,4 @@
-use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, CreateSnapshotsRequest,
-                 DatasetKind, Error, Result, SnapDir, ZfsEngine};
+use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, Error, Result, SnapDir, ZfsEngine, ValidationError, DestroyTiming};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
@@ -8,6 +7,9 @@ use slog_stdlog::StdLog;
 use crate::zfs::properties::{AclInheritMode, AclMode, ZfsProp};
 use std::{ffi::CString, path::PathBuf, ptr::null_mut};
 use zfs_core_sys as sys;
+use crate::zfs::PathExt;
+use crate::zfs::errors::Error::ValidationErrors;
+use std::collections::HashMap;
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -135,20 +137,64 @@ impl ZfsEngine for ZfsLzc {
         }
     }
 
-    fn snapshot(&self, request: CreateSnapshotsRequest) -> Result<()> {
-        request.validate()?;
+    fn snapshot(&self, snapshots: &[PathBuf], user_properties: Option<HashMap<String,String>>) -> Result<()> {
+        let validation_errors: Vec<ValidationError> = snapshots.iter()
+            .map(PathBuf::validate)
+            .filter(Result::is_err)
+            .map(Result::unwrap_err)
+            .collect();
+        if !validation_errors.is_empty() {
+            return Err(ValidationErrors(validation_errors));
+        }
 
-        let mut snapshots = NvList::default();
+        let mut snapshots_list = NvList::default();
         let mut props = NvList::default();
-        for snap in request.snapshots() {
-            snapshots.insert(&snap.to_string_lossy(), true)?;
+        for snap in snapshots {
+            snapshots_list.insert(&snap.to_string_lossy(), true)?;
         }
         let mut errors_list_ptr = null_mut();
-        for (key, value) in request.user_properties() {
-            props.insert_string(key, value)?;
+        if let Some(user_properties) = user_properties {
+            for (key, value) in user_properties {
+                props.insert_string(&key, &value)?;
+            }
         }
         let errno = unsafe {
-            zfs_core_sys::lzc_snapshot(snapshots.as_ptr(), props.as_ptr(), &mut errors_list_ptr)
+            zfs_core_sys::lzc_snapshot(snapshots_list.as_ptr(), props.as_ptr(), &mut errors_list_ptr)
+        };
+        if !errors_list_ptr.is_null() {
+            let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
+            if !errors.is_empty() {
+                return Err(Error::from(errors));
+            }
+        }
+        match errno {
+            0 => Ok(()),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
+    }
+
+    fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
+        let validation_errors: Vec<ValidationError> = snapshots.iter()
+            .map(PathBuf::validate)
+            .filter(Result::is_err)
+            .map(Result::unwrap_err)
+            .collect();
+        if !validation_errors.is_empty() {
+            return Err(ValidationErrors(validation_errors));
+        }
+
+        let mut snapshots_list = NvList::default();
+
+        for snap in snapshots {
+            snapshots_list.insert(&snap.to_string_lossy(), true)?;
+        }
+
+        let mut errors_list_ptr = null_mut();
+        let errno = unsafe {
+            zfs_core_sys::lzc_destroy_snaps(snapshots_list.as_ptr(), timing.as_c_uint(), &mut errors_list_ptr)
         };
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };

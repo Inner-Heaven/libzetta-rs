@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{PathBuf};
 
 pub mod description;
 pub use description::{Dataset, DatasetKind};
@@ -25,7 +25,24 @@ pub static DATASET_NAME_MAX_LENGTH: usize = 255;
 mod errors;
 
 pub use errors::{Error, ErrorKind, Result, ValidationError, ValidationResult};
-use std::ffi::OsStr;
+
+/// Whether to mark busy snapshots for deferred destruction rather than immediately failing if can't be destroyed right now.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum DestroyTiming {
+    /// If a snapshot has user holds or clones, destroy operation will fail and none of the snapshots will be destroyed.
+    RightNow,
+    /// If a snapshot has user holds or clones, it will be marked for deferred destruction, and will be destroyed when the last hold or clone is removed/destroyed.
+    Defer,
+}
+
+impl DestroyTiming {
+    pub fn as_c_uint(&self) -> std::os::raw::c_uint {
+        match self {
+            DestroyTiming::Defer => 1,
+            DestroyTiming::RightNow => 0,
+        }
+    }
+}
 
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
@@ -39,12 +56,17 @@ pub trait ZfsEngine {
     #[cfg_attr(tarpaulin, skip)]
     fn create(&self, _request: CreateDatasetRequest) -> Result<()> { Err(Error::Unimplemented) }
 
+    /// Create snapshots as one atomic operation.
     #[cfg_attr(tarpaulin, skip)]
-    fn snapshot(&self, _request: CreateSnapshotsRequest) -> Result<()> { Err(Error::Unimplemented) }
+    fn snapshot(&self, _snapshots: &[PathBuf], _user_properties: Option<HashMap<String,String>>) -> Result<()> { Err(Error::Unimplemented) }
 
     /// Deletes the dataset
     #[cfg_attr(tarpaulin, skip)]
     fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> { Err(Error::Unimplemented) }
+
+    /// Delete snapshots as one atomic operation
+    #[cfg_attr(tarpaulin, skip)]
+    fn destroy_snapshots(&self, _snapshots: &[PathBuf], _timing: DestroyTiming) -> Result<()> { Err(Error::Unimplemented) }
 
     #[cfg_attr(tarpaulin, skip)]
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
@@ -189,89 +211,6 @@ impl CreateDatasetRequest {
     }
 }
 
-#[derive(Default, Builder, Debug, Clone, Getters)]
-#[builder(setter(into))]
-#[get = "pub"]
-pub struct CreateSnapshotsRequest {
-    snapshots: Vec<PathBuf>,
-    #[builder(default)]
-    user_properties: HashMap<String, String>,
-}
-impl CreateSnapshotsRequest {
-    pub fn builder() -> CreateSnapshotsRequestBuilder { CreateSnapshotsRequestBuilder::default() }
-
-    pub fn validate(&self) -> Result<()> {
-        let mut errors = Vec::new();
-        // Check if all datasets belong to the same pool
-        {
-            let mut zpools: Vec<Option<&OsStr>> =
-                self.snapshots.iter().map(|path| path.iter().next()).collect();
-            zpools.sort();
-            zpools.dedup();
-            if zpools.len() > 1 {
-                let zpls = zpools
-                    .into_iter()
-                    .filter(Option::is_some)
-                    .map(Option::unwrap)
-                    .filter(|name| name.to_string_lossy() != "/")
-                    .map(PathBuf::from)
-                    .collect();
-                errors.push(ValidationError::MultipleZpools(zpls))
-            }
-        }
-        // Validate names
-        errors.extend(
-            self.snapshots
-                .iter()
-                .map(PathBuf::validate)
-                .filter(ValidationResult::is_err)
-                .map(ValidationResult::unwrap_err),
-        );
-        // Validate that name is actually a snapshot
-        for path in self.snapshots.iter() {
-            let as_str = path.to_string_lossy();
-            let mut parts = as_str.split('@');
-            // Validate name part
-            if parts.next().is_none() {
-                errors.push(ValidationError::Unknown(path.clone()));
-            }
-            // Validate snapshot name part
-            if parts.next().is_none() {
-                errors.push(ValidationError::MissingSnapshotName(path.clone()));
-            }
-        }
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors.into())
-        }
-    }
-}
-
-impl CreateSnapshotsRequestBuilder {
-    pub fn prop(&mut self, key: String, val: String) -> &mut Self {
-        match self.user_properties {
-            Some(ref mut props) => props.insert(key, val),
-            None => {
-                self.user_properties = Some(HashMap::new());
-                return self.prop(key, val);
-            },
-        };
-        self
-    }
-
-    pub fn snapshot(&mut self, snapshot: PathBuf) -> &mut Self {
-        match self.snapshots {
-            Some(ref mut snapshots) => snapshots.push(snapshot),
-            None => {
-                self.snapshots = Some(Vec::new());
-                return self.snapshot(snapshot);
-            },
-        }
-        self
-    }
-}
-
 pub(crate) mod validators {
     use crate::zfs::{errors::ValidationResult, ValidationError, DATASET_NAME_MAX_LENGTH};
     use std::path::Path;
@@ -303,7 +242,6 @@ pub(crate) mod validators {
 #[cfg(test)]
 mod test {
     use super::{CreateDatasetRequest, DatasetKind, Error, ErrorKind, ValidationError};
-    use crate::zfs::CreateSnapshotsRequest;
     use std::path::PathBuf;
 
     #[test]
@@ -348,23 +286,5 @@ mod test {
         let result = request.validate().unwrap_err();
         let expected = Error::from(vec![ValidationError::NameTooLong(path.clone())]);
         assert_eq!(expected, result);
-    }
-
-    #[test]
-    fn test_snapshot_validator() {
-        let req = CreateSnapshotsRequest::builder()
-            .snapshot(PathBuf::from("/a/b/"))
-            .snapshot(PathBuf::from("a/b@c"))
-            .snapshot(PathBuf::from("x/y/z"))
-            .build()
-            .unwrap();
-        let errors = req.validate().unwrap_err();
-        let expected = vec![
-            ValidationError::MultipleZpools(vec![PathBuf::from("a"), PathBuf::from("x")]),
-            ValidationError::MissingName(PathBuf::from("/a/b/")),
-            ValidationError::MissingSnapshotName(PathBuf::from("/a/b/")),
-            ValidationError::MissingSnapshotName(PathBuf::from("x/y/z")),
-        ];
-        assert_eq!(Error::from(expected), errors);
     }
 }
