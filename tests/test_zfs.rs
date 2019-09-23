@@ -12,11 +12,12 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{Copies, CreateDatasetRequest, CreateSnapshotsRequest, DatasetKind, Error,
+               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error,
                      ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
+use libzetta::zfs::DestroyTiming;
 
 static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
@@ -264,13 +265,15 @@ fn easy_snapshot() {
     zfs.create(request).expect("Failed to create a root dataset");
     let expected_snapshots = vec![PathBuf::from(format!("{}/{}@snap-1", zpool, &root_name))];
 
-    let request =
-        CreateSnapshotsRequest::builder().snapshots(expected_snapshots.clone()).build().unwrap();
-    zfs.snapshot(request).expect("Failed to create snapshots");
+    zfs.snapshot(&expected_snapshots, None).expect("Failed to create snapshots");
 
     let snapshots =
         zfs.list_snapshots(PathBuf::from(root.clone())).expect("failed to list snapshots");
     assert_eq!(expected_snapshots, snapshots);
 
     assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
+
+    zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
+    assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
+
 }
