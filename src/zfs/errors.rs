@@ -1,6 +1,7 @@
 use crate::parsers::zfs::{Rule, ZfsParser};
 use pest::Parser;
 use std::{borrow::Cow, io, path::PathBuf};
+use libnv::nvpair::NvList;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type ValidationResult<T = (), E = ValidationError> = std::result::Result<T, E>;
@@ -17,9 +18,9 @@ quick_error! {
             cause(err)
             from()
         }
-        InvalidInput {}
         Io(err: std::io::Error) {
             cause(err)
+            from()
         }
         Unknown {}
         UnknownSoFar(err: String) {}
@@ -27,20 +28,13 @@ quick_error! {
         ValidationErrors(errors: Vec<ValidationError>) {
             from()
         }
+        MultiOpError(err: NvList) {
+            from()
+        }
         Unimplemented {}
     }
 }
 
-impl From<io::Error> for Error {
-    #[allow(clippy::wildcard_enum_match_arm)]
-    fn from(err: io::Error) -> Error {
-        match err.kind() {
-            io::ErrorKind::NotFound => Error::CmdNotFound,
-            io::ErrorKind::InvalidInput => Error::InvalidInput,
-            _ => Error::Io(err),
-        }
-    }
-}
 impl From<ValidationError> for Error {
     fn from(err: ValidationError) -> Error { Error::ValidationErrors(vec![err]) }
 }
@@ -51,11 +45,11 @@ impl Error {
             Error::CmdNotFound => ErrorKind::CmdNotFound,
             Error::LZCInitializationFailed(_) => ErrorKind::LZCInitializationFailed,
             Error::NvOpError(_) => ErrorKind::NvOpError,
-            Error::InvalidInput => ErrorKind::InvalidInput,
             Error::Io(_) => ErrorKind::Io,
             Error::DatasetNotFound(_) => ErrorKind::DatasetNotFound,
             Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
             Error::ValidationErrors(_) => ErrorKind::ValidationErrors,
+            Error::MultiOpError(_) => ErrorKind::MultiOpError,
             Error::Unimplemented => ErrorKind::Unimplemented,
         }
     }
@@ -80,6 +74,10 @@ impl Error {
             Self::unknown_so_far(stderr)
         }
     }
+
+    pub fn invalid_input() -> Self {
+        Error::Io(io::Error::from(io::ErrorKind::InvalidInput))
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -93,6 +91,7 @@ pub enum ErrorKind {
     DatasetNotFound,
     ValidationErrors,
     Unimplemented,
+    MultiOpError,
 }
 
 impl PartialEq for Error {
@@ -110,7 +109,7 @@ quick_error! {
         NameTooLong(dataset: PathBuf) {}
         MissingName(dataset: PathBuf) {}
         MissingSnapshotName(dataset: PathBuf) {}
-        MissingPool(daset: PathBuf) {}
+        MissingPool(dataset: PathBuf) {}
         Unknown(dataset: PathBuf) {}
     }
 }
