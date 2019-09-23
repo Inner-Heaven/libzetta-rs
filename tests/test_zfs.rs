@@ -137,7 +137,7 @@ fn easy_invalid_zfs() {
         .unwrap();
 
     let res = zfs.create(request).unwrap_err();
-    assert_eq!(Error::InvalidInput, res);
+    assert_eq!(Error::invalid_input(), res);
 
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
@@ -148,7 +148,7 @@ fn easy_invalid_zfs() {
         .unwrap();
 
     let res = zfs.create(request).unwrap_err();
-    assert_eq!(Error::InvalidInput, res);
+    assert_eq!(Error::invalid_input(), res);
 
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
@@ -160,7 +160,7 @@ fn easy_invalid_zfs() {
         .unwrap();
 
     let res = zfs.create(request).unwrap_err();
-    assert_eq!(Error::InvalidInput, res);
+    assert_eq!(Error::invalid_input(), res);
 
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
@@ -170,7 +170,7 @@ fn easy_invalid_zfs() {
         .unwrap();
 
     let res = zfs.create(request).unwrap_err();
-    assert_eq!(Error::InvalidInput, res);
+    assert_eq!(Error::invalid_input(), res);
 }
 
 #[test]
