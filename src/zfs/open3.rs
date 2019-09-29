@@ -1,4 +1,4 @@
-use crate::zfs::{DatasetKind, Error, Result, ZfsEngine};
+use crate::zfs::{DatasetKind, Error, Result, ZfsEngine, Properties, FilesystemProperties};
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::{ffi::OsString,
@@ -7,6 +7,9 @@ use std::{ffi::OsString,
 
 use crate::parsers::zfs::{Rule, ZfsParser};
 use pest::Parser;
+use std::str::Lines;
+
+static FAILED_TO_PARSE: &str = "Failed to parse value";
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -131,7 +134,31 @@ impl ZfsEngine for ZfsOpen3 {
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         ZfsOpen3::stdout_to_list_of_datasets(&mut z)
     }
+
+    fn read_properties<N: Into<PathBuf>>(&self, path: N) -> Result<Properties> {
+        let mut z = self.zfs();
+        z.args(&["get", "-Hp", "all"]);
+        z.arg(path.into().as_os_str());
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        if out.status.success() {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let mut lines = stdout.lines();
+
+            let first = lines.next().expect("Empty stdout with 0 exit code");
+            let kind = parse_prop_line(&first).0;
+
+            let ret =match kind.as_ref() {
+                "filesystem" => parse_filesystem_lines(&mut lines),
+                _ => parse_unknown_lines(&mut lines),
+            };
+            Ok(ret)
+        } else {
+            Err(Error::from_stderr(&out.stderr))
+        }
+    }
 }
+
 
 impl ZfsOpen3 {
     #[allow(clippy::option_unwrap_used)]
@@ -155,5 +182,51 @@ impl ZfsOpen3 {
         } else {
             Err(Error::from_stderr(&out.stderr))
         }
+    }
+}
+
+fn parse_prop_line(line: &str) -> (String, String) {
+    let mut splits = line.split('\t');
+    // consume dataset name
+    splits.next().expect("Failed to parse output");
+    let name = splits.next().expect("failed to extract key").to_string();
+    let value = splits.next().expect("Failed to extract value").to_string();
+    (name, value)
+}
+
+pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
+    let mut properties = FilesystemProperties::builder();
+    for (key, value) in lines.map(parse_prop_line) {
+        match key.as_ref() {
+            "creation" => { properties.creation(value.parse().expect(FAILED_TO_PARSE)); },
+            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
+            "available" => { properties.available(value.parse().expect(FAILED_TO_PARSE)); },
+            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
+            "compressratio" => { properties.compression_ratio(value.parse().expect(FAILED_TO_PARSE)); },
+            "mounted" => { properties.mounted(parse_bool(&value)); },
+            "quota"  => { properties.quota(value.parse().expect(FAILED_TO_PARSE)); },
+            "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },
+            "recordsize"  => { properties.record_size(value.parse().expect(FAILED_TO_PARSE)); },
+            "mountpoint" => { properties.mount_point(parse_mount_point(&value)); },
+
+            _ => properties.insert_unknown_property(key, value),
+        };
+    }
+    unimplemented!();
+}
+
+fn parse_unknown_lines(lines: &mut Lines) -> Properties {
+    let props = lines.map(parse_prop_line).collect();
+    Properties::Unknown(props)
+}
+
+fn parse_bool(val: &str) -> bool {
+    val == "yes"
+}
+
+fn parse_mount_point(val: &str) -> Option<PathBuf> {
+    match val {
+        "-" | "none" => None,
+        _ => Some(PathBuf::from(val))
     }
 }

@@ -1,7 +1,7 @@
 use std::path::{PathBuf};
 
 pub mod description;
-pub use description::{Dataset, DatasetKind};
+pub use description::{DatasetKind};
 
 pub mod delegating;
 pub use delegating::DelegatingZfsEngine;
@@ -14,8 +14,8 @@ pub use lzc::ZfsLzc;
 use std::collections::HashMap;
 
 pub mod properties;
-pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, DatasetProperties,
-                     SnapDir};
+pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, FilesystemProperties,
+                     SnapDir, Properties, VolumeProperties};
 
 mod pathext;
 pub use pathext::PathExt;
@@ -82,6 +82,11 @@ pub trait ZfsEngine {
     }
     #[cfg_attr(tarpaulin, skip)]
     fn list_volumes<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        Err(Error::Unimplemented)
+    }
+    /// Read all properties of filesystem/volume/snapshot/bookmark.
+    #[cfg_attr(tarpaulin, skip)]
+    fn read_properties<N: Into<PathBuf>>(&self, _path: N) -> Result<Properties> {
         Err(Error::Unimplemented)
     }
 }

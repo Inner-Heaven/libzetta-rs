@@ -2,6 +2,7 @@ use std::{default::Default, path::PathBuf};
 use strum_macros::{AsRefStr, Display, EnumString};
 
 use crate::zfs::description::DatasetKind;
+use std::collections::HashMap;
 
 macro_rules! impl_zfs_prop {
     ($type_:ty, $as_str:literal) => {
@@ -249,7 +250,7 @@ impl Default for CanMount {
     fn default() -> Self { CanMount::On }
 }
 
-/// Most of native properties of dataset - both immutable and mutable. Default values taken from
+/// Most of native properties of filesystem dataset - both immutable and mutable. Default values taken from
 /// FreeBSD 12.
 ///
 /// Notable missing properties:
@@ -258,9 +259,9 @@ impl Default for CanMount {
 ///  - sharesmb
 ///  - version
 ///  - zoned
-#[derive(Debug, Clone, PartialEq, Getters)]
+#[derive(Debug, Clone, PartialEq, Getters, Builder)]
 #[get = "pub"]
-pub struct DatasetProperties {
+pub struct FilesystemProperties {
     /// Controls how ACL entries inherited when files and directories created.
     acl_inherit: AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
@@ -296,7 +297,7 @@ pub struct DatasetProperties {
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec: bool,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
-    /// mounted. This property does not apply to volumes.
+    /// mounted.
     mounted: bool,
     /// Controls the mount point used for this file system.
     mount_point: Option<PathBuf>,
@@ -348,6 +349,108 @@ pub struct DatasetProperties {
     /// Read-only property that identifies the amount of disk space is consumed by snapshots of a
     /// dataset.
     used_by_snapshots: u64,
+    /// Indicates whether extended attributes are enabled or disabled.
+    xattr: bool,
+    /// Controls whether the dataset is managed from a jail.
+    jailed: Option<bool>,
+    /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
+    utf8_only: Option<bool>,
+
+    /// User defined properties and properties this library failed to recognize.
+    unknown_properties: HashMap<String, String>,
+}
+
+impl FilesystemProperties {
+    pub fn builder() -> FilesystemPropertiesBuilder {
+        let mut ret = FilesystemPropertiesBuilder::default();
+        ret.unknown_properties(HashMap::new());
+        ret
+    }
+}
+
+impl FilesystemPropertiesBuilder {
+    pub fn insert_unknown_property(&mut self, key: String, value: String) {
+        if let Some(ref mut props) = self.unknown_properties {
+            props.insert(key, value);
+        } else {
+            self.unknown_properties(HashMap::new());
+            self.insert_unknown_property(key, value);
+        }
+    }
+}
+
+
+/// Most of native properties of volume dataset - both immutable and mutable. Default values taken from
+/// FreeBSD 12.
+///
+/// Notable missing properties:
+///  - shareiscsi
+///  - sharenfs
+///  - sharesmb
+///  - version
+///  - zoned
+#[derive(Debug, Clone, PartialEq, Getters)]
+#[get = "pub"]
+pub struct VolumeProperties {
+    /// Read-only property that identifies the amount of disk space available to a dataset and all
+    /// its children, assuming no other activity in the pool. Because disk space shared within a
+    /// pool, available space can be limited by various factors including physical pool size,
+    /// quotas, reservations, and other datasets within the pool.
+    available: i64,
+    /// Controls the checksum used to verify data integrity.
+    checksum: Checksum,
+    /// Enables or disables compression for a dataset.
+    compression: Compression,
+    /// Read-only property that identifies the compression ratio achieved for a dataset, expressed
+    /// as a multiplier.
+    compression_ratio: f64,
+    /// Sets the number of copies of user data per file system. Available values are 1, 2, or 3.
+    /// These copies are in addition to any pool-level redundancy. Disk space used by multiple
+    /// copies of user data charged to the corresponding file and dataset, and counts against
+    /// quotas and reservations. In addition, the used property updated when multiple copies
+    /// enabled. Consider setting this property when the file system created because changing this
+    /// property on an existing file system only affects newly written data.
+    copies: Copies,
+    /// Read-only property that identifies the date and time a dataset created.
+    creation: u64,
+    /// Controls what is cached in the primary cache (ARC).
+    primary_cache: CacheMode,
+    // Read-only property for cloned file systems or volumes that identifies the snapshot from
+    // which the clone was created.
+    origin: Option<String>,
+    /// Controls whether a dataset can be modified.
+    readonly: bool,
+    /// Specifies a suggested block size for files in a file system in bytes. The size specified
+    /// must be a power of two greater than or equal to 512 and less than or equal to 128 KiB.
+    /// If the large_blocks feature is enabled on the pool, the size may be up to 1 MiB.
+    record_size: u64,
+    /// Read-only property that identifies the amount of data accessible by a dataset, which might
+    /// or might not be shared with other datasets in the pool.
+    referenced: u64,
+    /// Sets the minimum amount of disk space is guaranteed to a dataset, not including
+    /// descendants, such as snapshots and clones.
+    ref_reservation: Option<u64>,
+    /// Sets the minimum amount of disk space guaranteed to a dataset and its descendants.
+    reservation: Option<u64>,
+    /// Controls what is cached in the secondary cache (L2ARC).
+    secondary_cache: CacheMode,
+    /// Read-only property that identifies the dataset type as filesystem (file system or clone),
+    /// volume, or snapshot.
+    kind: DatasetKind,
+    /// Read-only property that identifies the amount of disk space consumed by a dataset and all
+    /// its descendants.
+    used: u64,
+    /// Read-only property that identifies the amount of disk space is used by children of this
+    /// dataset, which would be freed if all the dataset's children were destroyed.
+    used_by_children: u64,
+    /// Read-only property that identifies the amount of disk space is used by a dataset itself.
+    used_by_dataset: u64,
+    /// Read-only property that identifies the amount of disk space is used by a refreservation set
+    /// on a dataset.
+    used_by_ref_reservation: u64,
+    /// Read-only property that identifies the amount of disk space is consumed by snapshots of a
+    /// dataset.
+    used_by_snapshots: u64,
     /// For volumes, specifies the logical size of the volume.
     volume_size: u64,
     /// For volumes, specifies the block size of the volume in bytes. The block size cannot be
@@ -355,8 +458,14 @@ pub struct DatasetProperties {
     /// The default block size for volumes is 8 KB. Any power of 2 from 512 bytes to 128 KB is
     /// valid.
     volume_block_size: u64,
-    /// Indicates whether extended attributes are enabled or disabled.
-    xattr: bool,
+    /// User defined properties and properties this library failed to recognize.
+    unknown_properties: HashMap<String, String>,
+}
+
+pub enum Properties {
+    Filesystem(FilesystemProperties),
+    Volume(VolumeProperties),
+    Unknown(HashMap<String, String>),
 }
 
 impl_zfs_prop!(AclInheritMode, "aclinherit");
