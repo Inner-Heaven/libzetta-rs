@@ -17,7 +17,7 @@ is-it-maintained-issue-resolution = { repository = "Inner-Heaven/libzetta-rs" }
 azure-devops = { project = "andoriyu/libpandemonium", pipeline = "libzetta-rs", build="4" }
 
 [dependencies]
-getset = "0.0.8"
+getset = "0.0.9"
 derive_builder = "0.8"
 lazy_static = "1.2"
 libc = "0.2"
