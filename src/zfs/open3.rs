@@ -208,6 +208,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
             "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },
             "recordsize"  => { properties.record_size(value.parse().expect(FAILED_TO_PARSE)); },
             "mountpoint" => { properties.mount_point(parse_mount_point(&value)); },
+            "primarycache" => { properties.primary_cache(value.parse().expect(FAILED_TO_PARSE)); },
 
             _ => properties.insert_unknown_property(key, value),
         };
