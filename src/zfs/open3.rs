@@ -8,6 +8,7 @@ use std::{ffi::OsString,
 use crate::parsers::zfs::{Rule, ZfsParser};
 use pest::Parser;
 use std::str::Lines;
+use crate::utils::parse_float;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
 
@@ -202,7 +203,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
             "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
             "available" => { properties.available(value.parse().expect(FAILED_TO_PARSE)); },
             "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
-            "compressratio" => { properties.compression_ratio(value.parse().expect(FAILED_TO_PARSE)); },
+            "compressratio" => { properties.compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
             "mounted" => { properties.mounted(parse_bool(&value)); },
             "quota"  => { properties.quota(value.parse().expect(FAILED_TO_PARSE)); },
             "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },

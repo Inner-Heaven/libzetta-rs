@@ -3,6 +3,7 @@
 use std::{ffi::OsString, path::PathBuf};
 
 use super::{ZpoolError, ZpoolResult};
+use crate::utils::parse_float;
 
 /// Implement this for your custom properties.
 pub trait PropPair {
@@ -354,16 +355,7 @@ impl ZpoolProperties {
         };
 
         let mut dedup_ratio_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
-
-        // remove 'x'
-        let last_char = {
-            let chars = dedup_ratio_string.chars();
-            chars.last()
-        };
-        if last_char == Some('x') {
-            dedup_ratio_string.pop();
-        }
-        let dedup_ratio: f64 = dedup_ratio_string.parse()?;
+        let dedup_ratio: f64 = parse_float(dedup_ratio_string)?;
 
         let expand_size_str = cols.next().ok_or(ZpoolError::ParseError)?;
         let expand_size: Option<usize> = match expand_size_str {
