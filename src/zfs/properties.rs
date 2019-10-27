@@ -290,12 +290,14 @@ pub struct FilesystemProperties {
     /// property on an existing file system only affects newly written data.
     copies: Copies,
     /// Read-only property that identifies the date and time a dataset created.
-    creation: String,
+    creation: u64,
     /// Controls whether device files in a file system can be opened.
     devices: bool,
     /// Controls whether programs in a file system allowed to be executed. Also, when set to
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec: bool,
+    /// GUID of the database
+    guid: u64,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
     /// mounted.
     mounted: bool,
@@ -307,7 +309,7 @@ pub struct FilesystemProperties {
     // which the clone was created.
     origin: Option<String>,
     /// Limits the amount of disk space a dataset and its descendants can consume.
-    quota: Option<u64>,
+    quota: u64,
     /// Controls whether a dataset can be modified.
     readonly: bool,
     /// Specifies a suggested block size for files in a file system in bytes. The size specified
@@ -320,21 +322,18 @@ pub struct FilesystemProperties {
     /// Sets the amount of disk space a dataset can consume. This property enforces a hard limit on
     /// the amount of space used. This hard limit does not include disk space used by descendents,
     /// such as snapshots and clones.
-    ref_quota: Option<u64>,
+    ref_quota: u64,
     /// Sets the minimum amount of disk space is guaranteed to a dataset, not including
     /// descendants, such as snapshots and clones.
-    ref_reservation: Option<u64>,
+    ref_reservation: u64,
     /// Sets the minimum amount of disk space guaranteed to a dataset and its descendants.
-    reservation: Option<u64>,
+    reservation: u64,
     /// Controls what is cached in the secondary cache (L2ARC).
     secondary_cache: CacheMode,
     /// Controls whether the `setuid` bit is honored in a file system.
     setuid: bool,
     /// Controls whether the .zfs directory is hidden or visible in the root of the file system
     snap_dir: SnapDir,
-    /// Read-only property that identifies the dataset type as filesystem (file system or clone),
-    /// volume, or snapshot.
-    kind: DatasetKind,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
     /// its descendants.
     used: u64,
@@ -355,6 +354,10 @@ pub struct FilesystemProperties {
     jailed: Option<bool>,
     /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
     utf8_only: Option<bool>,
+    /// Version (should 5)
+    version: u64,
+    /// Written?
+    written: u64,
 
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
@@ -462,6 +465,7 @@ pub struct VolumeProperties {
     unknown_properties: HashMap<String, String>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Properties {
     Filesystem(FilesystemProperties),
     Volume(VolumeProperties),

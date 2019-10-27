@@ -231,3 +231,84 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
         _ => Some(PathBuf::from(val))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::zfs::properties::{AclInheritMode, AclMode};
+    use crate::zfs::{CanMount, Checksum, Compression, Copies, CacheMode, SnapDir};
+
+    #[test]
+    fn filesystem_properties_freebsd() {
+        let stdout = include_str!("fixtures/filesystem_properties_freebsd");
+
+        let result = parse_filesystem_lines(&mut stdout.lines());
+
+        // Goal to have zero unknown before 1.0
+        let unknown  = [
+            ("casesensitivity", "sensitive"),
+            ("createtxg", "46918"),
+            ("dedup", "off"),
+            ("dnodesize", "legacy"),
+            ("filesystem_count", "18446744073709551615"),
+            ("filesystem_limit", "18446744073709551615"),
+            ("logbias", "latency"),
+            ("logicalreferenced", "117966950912"),
+            ("logicalused", "125882283520"),
+            ("mlslabel", ""),
+            ("nbmand", "off"),
+            ("normalization", "none"),
+            ("redudant_metadata", "all"),
+            ("refcompressratio", "1.23x"),
+            ("sharenfs", "off"),
+            ("sharesmb", "off"),
+            ("sync", "standard"),
+            ("volmode", "default"),
+            ("vscan", "off")
+        ].iter()
+            .map(|(k,v)| (k.to_string(), v.to_string()))
+            .collect();
+
+        let expected = FilesystemProperties::builder()
+            .acl_inherit(AclInheritMode::Restricted)
+            .acl_mode(AclMode::Discard)
+            .atime(false)
+            .available(161379753984)
+            .can_mount(CanMount::On)
+            .checksum(Checksum::On)
+            .compression(Compression::LZ4)
+            .compression_ratio(1.25)
+            .copies(Copies::One)
+            .creation(1493670099)
+            .devices(true)
+            .exec(true)
+            .guid(10533576440524459469)
+            .jailed(Some(false))
+            .mounted(true)
+            .mount_point(Some(PathBuf::from("/usr/home")))
+            .primary_cache(CacheMode::All)
+            .quota(0)
+            .readonly(false)
+            .record_size(131072)
+            .referenced(97392148480)
+            .ref_quota(0)
+            .ref_reservation(0)
+            .reservation(0)
+            .secondary_cache(CacheMode::All)
+            .setuid(true)
+            .snap_dir(SnapDir::Hidden)
+            .used(102563762176)
+            .used_by_children(0)
+            .used_by_dataset(97392148480)
+            .used_by_ref_reservation(0)
+            .used_by_snapshots(5171613696)
+            .utf8_only(Some(false))
+            .version(5)
+            .written(35372666880)
+            .xattr(false)
+            .unknown_properties(unknown)
+            .build().unwrap();
+
+        assert_eq!(Properties::Filesystem(expected), result);
+    }
+}
