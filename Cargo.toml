@@ -29,7 +29,7 @@ slog-stdlog = "4"
 zfs-core-sys= "0.1.0"
 cstr-argument = "0.1.1"
 strum = "0.17.1"
-strum_macros = "0.16.0"
+strum_macros = "0.17.1"
 
 [dependencies.libnv]
 version = "0.2.2"
