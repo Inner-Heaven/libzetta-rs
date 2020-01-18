@@ -13,7 +13,7 @@ use rand::Rng;
 
 use libzetta::{slog::*,
                zfs::{Copies, CreateDatasetRequest, DatasetKind, Error,
-                     ZfsEngine, ZfsLzc},
+                     ZfsEngine, ZfsLzc, SnapDir, Properties},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
@@ -275,5 +275,30 @@ fn easy_snapshot() {
 
     zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
     assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
+
+}
+
+
+#[test]
+fn read_properties() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .copies(Copies::Two)
+        .snap_dir(SnapDir::Visible)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+    let test = zfs.read_properties(&root).unwrap();
+    if let Properties::Filesystem(properties) = zfs.read_properties(&root).unwrap() {
+        assert_eq!(&SnapDir::Visible, properties.snap_dir());
+        assert_eq!(&Copies::Two, properties.copies());
+    } else {
+        panic!("Read not fs properties");
+    }
 
 }

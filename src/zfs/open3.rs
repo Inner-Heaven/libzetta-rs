@@ -147,9 +147,8 @@ impl ZfsEngine for ZfsOpen3 {
             let mut lines = stdout.lines();
 
             let first = lines.next().expect("Empty stdout with 0 exit code");
-            let kind = parse_prop_line(&first).0;
-
-            let ret =match kind.as_ref() {
+            let kind = parse_prop_line(&first).1;
+            let ret = match kind.as_ref() {
                 "filesystem" => parse_filesystem_lines(&mut lines),
                 _ => parse_unknown_lines(&mut lines),
             };
@@ -199,22 +198,50 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     let mut properties = FilesystemProperties::builder();
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
-            "creation" => { properties.creation(value.parse().expect(FAILED_TO_PARSE)); },
-            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
+            "aclinherit" => { properties.acl_inherit(value.parse().expect(FAILED_TO_PARSE)); },
+            "aclmode" => { properties.acl_mode(value.parse().expect(FAILED_TO_PARSE)); },
+            "atime" => { properties.atime(parse_bool(&value)); },
             "available" => { properties.available(value.parse().expect(FAILED_TO_PARSE)); },
-            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
+            "canmount" => { properties.can_mount(value.parse().expect(FAILED_TO_PARSE)); },
+            "checksum" => { properties.checksum(value.parse().expect(FAILED_TO_PARSE)); },
+            "compression" => { properties.compression(value.parse().expect(FAILED_TO_PARSE)); },
             "compressratio" => { properties.compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
+            "copies" => { properties.copies(value.parse().expect(FAILED_TO_PARSE)); },
+            "creation" => { properties.creation(value.parse().expect(FAILED_TO_PARSE)); },
+            "devices" => { properties.devices(parse_bool(&value)); },
+            "exec" => { properties.exec(parse_bool(&value)); },
+            "guid" => { properties.guid(value.parse().expect(FAILED_TO_PARSE)); },
+            "jailed" => { properties.jailed(Some(parse_bool(&value))); },
             "mounted" => { properties.mounted(parse_bool(&value)); },
-            "quota"  => { properties.quota(value.parse().expect(FAILED_TO_PARSE)); },
-            "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },
-            "recordsize"  => { properties.record_size(value.parse().expect(FAILED_TO_PARSE)); },
             "mountpoint" => { properties.mount_point(parse_mount_point(&value)); },
+            "origin"  => { properties.origin(Some(value)); },
             "primarycache" => { properties.primary_cache(value.parse().expect(FAILED_TO_PARSE)); },
+            "quota"  => { properties.quota(value.parse().expect(FAILED_TO_PARSE)); },
+            "readonly" => { properties.readonly(parse_bool(&value)); },
+            "recordsize"  => { properties.record_size(value.parse().expect(FAILED_TO_PARSE)); },
+            "refquota"  => { properties.ref_quota(value.parse().expect(FAILED_TO_PARSE)); },
+            "refreservation"  => { properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE)); },
+            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
+            "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },
+            "secondarycache" => { properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE)); },
+            "setuid" => { properties.setuid(parse_bool(&value)); },
+            "snapdir" => { properties.snap_dir(value.parse().expect(FAILED_TO_PARSE)); },
+            "sync" => { properties.sync(value.parse().expect(FAILED_TO_PARSE)); },
+            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
+            "usedbychildren" => { properties.used_by_children(value.parse().expect(FAILED_TO_PARSE)); },
+            "usedbydataset" => { properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE)); },
+            "usedbyrefreservation" => { properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE)); },
+            "usedbysnapshots" => { properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE)); },
+            "utf8only" => { properties.utf8_only(Some(parse_bool(&value))); },
+            "version" => { properties.version(value.parse().expect(FAILED_TO_PARSE)); },
+            "written" => { properties.written(value.parse().expect(FAILED_TO_PARSE)); },
+            "xattr" => { properties.xattr(parse_bool(&value)); },
+            "type" => { /* no-op */ },
 
             _ => properties.insert_unknown_property(key, value),
         };
-    }
-    unimplemented!();
+    };
+    Properties::Filesystem(properties.build().expect("Failed to build properties"))
 }
 
 fn parse_unknown_lines(lines: &mut Lines) -> Properties {
@@ -223,7 +250,7 @@ fn parse_unknown_lines(lines: &mut Lines) -> Properties {
 }
 
 fn parse_bool(val: &str) -> bool {
-    val == "yes"
+    val == "yes" || val == "on"
 }
 
 fn parse_mount_point(val: &str) -> Option<PathBuf> {
@@ -236,12 +263,24 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::properties::{AclInheritMode, AclMode};
+    use crate::zfs::properties::{AclInheritMode, AclMode, SyncMode};
     use crate::zfs::{CanMount, Checksum, Compression, Copies, CacheMode, SnapDir};
+    use std::collections::HashMap;
 
     #[test]
+    fn test_hashmap_eq() {
+        let mut left = HashMap::new();
+        left.insert("foo", "bar");
+        left.insert("bar", "foo");
+        let mut right = HashMap::new();
+        right.insert("bar", "foo");
+        right.insert("foo", "bar");
+        assert_eq!(left, right);
+
+    }
+    #[test]
     fn filesystem_properties_freebsd() {
-        let stdout = include_str!("fixtures/filesystem_properties_freebsd");
+        let stdout = include_str!("fixtures/filesystem_properties_freebsd.sorted");
 
         let result = parse_filesystem_lines(&mut stdout.lines());
 
@@ -259,11 +298,12 @@ mod test {
             ("mlslabel", ""),
             ("nbmand", "off"),
             ("normalization", "none"),
-            ("redudant_metadata", "all"),
+            ("redundant_metadata", "all"),
             ("refcompressratio", "1.23x"),
             ("sharenfs", "off"),
             ("sharesmb", "off"),
-            ("sync", "standard"),
+            ("snapshot_count", "18446744073709551615"),
+            ("snapshot_limit", "18446744073709551615"),
             ("volmode", "default"),
             ("vscan", "off")
         ].iter()
@@ -298,6 +338,7 @@ mod test {
             .secondary_cache(CacheMode::All)
             .setuid(true)
             .snap_dir(SnapDir::Hidden)
+            .sync(SyncMode::Standard)
             .used(102563762176)
             .used_by_children(0)
             .used_by_dataset(97392148480)

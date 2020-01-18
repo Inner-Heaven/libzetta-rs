@@ -250,6 +250,25 @@ impl Default for CanMount {
     fn default() -> Self { CanMount::On }
 }
 
+/// Controls the behavior of synchronous requests.
+#[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
+#[repr(u64)]
+pub enum SyncMode {
+    /// Posix specified behavior.
+    #[strum(serialize = "standard")]
+    Standard   = 0,
+    /// All transactions are written and flushed. Large performance penalty.
+    #[strum(serialize = "always")]
+    Always    = 1,
+    /// DANGER. Disables synchronous requests.
+    #[strum(serialize = "disabled")]
+    Disabled = 2,
+}
+
+impl Default for SyncMode {
+    fn default() -> Self { SyncMode::Standard }
+}
+
 /// Most of native properties of filesystem dataset - both immutable and mutable. Default values taken from
 /// FreeBSD 12.
 ///
@@ -260,6 +279,7 @@ impl Default for CanMount {
 ///  - version
 ///  - zoned
 #[derive(Debug, Clone, PartialEq, Getters, Builder)]
+#[builder(derive(Debug))]
 #[get = "pub"]
 pub struct FilesystemProperties {
     /// Controls how ACL entries inherited when files and directories created.
@@ -307,6 +327,7 @@ pub struct FilesystemProperties {
     primary_cache: CacheMode,
     // Read-only property for cloned file systems or volumes that identifies the snapshot from
     // which the clone was created.
+    #[builder(default)]
     origin: Option<String>,
     /// Limits the amount of disk space a dataset and its descendants can consume.
     quota: u64,
@@ -334,6 +355,8 @@ pub struct FilesystemProperties {
     setuid: bool,
     /// Controls whether the .zfs directory is hidden or visible in the root of the file system
     snap_dir: SnapDir,
+    /// Controls the behavior of synchronous requests.
+    sync: SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
     /// its descendants.
     used: u64,
@@ -351,8 +374,10 @@ pub struct FilesystemProperties {
     /// Indicates whether extended attributes are enabled or disabled.
     xattr: bool,
     /// Controls whether the dataset is managed from a jail.
+    #[builder(default)]
     jailed: Option<bool>,
     /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
+    #[builder(default)]
     utf8_only: Option<bool>,
     /// Version (should 5)
     version: u64,

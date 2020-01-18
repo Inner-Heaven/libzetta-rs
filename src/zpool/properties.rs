@@ -355,7 +355,7 @@ impl ZpoolProperties {
         };
 
         let mut dedup_ratio_string = cols.next().ok_or(ZpoolError::ParseError).map(String::from)?;
-        let dedup_ratio: f64 = parse_float(dedup_ratio_string)?;
+        let dedup_ratio: f64 = parse_float(&mut dedup_ratio_string)?;
 
         let expand_size_str = cols.next().ok_or(ZpoolError::ParseError)?;
         let expand_size: Option<usize> = match expand_size_str {

@@ -512,7 +512,6 @@ fn test_zpool_take_single_device_offline() {
         zpool.create(topo).unwrap();
 
         let result = zpool.take_offline(&name, &vdev_path, OfflineMode::UntilReboot);
-        dbg!(&result);
         assert!(result.is_err());
 
         assert_eq!(result.unwrap_err().kind(), ZpoolErrorKind::NoValidReplicas);
@@ -820,10 +819,8 @@ fn test_create_with_spare() {
             .spare(vdev1_path.clone())
             .build()
             .unwrap();
-        dbg!(&topo);
         zpool.create(topo.clone()).unwrap();
         let z = zpool.status(&name).unwrap();
-        dbg!(&z);
         assert_eq!(topo, z);
     });
 }
