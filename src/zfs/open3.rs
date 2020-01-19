@@ -199,7 +199,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
             "aclinherit" => { properties.acl_inherit(value.parse().expect(FAILED_TO_PARSE)); },
-            "aclmode" => { properties.acl_mode(value.parse().expect(FAILED_TO_PARSE)); },
+            "aclmode" => { properties.acl_mode(Some(value.parse().expect(FAILED_TO_PARSE))); },
             "atime" => { properties.atime(parse_bool(&value)); },
             "available" => { properties.available(value.parse().expect(FAILED_TO_PARSE)); },
             "canmount" => { properties.can_mount(value.parse().expect(FAILED_TO_PARSE)); },
@@ -210,7 +210,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
             "creation" => { properties.creation(value.parse().expect(FAILED_TO_PARSE)); },
             "devices" => { properties.devices(parse_bool(&value)); },
             "exec" => { properties.exec(parse_bool(&value)); },
-            "guid" => { properties.guid(value.parse().expect(FAILED_TO_PARSE)); },
+            "guid" => { properties.guid(Some(value.parse().expect(FAILED_TO_PARSE))); },
             "jailed" => { properties.jailed(Some(parse_bool(&value))); },
             "mounted" => { properties.mounted(parse_bool(&value)); },
             "mountpoint" => { properties.mount_point(parse_mount_point(&value)); },
@@ -312,7 +312,7 @@ mod test {
 
         let expected = FilesystemProperties::builder()
             .acl_inherit(AclInheritMode::Restricted)
-            .acl_mode(AclMode::Discard)
+            .acl_mode(Some(AclMode::Discard))
             .atime(false)
             .available(161379753984)
             .can_mount(CanMount::On)
@@ -323,7 +323,7 @@ mod test {
             .creation(1493670099)
             .devices(true)
             .exec(true)
-            .guid(10533576440524459469)
+            .guid(Some(10533576440524459469))
             .jailed(Some(false))
             .mounted(true)
             .mount_point(Some(PathBuf::from("/usr/home")))

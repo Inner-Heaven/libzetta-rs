@@ -285,7 +285,7 @@ pub struct FilesystemProperties {
     /// Controls how ACL entries inherited when files and directories created.
     acl_inherit: AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
-    acl_mode: AclMode,
+    acl_mode: Option<AclMode>,
     /// Controls whether the access time for files updated when they are read.
     atime: bool,
     /// Read-only property that identifies the amount of disk space available to a dataset and all
@@ -317,7 +317,7 @@ pub struct FilesystemProperties {
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec: bool,
     /// GUID of the database
-    guid: u64,
+    guid: Option<u64>,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
     /// mounted.
     mounted: bool,
