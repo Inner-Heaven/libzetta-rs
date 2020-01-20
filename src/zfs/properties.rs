@@ -7,7 +7,7 @@ use std::collections::HashMap;
 macro_rules! impl_zfs_prop {
     ($type_:ty, $as_str:literal) => {
         impl ZfsProp for $type_ {
-            fn as_nv_key() -> &'static str { $as_str }
+            fn nv_key() -> &'static str { $as_str }
 
             fn as_nv_value(&self) -> u64 { *self as u64 }
         }
@@ -15,7 +15,7 @@ macro_rules! impl_zfs_prop {
 }
 pub trait ZfsProp {
     /// String representation of ZFS Property
-    fn as_nv_key() -> &'static str;
+    fn nv_key() -> &'static str;
     fn as_nv_value(&self) -> u64;
 }
 /// Controls how ACL entries inherited when files and directories created. Default value is
@@ -209,7 +209,7 @@ pub enum CacheMode {
 
 impl ZfsProp for CacheMode {
     #[allow(clippy::unimplemented)]
-    fn as_nv_key() -> &'static str { unimplemented!() }
+    fn nv_key() -> &'static str { unimplemented!() }
 
     fn as_nv_value(&self) -> u64 { *self as u64 }
 }
@@ -285,6 +285,7 @@ pub struct FilesystemProperties {
     /// Controls how ACL entries inherited when files and directories created.
     acl_inherit: AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
+    #[builder(default)]
     acl_mode: Option<AclMode>,
     /// Controls whether the access time for files updated when they are read.
     atime: bool,
@@ -317,6 +318,7 @@ pub struct FilesystemProperties {
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec: bool,
     /// GUID of the database
+    #[builder(default)]
     guid: Option<u64>,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
     /// mounted.
