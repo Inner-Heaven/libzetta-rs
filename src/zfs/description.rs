@@ -32,8 +32,3 @@ impl DatasetKind {
         }
     }
 }
-
-pub struct Dataset {
-    kind: DatasetKind,
-    name: String,
-}

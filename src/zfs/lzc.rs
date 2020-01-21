@@ -67,14 +67,14 @@ impl ZfsEngine for ZfsLzc {
         let name_c_string =
             CString::new(request.name().to_str().expect("Non UTF-8 name")).expect("NULL in name");
         // LZC wants _everything_ as u64 even booleans.
-        props.insert_u64(AclInheritMode::as_nv_key(), request.acl_inherit.as_nv_value())?;
+        props.insert_u64(AclInheritMode::nv_key(), request.acl_inherit.as_nv_value())?;
         if let Some(acl_mode) = request.acl_mode {
-            props.insert_u64(AclMode::as_nv_key(), acl_mode.as_nv_value())?;
+            props.insert_u64(AclMode::nv_key(), acl_mode.as_nv_value())?;
         }
         props.insert_u64("atime", bool_to_u64(request.atime))?;
-        props.insert_u64(Checksum::as_nv_key(), request.checksum.as_nv_value())?;
-        props.insert_u64(Compression::as_nv_key(), request.compression.as_nv_value())?;
-        props.insert_u64(Copies::as_nv_key(), request.copies().as_nv_value())?;
+        props.insert_u64(Checksum::nv_key(), request.checksum.as_nv_value())?;
+        props.insert_u64(Compression::nv_key(), request.compression.as_nv_value())?;
+        props.insert_u64(Copies::nv_key(), request.copies().as_nv_value())?;
         props.insert_u64("devices", bool_to_u64(request.devices))?;
         props.insert_u64("exec", bool_to_u64(request.exec))?;
         // saved fore mount point
@@ -94,7 +94,7 @@ impl ZfsEngine for ZfsLzc {
         }
         props.insert_u64("secondarycache", request.secondary_cache.as_nv_value())?;
         props.insert_u64("setuid", bool_to_u64(request.setuid))?;
-        props.insert_u64(SnapDir::as_nv_key(), request.snap_dir.as_nv_value())?;
+        props.insert_u64(SnapDir::nv_key(), request.snap_dir.as_nv_value())?;
 
         if request.kind == DatasetKind::Filesystem
             && (request.volume_size.is_some() || request.volume_block_size.is_some())

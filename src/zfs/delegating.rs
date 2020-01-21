@@ -2,7 +2,7 @@ use crate::{slog::Logger,
             zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest,
                   DatasetKind, Result, ZfsEngine}};
 use std::path::PathBuf;
-use crate::zfs::DestroyTiming;
+use crate::zfs::{DestroyTiming, Properties};
 use std::collections::HashMap;
 
 /// Handy wrapper that delegates your call to correct implementation.
@@ -49,5 +49,9 @@ impl ZfsEngine for DelegatingZfsEngine {
 
     fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
         self.open3.list_volumes(pool)
+    }
+
+    fn read_properties<N: Into<PathBuf>>(&self, path: N) -> Result<Properties> {
+        self.open3.read_properties(path)
     }
 }
