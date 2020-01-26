@@ -4,13 +4,16 @@ use slog_stdlog::StdLog;
 use std::{ffi::OsString,
           path::PathBuf,
           process::{Command, Stdio}};
+use chrono::{NaiveDateTime};
 
 use crate::parsers::zfs::{Rule, ZfsParser};
 use pest::Parser;
 use std::str::Lines;
 use crate::utils::parse_float;
+use crate::zfs::properties::SnapshotProperties;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
+static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -150,6 +153,7 @@ impl ZfsEngine for ZfsOpen3 {
             let kind = parse_prop_line(&first).1;
             let ret = match kind.as_ref() {
                 "filesystem" => parse_filesystem_lines(&mut lines),
+                "snapshot" => parse_snapshot_lines(&mut lines),
                 _ => parse_unknown_lines(&mut lines),
             };
             Ok(ret)
@@ -194,6 +198,26 @@ fn parse_prop_line(line: &str) -> (String, String) {
     (name, value)
 }
 
+fn parse_list_of_pathbufs(value: &str) -> Option<Vec<PathBuf>> {
+    if value == "-" || value == "" {
+        return None;
+    }
+    let clones = value.split(",")
+        .map(PathBuf::from)
+        .collect();
+    Some(clones)
+}
+
+fn parse_creation_into_timestamp(value: &str) -> i64 {
+    if let Ok(timestamp) = value.parse() {
+        return timestamp;
+    } else {
+        let date = NaiveDateTime::parse_from_str(value, DATE_FORMAT)
+            .expect(FAILED_TO_PARSE);
+        return date.timestamp();
+    };
+}
+
 pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     let mut properties = FilesystemProperties::builder();
     for (key, value) in lines.map(parse_prop_line) {
@@ -234,6 +258,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
             "usedbysnapshots" => { properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE)); },
             "utf8only" => { properties.utf8_only(Some(parse_bool(&value))); },
             "version" => { properties.version(value.parse().expect(FAILED_TO_PARSE)); },
+            "volmode" => { properties.volume_mode(value.parse().expect(FAILED_TO_PARSE)); },
             "written" => { properties.written(value.parse().expect(FAILED_TO_PARSE)); },
             "xattr" => { properties.xattr(parse_bool(&value)); },
             "type" => { /* no-op */ },
@@ -244,6 +269,37 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     Properties::Filesystem(properties.build().expect("Failed to build properties"))
 }
 
+pub(crate) fn parse_snapshot_lines(lines: &mut Lines) -> Properties {
+    let mut properties = SnapshotProperties::builder();
+    for (key, value) in lines.map(parse_prop_line) {
+        match key.as_ref() {
+            "clones" => { properties.clones(parse_list_of_pathbufs(&value)); },
+            "compressratio" => { properties.compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
+            "creation" => { properties.creation(parse_creation_into_timestamp(&value)); },
+            "defer_destroy" => { properties.defer_destroy(parse_bool(&value)); },
+            "devices" => { properties.devices(parse_bool(&value)); },
+            "exec" => { properties.exec(parse_bool(&value)); },
+            "guid" => { properties.guid(Some(value.parse().expect(FAILED_TO_PARSE))); },
+            "logicalreferenced" => { properties.logically_referenced(value.parse().expect(FAILED_TO_PARSE)); },
+            "primarycache" => { properties.primary_cache(value.parse().expect(FAILED_TO_PARSE)); },
+            "refcompressratio" => { properties.ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
+            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
+            "secondarycache" => { properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE)); },
+            "setuid" => { properties.setuid(parse_bool(&value)); },
+            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
+            "userrefs" => { properties.user_refs(value.parse().expect(FAILED_TO_PARSE)); },
+            "utf8only" => { properties.utf8_only(Some(parse_bool(&value))); },
+            "version" => { properties.version(value.parse().expect(FAILED_TO_PARSE)); },
+            "volmode" => { properties.volume_mode(value.parse().expect(FAILED_TO_PARSE)); },
+            "written" => { properties.written(value.parse().expect(FAILED_TO_PARSE)); },
+            "xattr" => { properties.xattr(parse_bool(&value)); },
+            "type" => { /* no-op */ },
+
+            _ => properties.insert_unknown_property(key, value),
+        };
+    };
+    Properties::Snapshot(properties.build().expect("Failed to build properties"))
+}
 fn parse_unknown_lines(lines: &mut Lines) -> Properties {
     let props = lines.map(parse_prop_line).collect();
     Properties::Unknown(props)
@@ -263,7 +319,7 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::properties::{AclInheritMode, AclMode, SyncMode};
+    use crate::zfs::properties::{AclInheritMode, AclMode, SyncMode, VolumeMode, SnapshotProperties};
     use crate::zfs::{CanMount, Checksum, Compression, Copies, CacheMode, SnapDir};
     use std::collections::HashMap;
 
@@ -304,7 +360,6 @@ mod test {
             ("sharesmb", "off"),
             ("snapshot_count", "18446744073709551615"),
             ("snapshot_limit", "18446744073709551615"),
-            ("volmode", "default"),
             ("vscan", "off")
         ].iter()
             .map(|(k,v)| (k.to_string(), v.to_string()))
@@ -348,9 +403,54 @@ mod test {
             .version(5)
             .written(35372666880)
             .xattr(false)
+            .volume_mode(VolumeMode::Default)
             .unknown_properties(unknown)
             .build().unwrap();
 
         assert_eq!(Properties::Filesystem(expected), result);
+    }
+
+    #[test]
+    fn snapshot_properties_freebsd() {
+        let stdout = include_str!("fixtures/snapshot_properties_freebsd.sorted");
+
+        let result = parse_snapshot_lines(&mut stdout.lines());
+
+        // Goal to have zero unknown before 1.0
+        let unknown = [
+            ("casesensitivity", "sensitive"),
+            ("mlslabel", ""),
+            ("nbmand", "off"),
+            ("normalization", "none"),
+            ("createtxg", "3034392"),
+        ].iter()
+            .map(|(k,v)| (k.to_string(), v.to_string()))
+            .collect();
+
+        let expected = SnapshotProperties::builder()
+            .clones(None)
+            .compression_ratio(1.0)
+            .creation(1574590597)
+            .defer_destroy(false)
+            .devices(true)
+            .exec(true)
+            .guid(Some(6033436932844487115))
+            .logically_referenced(37376)
+            .primary_cache(CacheMode::All)
+            .ref_compression_ratio(1.0)
+            .referenced(90210)
+            .secondary_cache(CacheMode::All)
+            .setuid(true)
+            .used(0)
+            .user_refs(0)
+            .utf8_only(Some(false))
+            .version(5)
+            .volume_mode(VolumeMode::Default)
+            .written(0)
+            .xattr(true)
+            .unknown_properties(unknown)
+            .build().unwrap();
+
+        assert_eq!(Properties::Snapshot(expected), result);
     }
 }

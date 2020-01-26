@@ -18,6 +18,7 @@ use libzetta::{slog::*,
 
 use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
 use libzetta::zfs::DestroyTiming;
+use libzetta::zfs::properties::VolumeMode;
 
 static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
@@ -280,7 +281,7 @@ fn easy_snapshot() {
 
 
 #[test]
-fn read_properties() {
+fn read_properties_of_filesystem() {
     let zpool = SHARED_ZPOOL.clone();
     let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
@@ -293,12 +294,38 @@ fn read_properties() {
         .build()
         .unwrap();
     zfs.create(request).expect("Failed to create a root dataset");
-    let test = zfs.read_properties(&root).unwrap();
     if let Properties::Filesystem(properties) = zfs.read_properties(&root).unwrap() {
         assert_eq!(&SnapDir::Visible, properties.snap_dir());
         assert_eq!(&Copies::Two, properties.copies());
     } else {
         panic!("Read not fs properties");
     }
+}
 
+#[test]
+fn read_properties_of_snapshot() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .copies(Copies::Two)
+        .snap_dir(SnapDir::Visible)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+
+    let snapshot_name = format!("{}/{}@properties", zpool, &root_name);
+
+
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
+
+    if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
+        assert_eq!(&None, properties.clones());
+        assert_eq!(&VolumeMode::Default, properties.volume_mode());
+    } else {
+        panic!("Read not fs properties");
+    }
 }

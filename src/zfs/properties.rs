@@ -269,6 +269,30 @@ impl Default for SyncMode {
     fn default() -> Self { SyncMode::Standard }
 }
 
+/// This property specifies how volumes should be exposed to the OS.
+#[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
+#[repr(u64)]
+pub enum VolumeMode {
+    /// Controlled by system-wide sysctl/tunable.
+    #[strum(serialize = "default")]
+    Default = 0,
+    /// Volumes with this property are exposed as [`geom(4)`](https://www.freebsd.org/cgi/man.cgi?geom(4)) device.
+    #[strum(serialize = "geom")]
+    GEOM = 1,
+    /// Volumes with this property are exposed as cdev in devfs.
+    #[strum(serialize = "dev")]
+    Dev = 2,
+    /// Volumes with this property are not exposed outside of zfs.
+    #[strum(serialize = "none")]
+    None = 3,
+}
+
+impl Default for VolumeMode {
+    fn default() -> Self {
+        VolumeMode::Default
+    }
+}
+
 /// Most of native properties of filesystem dataset - both immutable and mutable. Default values taken from
 /// FreeBSD 12.
 ///
@@ -311,7 +335,7 @@ pub struct FilesystemProperties {
     /// property on an existing file system only affects newly written data.
     copies: Copies,
     /// Read-only property that identifies the date and time a dataset created.
-    creation: u64,
+    creation: i64,
     /// Controls whether device files in a file system can be opened.
     devices: bool,
     /// Controls whether programs in a file system allowed to be executed. Also, when set to
@@ -385,7 +409,8 @@ pub struct FilesystemProperties {
     version: u64,
     /// Written?
     written: u64,
-
+    /// Controls how the volume is exposed to the OS
+    volume_mode: VolumeMode,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
 }
@@ -419,7 +444,7 @@ impl FilesystemPropertiesBuilder {
 ///  - sharesmb
 ///  - version
 ///  - zoned
-#[derive(Debug, Clone, PartialEq, Getters)]
+#[derive(Debug, Clone, PartialEq, Getters, Builder)]
 #[get = "pub"]
 pub struct VolumeProperties {
     /// Read-only property that identifies the amount of disk space available to a dataset and all
@@ -442,7 +467,7 @@ pub struct VolumeProperties {
     /// property on an existing file system only affects newly written data.
     copies: Copies,
     /// Read-only property that identifies the date and time a dataset created.
-    creation: u64,
+    creation: i64,
     /// Controls what is cached in the primary cache (ARC).
     primary_cache: CacheMode,
     // Read-only property for cloned file systems or volumes that identifies the snapshot from
@@ -492,10 +517,85 @@ pub struct VolumeProperties {
     unknown_properties: HashMap<String, String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Getters, Builder)]
+#[builder(derive(Debug))]
+#[get = "pub"]
+pub struct SnapshotProperties {
+    /// Read-only property that identifies the date and time a dataset created.
+    creation: i64,
+    /// Read-only property that identifies the amount of disk space consumed by a dataset and all
+    /// its descendants.
+    used: u64,
+    /// Read-only property that identifies the amount of data accessible by a dataset, which might
+    /// or might not be shared with other datasets in the pool.
+    referenced: u64,
+    /// Read-only property that identifies the compression ratio achieved for a dataset, expressed
+    /// as a multiplier.
+    compression_ratio: f64,
+    /// Controls whether device files in a file system can be opened.
+    devices: bool,
+    /// Controls whether programs in a file system allowed to be executed. Also, when set to
+    /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
+    exec: bool,
+    /// Controls whether the `setuid` bit is honored in a file system.
+    setuid: bool,
+    /// Indicates whether extended attributes are enabled or disabled.
+    xattr: bool,
+    /// Version (should 5)
+    version: u64,
+    /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
+    #[builder(default)]
+    utf8_only: Option<bool>,
+    /// GUID of the database
+    #[builder(default)]
+    guid: Option<u64>,
+    /// Controls what is cached in the primary cache (ARC).
+    primary_cache: CacheMode,
+    /// Controls what is cached in the secondary cache (L2ARC).
+    secondary_cache: CacheMode,
+    /// Snapshot marked for deferred destroy.
+    defer_destroy: bool,
+    /// Number of holds on this snapshot.
+    user_refs: u64,
+    /// Compression ratio achieved for the referenced space of this snapshot.
+    ref_compression_ratio: f64,
+    /// The amount of referenced space written to this dataset since the previous snapshot.
+    written: u64,
+    /// List of datasets which are clones of this snapshot.
+    clones: Option<Vec<PathBuf>>,
+    /// The amount of space that is "logically" accessible by this dataset.
+    logically_referenced: u64,
+    /// Controls how the volume is exposed to the OS
+    volume_mode: VolumeMode,
+    /// User defined properties and properties this library failed to recognize.
+    unknown_properties: HashMap<String, String>,
+}
+
+impl SnapshotProperties {
+    pub fn builder() -> SnapshotPropertiesBuilder {
+        let mut ret = SnapshotPropertiesBuilder::default();
+        ret.unknown_properties(HashMap::new());
+        ret
+    }
+}
+
+
+impl SnapshotPropertiesBuilder {
+    pub fn insert_unknown_property(&mut self, key: String, value: String) {
+        if let Some(ref mut props) = self.unknown_properties {
+            props.insert(key, value);
+        } else {
+            self.unknown_properties(HashMap::new());
+            self.insert_unknown_property(key, value);
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Properties {
     Filesystem(FilesystemProperties),
     Volume(VolumeProperties),
+    Snapshot(SnapshotProperties),
     Unknown(HashMap<String, String>),
 }
 
@@ -506,3 +606,4 @@ impl_zfs_prop!(Checksum, "checksum");
 impl_zfs_prop!(Compression, "compression");
 impl_zfs_prop!(Copies, "copies");
 impl_zfs_prop!(SnapDir, "snapdir");
+impl_zfs_prop!(VolumeMode, "volmod");
