@@ -321,6 +321,7 @@ fn read_properties_of_snapshot_blessed_os() {
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
+        assert_eq!(&Some(VolumeMode::Default), properties.volume_mode());
     } else {
         panic!("Read not fs properties");
     }
@@ -346,7 +347,6 @@ fn read_properties_of_snapshot() {
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
-        assert_eq!(&Some(VolumeMode::Default), properties.volume_mode());
     } else {
         panic!("Read not fs properties");
     }
