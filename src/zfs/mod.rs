@@ -1,7 +1,7 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 pub mod description;
-pub use description::{DatasetKind};
+pub use description::DatasetKind;
 
 pub mod delegating;
 pub use delegating::DelegatingZfsEngine;
@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 pub mod properties;
 pub use properties::{CacheMode, CanMount, Checksum, Compression, Copies, FilesystemProperties,
-                     SnapDir, Properties, VolumeProperties};
+                     Properties, SnapDir, VolumeProperties};
 
 mod pathext;
 pub use pathext::PathExt;
@@ -26,12 +26,15 @@ mod errors;
 
 pub use errors::{Error, ErrorKind, Result, ValidationError, ValidationResult};
 
-/// Whether to mark busy snapshots for deferred destruction rather than immediately failing if can't be destroyed right now.
+/// Whether to mark busy snapshots for deferred destruction rather than immediately failing if can't
+/// be destroyed right now.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DestroyTiming {
-    /// If a snapshot has user holds or clones, destroy operation will fail and none of the snapshots will be destroyed.
+    /// If a snapshot has user holds or clones, destroy operation will fail and none of the
+    /// snapshots will be destroyed.
     RightNow,
-    /// If a snapshot has user holds or clones, it will be marked for deferred destruction, and will be destroyed when the last hold or clone is removed/destroyed.
+    /// If a snapshot has user holds or clones, it will be marked for deferred destruction, and
+    /// will be destroyed when the last hold or clone is removed/destroyed.
     Defer,
 }
 
@@ -58,7 +61,13 @@ pub trait ZfsEngine {
 
     /// Create snapshots as one atomic operation.
     #[cfg_attr(tarpaulin, skip)]
-    fn snapshot(&self, _snapshots: &[PathBuf], _user_properties: Option<HashMap<String,String>>) -> Result<()> { Err(Error::Unimplemented) }
+    fn snapshot(
+        &self,
+        _snapshots: &[PathBuf],
+        _user_properties: Option<HashMap<String, String>>,
+    ) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
 
     /// Deletes the dataset
     #[cfg_attr(tarpaulin, skip)]
@@ -66,7 +75,9 @@ pub trait ZfsEngine {
 
     /// Delete snapshots as one atomic operation
     #[cfg_attr(tarpaulin, skip)]
-    fn destroy_snapshots(&self, _snapshots: &[PathBuf], _timing: DestroyTiming) -> Result<()> { Err(Error::Unimplemented) }
+    fn destroy_snapshots(&self, _snapshots: &[PathBuf], _timing: DestroyTiming) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
 
     #[cfg_attr(tarpaulin, skip)]
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {

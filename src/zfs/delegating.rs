@@ -1,9 +1,7 @@
 use crate::{slog::Logger,
-            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest,
-                  DatasetKind, Result, ZfsEngine}};
-use std::path::PathBuf;
-use crate::zfs::{DestroyTiming, Properties};
-use std::collections::HashMap;
+            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, DatasetKind, DestroyTiming,
+                  Properties, Result, ZfsEngine}};
+use std::{collections::HashMap, path::PathBuf};
 
 /// Handy wrapper that delegates your call to correct implementation.
 pub struct DelegatingZfsEngine {
@@ -24,7 +22,11 @@ impl ZfsEngine for DelegatingZfsEngine {
 
     fn create(&self, request: CreateDatasetRequest) -> Result<()> { self.lzc.create(request) }
 
-    fn snapshot(&self, snapshots: &[PathBuf], user_properties: Option<HashMap<String,String>>) -> Result<()> {
+    fn snapshot(
+        &self,
+        snapshots: &[PathBuf],
+        user_properties: Option<HashMap<String, String>>,
+    ) -> Result<()> {
         self.lzc.snapshot(snapshots, user_properties)
     }
 
@@ -33,7 +35,6 @@ impl ZfsEngine for DelegatingZfsEngine {
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
         self.lzc.destroy_snapshots(snapshots, timing)
     }
-
 
     fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
         self.open3.list(pool)

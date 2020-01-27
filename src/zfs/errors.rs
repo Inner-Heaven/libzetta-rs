@@ -1,7 +1,7 @@
 use crate::parsers::zfs::{Rule, ZfsParser};
+use libnv::nvpair::NvList;
 use pest::Parser;
 use std::{borrow::Cow, io, path::PathBuf};
-use libnv::nvpair::NvList;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type ValidationResult<T = (), E = ValidationError> = std::result::Result<T, E>;
@@ -75,9 +75,7 @@ impl Error {
         }
     }
 
-    pub fn invalid_input() -> Self {
-        Error::Io(io::Error::from(io::ErrorKind::InvalidInput))
-    }
+    pub fn invalid_input() -> Self { Error::Io(io::Error::from(io::ErrorKind::InvalidInput)) }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]

@@ -1,15 +1,15 @@
-use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, Error, Result, SnapDir, ZfsEngine, ValidationError, DestroyTiming};
+use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, DestroyTiming,
+                 Error, Result, SnapDir, ValidationError, ZfsEngine};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 
-use crate::zfs::properties::{AclInheritMode, AclMode, ZfsProp};
-use std::{ffi::CString, path::PathBuf, ptr::null_mut};
+use crate::zfs::{errors::Error::ValidationErrors,
+                 properties::{AclInheritMode, AclMode, ZfsProp},
+                 PathExt};
+use std::{collections::HashMap, ffi::CString, path::PathBuf, ptr::null_mut};
 use zfs_core_sys as sys;
-use crate::zfs::PathExt;
-use crate::zfs::errors::Error::ValidationErrors;
-use std::collections::HashMap;
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
     logger
@@ -99,7 +99,6 @@ impl ZfsEngine for ZfsLzc {
         if request.kind == DatasetKind::Filesystem
             && (request.volume_size.is_some() || request.volume_block_size.is_some())
         {
-
             return Err(Error::invalid_input());
         }
 
@@ -137,8 +136,13 @@ impl ZfsEngine for ZfsLzc {
         }
     }
 
-    fn snapshot(&self, snapshots: &[PathBuf], user_properties: Option<HashMap<String,String>>) -> Result<()> {
-        let validation_errors: Vec<ValidationError> = snapshots.iter()
+    fn snapshot(
+        &self,
+        snapshots: &[PathBuf],
+        user_properties: Option<HashMap<String, String>>,
+    ) -> Result<()> {
+        let validation_errors: Vec<ValidationError> = snapshots
+            .iter()
             .map(PathBuf::validate)
             .filter(Result::is_err)
             .map(Result::unwrap_err)
@@ -159,7 +163,11 @@ impl ZfsEngine for ZfsLzc {
             }
         }
         let errno = unsafe {
-            zfs_core_sys::lzc_snapshot(snapshots_list.as_ptr(), props.as_ptr(), &mut errors_list_ptr)
+            zfs_core_sys::lzc_snapshot(
+                snapshots_list.as_ptr(),
+                props.as_ptr(),
+                &mut errors_list_ptr,
+            )
         };
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
@@ -177,7 +185,8 @@ impl ZfsEngine for ZfsLzc {
     }
 
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
-        let validation_errors: Vec<ValidationError> = snapshots.iter()
+        let validation_errors: Vec<ValidationError> = snapshots
+            .iter()
             .map(PathBuf::validate)
             .filter(Result::is_err)
             .map(Result::unwrap_err)
@@ -194,7 +203,11 @@ impl ZfsEngine for ZfsLzc {
 
         let mut errors_list_ptr = null_mut();
         let errno = unsafe {
-            zfs_core_sys::lzc_destroy_snaps(snapshots_list.as_ptr(), timing.as_c_uint(), &mut errors_list_ptr)
+            zfs_core_sys::lzc_destroy_snaps(
+                snapshots_list.as_ptr(),
+                timing.as_c_uint(),
+                &mut errors_list_ptr,
+            )
         };
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
