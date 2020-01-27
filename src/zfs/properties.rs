@@ -563,10 +563,12 @@ pub struct SnapshotProperties {
     /// The amount of referenced space written to this dataset since the previous snapshot.
     written: u64,
     /// List of datasets which are clones of this snapshot.
+    #[builder(default)]
     clones: Option<Vec<PathBuf>>,
     /// The amount of space that is "logically" accessible by this dataset.
     logically_referenced: u64,
     /// Controls how the volume is exposed to the OS
+    #[builder(default)]
     volume_mode: Option<VolumeMode>,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
