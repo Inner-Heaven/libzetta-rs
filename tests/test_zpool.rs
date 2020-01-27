@@ -883,7 +883,7 @@ fn test_zpool_replace_disk() {
             .build()
             .unwrap();
 
-        // otherwise test _might_ fail.
+        // otherwise, test _might_ fail.
         let wait_time = time::Duration::from_secs(13);
         thread::sleep(wait_time);
 

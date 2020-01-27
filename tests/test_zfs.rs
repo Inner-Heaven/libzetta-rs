@@ -12,13 +12,12 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error,
-                     ZfsEngine, ZfsLzc, SnapDir, Properties},
+               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error, Properties, SnapDir,
+                     ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
-use libzetta::{zfs::DelegatingZfsEngine, zpool::CreateMode};
-use libzetta::zfs::DestroyTiming;
-use libzetta::zfs::properties::VolumeMode;
+use libzetta::{zfs::{properties::VolumeMode, DelegatingZfsEngine, DestroyTiming},
+               zpool::CreateMode};
 
 static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
@@ -276,9 +275,7 @@ fn easy_snapshot() {
 
     zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
     assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
-
 }
-
 
 #[test]
 fn read_properties_of_filesystem() {
@@ -303,6 +300,32 @@ fn read_properties_of_filesystem() {
 }
 
 #[test]
+#[cfg(target_os = "freebsd")]
+fn read_properties_of_snapshot_blessed_os() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .copies(Copies::Two)
+        .snap_dir(SnapDir::Visible)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+
+    let snapshot_name = format!("{}/{}@properties", zpool, &root_name);
+
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
+
+    if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
+        assert_eq!(&None, properties.clones());
+    } else {
+        panic!("Read not fs properties");
+    }
+}
+#[test]
 fn read_properties_of_snapshot() {
     let zpool = SHARED_ZPOOL.clone();
     let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
@@ -319,12 +342,11 @@ fn read_properties_of_snapshot() {
 
     let snapshot_name = format!("{}/{}@properties", zpool, &root_name);
 
-
     zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
-        assert_eq!(&VolumeMode::Default, properties.volume_mode());
+        assert_eq!(&Some(VolumeMode::Default), properties.volume_mode());
     } else {
         panic!("Read not fs properties");
     }

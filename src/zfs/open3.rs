@@ -1,16 +1,16 @@
-use crate::zfs::{DatasetKind, Error, Result, ZfsEngine, Properties, FilesystemProperties};
+use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, ZfsEngine};
+use chrono::NaiveDateTime;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
 use std::{ffi::OsString,
           path::PathBuf,
           process::{Command, Stdio}};
-use chrono::{NaiveDateTime};
 
-use crate::parsers::zfs::{Rule, ZfsParser};
+use crate::{parsers::zfs::{Rule, ZfsParser},
+            utils::parse_float,
+            zfs::properties::SnapshotProperties};
 use pest::Parser;
 use std::str::Lines;
-use crate::utils::parse_float;
-use crate::zfs::properties::SnapshotProperties;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
 static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
@@ -163,7 +163,6 @@ impl ZfsEngine for ZfsOpen3 {
     }
 }
 
-
 impl ZfsOpen3 {
     #[allow(clippy::option_unwrap_used)]
     fn stdout_to_list_of_datasets(z: &mut Command) -> Result<Vec<PathBuf>, Error> {
@@ -202,9 +201,7 @@ fn parse_list_of_pathbufs(value: &str) -> Option<Vec<PathBuf>> {
     if value == "-" || value == "" {
         return None;
     }
-    let clones = value.split(",")
-        .map(PathBuf::from)
-        .collect();
+    let clones = value.split(",").map(PathBuf::from).collect();
     Some(clones)
 }
 
@@ -212,8 +209,7 @@ fn parse_creation_into_timestamp(value: &str) -> i64 {
     if let Ok(timestamp) = value.parse() {
         return timestamp;
     } else {
-        let date = NaiveDateTime::parse_from_str(value, DATE_FORMAT)
-            .expect(FAILED_TO_PARSE);
+        let date = NaiveDateTime::parse_from_str(value, DATE_FORMAT).expect(FAILED_TO_PARSE);
         return date.timestamp();
     };
 }
@@ -222,50 +218,129 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     let mut properties = FilesystemProperties::builder();
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
-            "aclinherit" => { properties.acl_inherit(value.parse().expect(FAILED_TO_PARSE)); },
-            "aclmode" => { properties.acl_mode(Some(value.parse().expect(FAILED_TO_PARSE))); },
-            "atime" => { properties.atime(parse_bool(&value)); },
-            "available" => { properties.available(value.parse().expect(FAILED_TO_PARSE)); },
-            "canmount" => { properties.can_mount(value.parse().expect(FAILED_TO_PARSE)); },
-            "checksum" => { properties.checksum(value.parse().expect(FAILED_TO_PARSE)); },
-            "compression" => { properties.compression(value.parse().expect(FAILED_TO_PARSE)); },
-            "compressratio" => { properties.compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
-            "copies" => { properties.copies(value.parse().expect(FAILED_TO_PARSE)); },
-            "creation" => { properties.creation(value.parse().expect(FAILED_TO_PARSE)); },
-            "devices" => { properties.devices(parse_bool(&value)); },
-            "exec" => { properties.exec(parse_bool(&value)); },
-            "guid" => { properties.guid(Some(value.parse().expect(FAILED_TO_PARSE))); },
-            "jailed" => { properties.jailed(Some(parse_bool(&value))); },
-            "mounted" => { properties.mounted(parse_bool(&value)); },
-            "mountpoint" => { properties.mount_point(parse_mount_point(&value)); },
-            "origin"  => { properties.origin(Some(value)); },
-            "primarycache" => { properties.primary_cache(value.parse().expect(FAILED_TO_PARSE)); },
-            "quota"  => { properties.quota(value.parse().expect(FAILED_TO_PARSE)); },
-            "readonly" => { properties.readonly(parse_bool(&value)); },
-            "recordsize"  => { properties.record_size(value.parse().expect(FAILED_TO_PARSE)); },
-            "refquota"  => { properties.ref_quota(value.parse().expect(FAILED_TO_PARSE)); },
-            "refreservation"  => { properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE)); },
-            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
-            "reservation"  => { properties.reservation(value.parse().expect(FAILED_TO_PARSE)); },
-            "secondarycache" => { properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE)); },
-            "setuid" => { properties.setuid(parse_bool(&value)); },
-            "snapdir" => { properties.snap_dir(value.parse().expect(FAILED_TO_PARSE)); },
-            "sync" => { properties.sync(value.parse().expect(FAILED_TO_PARSE)); },
-            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
-            "usedbychildren" => { properties.used_by_children(value.parse().expect(FAILED_TO_PARSE)); },
-            "usedbydataset" => { properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE)); },
-            "usedbyrefreservation" => { properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE)); },
-            "usedbysnapshots" => { properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE)); },
-            "utf8only" => { properties.utf8_only(Some(parse_bool(&value))); },
-            "version" => { properties.version(value.parse().expect(FAILED_TO_PARSE)); },
-            "volmode" => { properties.volume_mode(value.parse().expect(FAILED_TO_PARSE)); },
-            "written" => { properties.written(value.parse().expect(FAILED_TO_PARSE)); },
-            "xattr" => { properties.xattr(parse_bool(&value)); },
+            "aclinherit" => {
+                properties.acl_inherit(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "aclmode" => {
+                properties.acl_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "atime" => {
+                properties.atime(parse_bool(&value));
+            },
+            "available" => {
+                properties.available(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "canmount" => {
+                properties.can_mount(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "checksum" => {
+                properties.checksum(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "compression" => {
+                properties.compression(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "compressratio" => {
+                properties
+                    .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
+            },
+            "copies" => {
+                properties.copies(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "creation" => {
+                properties.creation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "devices" => {
+                properties.devices(parse_bool(&value));
+            },
+            "exec" => {
+                properties.exec(parse_bool(&value));
+            },
+            "guid" => {
+                properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "jailed" => {
+                properties.jailed(Some(parse_bool(&value)));
+            },
+            "mounted" => {
+                properties.mounted(parse_bool(&value));
+            },
+            "mountpoint" => {
+                properties.mount_point(parse_mount_point(&value));
+            },
+            "origin" => {
+                properties.origin(Some(value));
+            },
+            "primarycache" => {
+                properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "quota" => {
+                properties.quota(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "readonly" => {
+                properties.readonly(parse_bool(&value));
+            },
+            "recordsize" => {
+                properties.record_size(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "refquota" => {
+                properties.ref_quota(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "refreservation" => {
+                properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "referenced" => {
+                properties.referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "reservation" => {
+                properties.reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "secondarycache" => {
+                properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "setuid" => {
+                properties.setuid(parse_bool(&value));
+            },
+            "snapdir" => {
+                properties.snap_dir(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "sync" => {
+                properties.sync(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "used" => {
+                properties.used(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbychildren" => {
+                properties.used_by_children(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbydataset" => {
+                properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbyrefreservation" => {
+                properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbysnapshots" => {
+                properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "utf8only" => {
+                properties.utf8_only(Some(parse_bool(&value)));
+            },
+            "version" => {
+                properties.version(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "volmode" => {
+                properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "written" => {
+                properties.written(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "xattr" => {
+                properties.xattr(parse_bool(&value));
+            },
             "type" => { /* no-op */ },
 
             _ => properties.insert_unknown_property(key, value),
         };
-    };
+    }
     Properties::Filesystem(properties.build().expect("Failed to build properties"))
 }
 
@@ -273,31 +348,73 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines) -> Properties {
     let mut properties = SnapshotProperties::builder();
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
-            "clones" => { properties.clones(parse_list_of_pathbufs(&value)); },
-            "compressratio" => { properties.compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
-            "creation" => { properties.creation(parse_creation_into_timestamp(&value)); },
-            "defer_destroy" => { properties.defer_destroy(parse_bool(&value)); },
-            "devices" => { properties.devices(parse_bool(&value)); },
-            "exec" => { properties.exec(parse_bool(&value)); },
-            "guid" => { properties.guid(Some(value.parse().expect(FAILED_TO_PARSE))); },
-            "logicalreferenced" => { properties.logically_referenced(value.parse().expect(FAILED_TO_PARSE)); },
-            "primarycache" => { properties.primary_cache(value.parse().expect(FAILED_TO_PARSE)); },
-            "refcompressratio" => { properties.ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE)); },
-            "referenced" => { properties.referenced(value.parse().expect(FAILED_TO_PARSE)); },
-            "secondarycache" => { properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE)); },
-            "setuid" => { properties.setuid(parse_bool(&value)); },
-            "used" => { properties.used(value.parse().expect(FAILED_TO_PARSE)); },
-            "userrefs" => { properties.user_refs(value.parse().expect(FAILED_TO_PARSE)); },
-            "utf8only" => { properties.utf8_only(Some(parse_bool(&value))); },
-            "version" => { properties.version(value.parse().expect(FAILED_TO_PARSE)); },
-            "volmode" => { properties.volume_mode(value.parse().expect(FAILED_TO_PARSE)); },
-            "written" => { properties.written(value.parse().expect(FAILED_TO_PARSE)); },
-            "xattr" => { properties.xattr(parse_bool(&value)); },
+            "clones" => {
+                properties.clones(parse_list_of_pathbufs(&value));
+            },
+            "compressratio" => {
+                properties
+                    .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
+            },
+            "creation" => {
+                properties.creation(parse_creation_into_timestamp(&value));
+            },
+            "defer_destroy" => {
+                properties.defer_destroy(parse_bool(&value));
+            },
+            "devices" => {
+                properties.devices(parse_bool(&value));
+            },
+            "exec" => {
+                properties.exec(parse_bool(&value));
+            },
+            "guid" => {
+                properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "logicalreferenced" => {
+                properties.logically_referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "primarycache" => {
+                properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "refcompressratio" => {
+                properties
+                    .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
+            },
+            "referenced" => {
+                properties.referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "secondarycache" => {
+                properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "setuid" => {
+                properties.setuid(parse_bool(&value));
+            },
+            "used" => {
+                properties.used(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "userrefs" => {
+                properties.user_refs(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "utf8only" => {
+                properties.utf8_only(Some(parse_bool(&value)));
+            },
+            "version" => {
+                properties.version(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "volmode" => {
+                properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "written" => {
+                properties.written(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "xattr" => {
+                properties.xattr(parse_bool(&value));
+            },
             "type" => { /* no-op */ },
 
             _ => properties.insert_unknown_property(key, value),
         };
-    };
+    }
     Properties::Snapshot(properties.build().expect("Failed to build properties"))
 }
 fn parse_unknown_lines(lines: &mut Lines) -> Properties {
@@ -305,22 +422,21 @@ fn parse_unknown_lines(lines: &mut Lines) -> Properties {
     Properties::Unknown(props)
 }
 
-fn parse_bool(val: &str) -> bool {
-    val == "yes" || val == "on"
-}
+fn parse_bool(val: &str) -> bool { val == "yes" || val == "on" }
 
 fn parse_mount_point(val: &str) -> Option<PathBuf> {
     match val {
         "-" | "none" => None,
-        _ => Some(PathBuf::from(val))
+        _ => Some(PathBuf::from(val)),
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::properties::{AclInheritMode, AclMode, SyncMode, VolumeMode, SnapshotProperties};
-    use crate::zfs::{CanMount, Checksum, Compression, Copies, CacheMode, SnapDir};
+    use crate::zfs::{properties::{AclInheritMode, AclMode, SnapshotProperties, SyncMode,
+                                  VolumeMode},
+                     CacheMode, CanMount, Checksum, Compression, Copies, SnapDir};
     use std::collections::HashMap;
 
     #[test]
@@ -332,7 +448,6 @@ mod test {
         right.insert("bar", "foo");
         right.insert("foo", "bar");
         assert_eq!(left, right);
-
     }
     #[test]
     fn filesystem_properties_freebsd() {
@@ -341,7 +456,7 @@ mod test {
         let result = parse_filesystem_lines(&mut stdout.lines());
 
         // Goal to have zero unknown before 1.0
-        let unknown  = [
+        let unknown = [
             ("casesensitivity", "sensitive"),
             ("createtxg", "46918"),
             ("dedup", "off"),
@@ -360,10 +475,11 @@ mod test {
             ("sharesmb", "off"),
             ("snapshot_count", "18446744073709551615"),
             ("snapshot_limit", "18446744073709551615"),
-            ("vscan", "off")
-        ].iter()
-            .map(|(k,v)| (k.to_string(), v.to_string()))
-            .collect();
+            ("vscan", "off"),
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
 
         let expected = FilesystemProperties::builder()
             .acl_inherit(AclInheritMode::Restricted)
@@ -403,9 +519,10 @@ mod test {
             .version(5)
             .written(35372666880)
             .xattr(false)
-            .volume_mode(VolumeMode::Default)
+            .volume_mode(Some(VolumeMode::Default))
             .unknown_properties(unknown)
-            .build().unwrap();
+            .build()
+            .unwrap();
 
         assert_eq!(Properties::Filesystem(expected), result);
     }
@@ -423,9 +540,10 @@ mod test {
             ("nbmand", "off"),
             ("normalization", "none"),
             ("createtxg", "3034392"),
-        ].iter()
-            .map(|(k,v)| (k.to_string(), v.to_string()))
-            .collect();
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
 
         let expected = SnapshotProperties::builder()
             .clones(None)
@@ -445,11 +563,12 @@ mod test {
             .user_refs(0)
             .utf8_only(Some(false))
             .version(5)
-            .volume_mode(VolumeMode::Default)
+            .volume_mode(Some(VolumeMode::Default))
             .written(0)
             .xattr(true)
             .unknown_properties(unknown)
-            .build().unwrap();
+            .build()
+            .unwrap();
 
         assert_eq!(Properties::Snapshot(expected), result);
     }

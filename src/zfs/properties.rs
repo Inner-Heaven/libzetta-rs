@@ -256,10 +256,10 @@ impl Default for CanMount {
 pub enum SyncMode {
     /// Posix specified behavior.
     #[strum(serialize = "standard")]
-    Standard   = 0,
+    Standard = 0,
     /// All transactions are written and flushed. Large performance penalty.
     #[strum(serialize = "always")]
-    Always    = 1,
+    Always   = 1,
     /// DANGER. Disables synchronous requests.
     #[strum(serialize = "disabled")]
     Disabled = 2,
@@ -278,23 +278,21 @@ pub enum VolumeMode {
     Default = 0,
     /// Volumes with this property are exposed as [`geom(4)`](https://www.freebsd.org/cgi/man.cgi?geom(4)) device.
     #[strum(serialize = "geom")]
-    GEOM = 1,
+    GEOM    = 1,
     /// Volumes with this property are exposed as cdev in devfs.
     #[strum(serialize = "dev")]
-    Dev = 2,
+    Dev     = 2,
     /// Volumes with this property are not exposed outside of zfs.
     #[strum(serialize = "none")]
-    None = 3,
+    None    = 3,
 }
 
 impl Default for VolumeMode {
-    fn default() -> Self {
-        VolumeMode::Default
-    }
+    fn default() -> Self { VolumeMode::Default }
 }
 
-/// Most of native properties of filesystem dataset - both immutable and mutable. Default values taken from
-/// FreeBSD 12.
+/// Most of native properties of filesystem dataset - both immutable and mutable. Default values
+/// taken from FreeBSD 12.
 ///
 /// Notable missing properties:
 ///  - shareiscsi
@@ -402,7 +400,9 @@ pub struct FilesystemProperties {
     /// Controls whether the dataset is managed from a jail.
     #[builder(default)]
     jailed: Option<bool>,
-    /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
+    /// Indicates whether the file system should reject file names that include characters that are
+    /// not present in the UTF-8 character code set. If this property is explicitly set to off, the
+    /// normalization property must either not be explicitly set or be set to none.
     #[builder(default)]
     utf8_only: Option<bool>,
     /// Version (should 5)
@@ -410,7 +410,7 @@ pub struct FilesystemProperties {
     /// Written?
     written: u64,
     /// Controls how the volume is exposed to the OS
-    volume_mode: VolumeMode,
+    volume_mode: Option<VolumeMode>,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
 }
@@ -434,9 +434,8 @@ impl FilesystemPropertiesBuilder {
     }
 }
 
-
-/// Most of native properties of volume dataset - both immutable and mutable. Default values taken from
-/// FreeBSD 12.
+/// Most of native properties of volume dataset - both immutable and mutable. Default values taken
+/// from FreeBSD 12.
 ///
 /// Notable missing properties:
 ///  - shareiscsi
@@ -543,7 +542,9 @@ pub struct SnapshotProperties {
     xattr: bool,
     /// Version (should 5)
     version: u64,
-    /// Indicates whether the file system should reject file names that include characters that are not present in the UTF-8 character code set. If this property is explicitly set to off, the normalization property must either not be explicitly set or be set to none.
+    /// Indicates whether the file system should reject file names that include characters that are
+    /// not present in the UTF-8 character code set. If this property is explicitly set to off, the
+    /// normalization property must either not be explicitly set or be set to none.
     #[builder(default)]
     utf8_only: Option<bool>,
     /// GUID of the database
@@ -566,7 +567,7 @@ pub struct SnapshotProperties {
     /// The amount of space that is "logically" accessible by this dataset.
     logically_referenced: u64,
     /// Controls how the volume is exposed to the OS
-    volume_mode: VolumeMode,
+    volume_mode: Option<VolumeMode>,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
 }
@@ -578,7 +579,6 @@ impl SnapshotProperties {
         ret
     }
 }
-
 
 impl SnapshotPropertiesBuilder {
     pub fn insert_unknown_property(&mut self, key: String, value: String) {
