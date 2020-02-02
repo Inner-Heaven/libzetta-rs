@@ -1,7 +1,6 @@
 use std::{default::Default, path::PathBuf};
 use strum_macros::{AsRefStr, Display, EnumString};
 
-use crate::zfs::description::DatasetKind;
 use std::collections::HashMap;
 
 macro_rules! impl_zfs_prop {
@@ -304,6 +303,7 @@ impl Default for VolumeMode {
 #[builder(derive(Debug))]
 #[get = "pub"]
 pub struct FilesystemProperties {
+    name: PathBuf,
     /// Controls how ACL entries inherited when files and directories created.
     acl_inherit: AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
@@ -339,7 +339,7 @@ pub struct FilesystemProperties {
     /// Controls whether programs in a file system allowed to be executed. Also, when set to
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec: bool,
-    /// GUID of the database
+    /// GUID of the dataset
     #[builder(default)]
     guid: Option<u64>,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
@@ -416,8 +416,9 @@ pub struct FilesystemProperties {
 }
 
 impl FilesystemProperties {
-    pub fn builder() -> FilesystemPropertiesBuilder {
+    pub fn builder(name: PathBuf) -> FilesystemPropertiesBuilder {
         let mut ret = FilesystemPropertiesBuilder::default();
+        ret.name(name);
         ret.unknown_properties(HashMap::new());
         ret
     }
@@ -446,6 +447,7 @@ impl FilesystemPropertiesBuilder {
 #[derive(Debug, Clone, PartialEq, Getters, Builder)]
 #[get = "pub"]
 pub struct VolumeProperties {
+    name: PathBuf,
     /// Read-only property that identifies the amount of disk space available to a dataset and all
     /// its children, assuming no other activity in the pool. Because disk space shared within a
     /// pool, available space can be limited by various factors including physical pool size,
@@ -467,30 +469,28 @@ pub struct VolumeProperties {
     copies: Copies,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
+    /// GUID of the dataset
+    #[builder(default)]
+    guid: Option<u64>,
+    /// Read-only property that indicates whether a file system, clone, or snapshot is currently
     /// Controls what is cached in the primary cache (ARC).
     primary_cache: CacheMode,
-    // Read-only property for cloned file systems or volumes that identifies the snapshot from
-    // which the clone was created.
-    origin: Option<String>,
     /// Controls whether a dataset can be modified.
     readonly: bool,
-    /// Specifies a suggested block size for files in a file system in bytes. The size specified
-    /// must be a power of two greater than or equal to 512 and less than or equal to 128 KiB.
-    /// If the large_blocks feature is enabled on the pool, the size may be up to 1 MiB.
-    record_size: u64,
+    /// Compression ratio achieved for the referenced space of this snapshot.
+    ref_compression_ratio: f64,
     /// Read-only property that identifies the amount of data accessible by a dataset, which might
     /// or might not be shared with other datasets in the pool.
     referenced: u64,
     /// Sets the minimum amount of disk space is guaranteed to a dataset, not including
     /// descendants, such as snapshots and clones.
-    ref_reservation: Option<u64>,
+    ref_reservation: u64,
     /// Sets the minimum amount of disk space guaranteed to a dataset and its descendants.
-    reservation: Option<u64>,
+    reservation: u64,
     /// Controls what is cached in the secondary cache (L2ARC).
     secondary_cache: CacheMode,
-    /// Read-only property that identifies the dataset type as filesystem (file system or clone),
-    /// volume, or snapshot.
-    kind: DatasetKind,
+    /// Controls the behavior of synchronous requests.
+    sync: SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
     /// its descendants.
     used: u64,
@@ -505,21 +505,46 @@ pub struct VolumeProperties {
     /// Read-only property that identifies the amount of disk space is consumed by snapshots of a
     /// dataset.
     used_by_snapshots: u64,
-    /// For volumes, specifies the logical size of the volume.
-    volume_size: u64,
     /// For volumes, specifies the block size of the volume in bytes. The block size cannot be
     /// changed after the volume has been written, so set the block size at volume creation time.
     /// The default block size for volumes is 8 KB. Any power of 2 from 512 bytes to 128 KB is
     /// valid.
     volume_block_size: u64,
+    /// Controls how the volume is exposed to the OS
+    volume_mode: Option<VolumeMode>,
+    /// For volumes, specifies the logical size of the volume.
+    volume_size: u64,
+    /// Written?
+    written: u64,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties: HashMap<String, String>,
+}
+
+impl VolumeProperties {
+    pub fn builder(name: PathBuf) -> VolumePropertiesBuilder {
+        let mut ret = VolumePropertiesBuilder::default();
+        ret.name(name);
+        ret.unknown_properties(HashMap::new());
+        ret
+    }
+}
+
+impl VolumePropertiesBuilder {
+    pub fn insert_unknown_property(&mut self, key: String, value: String) {
+        if let Some(ref mut props) = self.unknown_properties {
+            props.insert(key, value);
+        } else {
+            self.unknown_properties(HashMap::new());
+            self.insert_unknown_property(key, value);
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Getters, Builder)]
 #[builder(derive(Debug))]
 #[get = "pub"]
 pub struct SnapshotProperties {
+    name: PathBuf,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -547,7 +572,7 @@ pub struct SnapshotProperties {
     /// normalization property must either not be explicitly set or be set to none.
     #[builder(default)]
     utf8_only: Option<bool>,
-    /// GUID of the database
+    /// GUID of the dataset
     #[builder(default)]
     guid: Option<u64>,
     /// Controls what is cached in the primary cache (ARC).
@@ -575,9 +600,10 @@ pub struct SnapshotProperties {
 }
 
 impl SnapshotProperties {
-    pub fn builder() -> SnapshotPropertiesBuilder {
+    pub fn builder(name: PathBuf) -> SnapshotPropertiesBuilder {
         let mut ret = SnapshotPropertiesBuilder::default();
         ret.unknown_properties(HashMap::new());
+        ret.name(name);
         ret
     }
 }
