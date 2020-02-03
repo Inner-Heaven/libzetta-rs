@@ -1,0 +1,34 @@
+z/iohyve/rancher/disk0	available	175800672256	-
+z/iohyve/rancher/disk0	checksum	on	default
+z/iohyve/rancher/disk0	compression	lz4	inherited from z
+z/iohyve/rancher/disk0	compressratio	1.30x	-
+z/iohyve/rancher/disk0	copies	1	default
+z/iohyve/rancher/disk0	createtxg	2432774	-
+z/iohyve/rancher/disk0	creation	1531943675	-
+z/iohyve/rancher/disk0	dedup	off	default
+z/iohyve/rancher/disk0	guid	8670277898870184975	-
+z/iohyve/rancher/disk0	logbias	latency	default
+z/iohyve/rancher/disk0	logicalreferenced	3618547712	-
+z/iohyve/rancher/disk0	logicalused	3618551808	-
+z/iohyve/rancher/disk0	mlslabel		-
+z/iohyve/rancher/disk0	primarycache	all	default
+z/iohyve/rancher/disk0	readonly	off	inherited from z
+z/iohyve/rancher/disk0	redundant_metadata	all	default
+z/iohyve/rancher/disk0	refcompressratio	1.30x	-
+z/iohyve/rancher/disk0	referenced	2781577216	-
+z/iohyve/rancher/disk0	refreservation	70871154688	local
+z/iohyve/rancher/disk0	reservation	0	default
+z/iohyve/rancher/disk0	secondarycache	all	default
+z/iohyve/rancher/disk0	snapshot_count	18446744073709551615	default
+z/iohyve/rancher/disk0	snapshot_limit	18446744073709551615	default
+z/iohyve/rancher/disk0	sync	standard	default
+z/iohyve/rancher/disk0	type	volume	-
+z/iohyve/rancher/disk0	used	73652740096	-
+z/iohyve/rancher/disk0	usedbychildren	0	-
+z/iohyve/rancher/disk0	usedbydataset	2781577216	-
+z/iohyve/rancher/disk0	usedbyrefreservation	70871146496	-
+z/iohyve/rancher/disk0	usedbysnapshots	16384	-
+z/iohyve/rancher/disk0	volblocksize	8192	default
+z/iohyve/rancher/disk0	volmode	dev	local
+z/iohyve/rancher/disk0	volsize	68719476736	local
+z/iohyve/rancher/disk0	written	8192	-

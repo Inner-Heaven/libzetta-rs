@@ -1,4 +1,4 @@
-use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, ZfsEngine};
+use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, ZfsEngine, VolumeProperties};
 use chrono::NaiveDateTime;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
@@ -140,9 +140,10 @@ impl ZfsEngine for ZfsOpen3 {
     }
 
     fn read_properties<N: Into<PathBuf>>(&self, path: N) -> Result<Properties> {
+        let path = path.into();
         let mut z = self.zfs();
         z.args(&["get", "-Hp", "all"]);
-        z.arg(path.into().as_os_str());
+        z.arg(path.clone().as_os_str());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         if out.status.success() {
@@ -152,8 +153,9 @@ impl ZfsEngine for ZfsOpen3 {
             let first = lines.next().expect("Empty stdout with 0 exit code");
             let kind = parse_prop_line(&first).1;
             let ret = match kind.as_ref() {
-                "filesystem" => parse_filesystem_lines(&mut lines),
-                "snapshot" => parse_snapshot_lines(&mut lines),
+                "filesystem" => parse_filesystem_lines(&mut lines, path),
+                "snapshot" => parse_snapshot_lines(&mut lines, path),
+                "volume" => parse_volume_lines(&mut lines, path),
                 _ => parse_unknown_lines(&mut lines),
             };
             Ok(ret)
@@ -214,8 +216,8 @@ fn parse_creation_into_timestamp(value: &str) -> i64 {
     };
 }
 
-pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
-    let mut properties = FilesystemProperties::builder();
+pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Properties {
+    let mut properties = FilesystemProperties::builder(name);
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
             "aclinherit" => {
@@ -344,8 +346,8 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines) -> Properties {
     Properties::Filesystem(properties.build().expect("Failed to build properties"))
 }
 
-pub(crate) fn parse_snapshot_lines(lines: &mut Lines) -> Properties {
-    let mut properties = SnapshotProperties::builder();
+pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properties {
+    let mut properties = SnapshotProperties::builder(name);
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
             "clones" => {
@@ -417,6 +419,92 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines) -> Properties {
     }
     Properties::Snapshot(properties.build().expect("Failed to build properties"))
 }
+
+pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties {
+    let mut properties = VolumeProperties::builder(name);
+    for (key, value) in lines.map(parse_prop_line) {
+        match key.as_ref() {
+            "available" => {
+                properties.available(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "checksum" => {
+                properties.checksum(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "compression" => {
+                properties.compression(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "compressratio" => {
+                properties
+                    .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
+            },
+            "copies" => {
+                properties.copies(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "creation" => {
+                properties.creation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "guid" => {
+                properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "primarycache" => {
+                properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "readonly" => {
+                properties.readonly(parse_bool(&value));
+            },
+            "refcompressratio" => {
+                properties
+                    .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
+            },
+            "referenced" => {
+                properties.referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "refreservation" => {
+                properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "reservation" => {
+                properties.reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "secondarycache" => {
+                properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "sync" => {
+                properties.sync(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "used" => {
+                properties.used(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbychildren" => {
+                properties.used_by_children(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbydataset" => {
+                properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbyrefreservation" => {
+                properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "usedbysnapshots" => {
+                properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "volblocksize" => {
+                properties.volume_block_size(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "volmode" => {
+                properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "volsize" => {
+                properties.volume_size(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "written" => {
+                properties.written(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "type" => { /* no-op */ },
+
+            _ => properties.insert_unknown_property(key, value),
+        };
+    }
+    Properties::Volume(properties.build().expect("Failed to build properties"))
+}
 fn parse_unknown_lines(lines: &mut Lines) -> Properties {
     let props = lines.map(parse_prop_line).collect();
     Properties::Unknown(props)
@@ -435,8 +523,7 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
 mod test {
     use super::*;
     use crate::zfs::{properties::{AclInheritMode, AclMode, SnapshotProperties, SyncMode,
-                                  VolumeMode},
-                     CacheMode, CanMount, Checksum, Compression, Copies, SnapDir};
+                                  VolumeMode}, CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
     use std::collections::HashMap;
 
     #[test]
@@ -453,7 +540,8 @@ mod test {
     fn filesystem_properties_freebsd() {
         let stdout = include_str!("fixtures/filesystem_properties_freebsd.sorted");
 
-        let result = parse_filesystem_lines(&mut stdout.lines());
+        let name = PathBuf::from("z/usr/home");
+        let result = parse_filesystem_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
         let unknown = [
@@ -481,7 +569,7 @@ mod test {
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect();
 
-        let expected = FilesystemProperties::builder()
+        let expected = FilesystemProperties::builder(name)
             .acl_inherit(AclInheritMode::Restricted)
             .acl_mode(Some(AclMode::Discard))
             .atime(false)
@@ -526,12 +614,64 @@ mod test {
 
         assert_eq!(Properties::Filesystem(expected), result);
     }
-
     #[test]
+    fn volume_properties_freebsd() {
+        let stdout = include_str!("fixtures/volume_properties_freebsd.sorted");
+        let name = PathBuf::from("z/iohyve/rancher/disk0");
+        let result = parse_volume_lines(&mut stdout.lines(), name.clone());
+
+        // Goal to have zero unknown before 1.0
+        let unknown = [
+            ("mlslabel", ""),
+            ("logbias", "latency"),
+            ("createtxg", "2432774"),
+            ("snapshot_count", "18446744073709551615"),
+            ("snapshot_limit", "18446744073709551615"),
+            ("dedup", "off"),
+            ("logicalreferenced", "3618547712"),
+            ("logicalused", "3618551808"),
+            ("redundant_metadata", "all"),
+        ]
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        let expected = VolumeProperties::builder(name)
+            .available(175800672256)
+            .checksum(Checksum::On)
+            .compression(Compression::LZ4)
+            .compression_ratio(1.30)
+            .copies(Copies::One)
+            .creation(1531943675)
+            .guid(Some(8670277898870184975))
+            .primary_cache(CacheMode::All)
+            .readonly(false)
+            .ref_compression_ratio(1.30)
+            .referenced(2781577216)
+            .ref_reservation(70871154688)
+            .reservation(0)
+            .secondary_cache(CacheMode::All)
+            .sync(SyncMode::Standard)
+            .used(73652740096)
+            .used_by_children(0)
+            .used_by_dataset(2781577216)
+            .used_by_ref_reservation(70871146496)
+            .used_by_snapshots(16384)
+            .volume_block_size(8192)
+            .volume_mode(Some(VolumeMode::Dev))
+            .volume_size(68719476736)
+            .written(8192)
+            .unknown_properties(unknown)
+            .build()
+            .unwrap();
+
+        assert_eq!(Properties::Volume(expected), result);
+    }
+
+        #[test]
     fn snapshot_properties_freebsd() {
         let stdout = include_str!("fixtures/snapshot_properties_freebsd.sorted");
-
-        let result = parse_snapshot_lines(&mut stdout.lines());
+        let name = PathBuf::from("z/usr@backup-2019-11-24");
+        let result = parse_snapshot_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
         let unknown = [
@@ -545,7 +685,7 @@ mod test {
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect();
 
-        let expected = SnapshotProperties::builder()
+        let expected = SnapshotProperties::builder(name)
             .clones(None)
             .compression_ratio(1.0)
             .creation(1574590597)

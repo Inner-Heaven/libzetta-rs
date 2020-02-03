@@ -351,3 +351,23 @@ fn read_properties_of_snapshot() {
         panic!("Read not fs properties");
     }
 }
+#[test]
+fn read_properties_of_volume() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Volume)
+        .volume_size(ONE_MB_IN_BYTES)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+
+    if let Properties::Volume(properties) = zfs.read_properties(&root).unwrap() {
+        assert_eq!(&root, properties.name());
+    } else {
+        panic!("Read not fs properties");
+    }
+}
