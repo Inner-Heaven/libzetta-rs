@@ -251,7 +251,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
             },
             "createtxg" => {
-                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+                properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
             },
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
@@ -363,7 +363,7 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properti
                     .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
             },
             "createtxg" => {
-                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+                properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
             },
             "creation" => {
                 properties.creation(parse_creation_into_timestamp(&value));
@@ -449,7 +449,7 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
             },
             "createtxg" => {
-                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+                properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
             },
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
@@ -523,7 +523,7 @@ pub(crate) fn parse_bookmark_lines(lines: &mut Lines, name: PathBuf) -> Properti
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
             "createtxg" => {
-                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+                properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
             },
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
@@ -613,7 +613,7 @@ mod test {
             .compression(Compression::LZ4)
             .compression_ratio(1.25)
             .copies(Copies::One)
-            .create_txg(46918)
+            .create_txg(Some(46918))
             .creation(1493670099)
             .devices(true)
             .exec(true)
@@ -675,7 +675,7 @@ mod test {
             .compression(Compression::LZ4)
             .compression_ratio(1.30)
             .copies(Copies::One)
-            .create_txg(2432774)
+            .create_txg(Some(2432774))
             .creation(1531943675)
             .guid(Some(8670277898870184975))
             .primary_cache(CacheMode::All)
@@ -722,7 +722,7 @@ mod test {
         let expected = SnapshotProperties::builder(name)
             .clones(None)
             .compression_ratio(1.0)
-            .create_txg(3034392)
+            .create_txg(Some(3034392))
             .creation(1574590597)
             .defer_destroy(false)
             .devices(true)
@@ -755,7 +755,7 @@ mod test {
         let result = parse_bookmark_lines(&mut stdout.lines(), name.clone());
 
         let expected = BookmarkProperties::builder(name)
-            .create_txg(2967653)
+            .create_txg(Some(2967653))
             .creation(1565321370)
             .guid(Some(12396914211240477066))
             .build()

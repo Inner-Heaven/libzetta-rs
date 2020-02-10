@@ -333,7 +333,7 @@ pub struct FilesystemProperties {
     /// property on an existing file system only affects newly written data.
     copies: Copies,
     /// The birth time transaction group (TXG) of the object.
-    create_txg: u64,
+    create_txg: Option<u64>,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// Controls whether device files in a file system can be opened.
@@ -470,7 +470,7 @@ pub struct VolumeProperties {
     /// property on an existing file system only affects newly written data.
     copies: Copies,
     /// The birth time transaction group (TXG) of the object.
-    create_txg: u64,
+    create_txg: Option<u64>,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// GUID of the dataset
@@ -550,7 +550,7 @@ impl VolumePropertiesBuilder {
 pub struct SnapshotProperties {
     name: PathBuf,
     /// The birth time transaction group (TXG) of the object.
-    create_txg: u64,
+    create_txg: Option<u64>,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -632,7 +632,7 @@ impl SnapshotPropertiesBuilder {
 pub struct BookmarkProperties {
     name: PathBuf,
     /// The birth time transaction group (TXG) of the object.
-    create_txg: u64,
+    create_txg: Option<u64>,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// GUID of the database
