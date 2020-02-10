@@ -332,6 +332,8 @@ pub struct FilesystemProperties {
     /// enabled. Consider setting this property when the file system created because changing this
     /// property on an existing file system only affects newly written data.
     copies: Copies,
+    /// The birth time transaction group (TXG) of the object.
+    create_txg: u64,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// Controls whether device files in a file system can be opened.
@@ -467,6 +469,8 @@ pub struct VolumeProperties {
     /// enabled. Consider setting this property when the file system created because changing this
     /// property on an existing file system only affects newly written data.
     copies: Copies,
+    /// The birth time transaction group (TXG) of the object.
+    create_txg: u64,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// GUID of the dataset
@@ -545,6 +549,8 @@ impl VolumePropertiesBuilder {
 #[get = "pub"]
 pub struct SnapshotProperties {
     name: PathBuf,
+    /// The birth time transaction group (TXG) of the object.
+    create_txg: u64,
     /// Read-only property that identifies the date and time a dataset created.
     creation: i64,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -619,11 +625,48 @@ impl SnapshotPropertiesBuilder {
     }
 }
 
+
+#[derive(Debug, Clone, PartialEq, Getters, Builder)]
+#[builder(derive(Debug))]
+#[get = "pub"]
+pub struct BookmarkProperties {
+    name: PathBuf,
+    /// The birth time transaction group (TXG) of the object.
+    create_txg: u64,
+    /// Read-only property that identifies the date and time a dataset created.
+    creation: i64,
+    /// GUID of the database
+    #[builder(default)]
+    guid: Option<u64>,
+    /// User defined properties and properties this library failed to recognize.
+    unknown_properties: HashMap<String, String>,
+}
+impl BookmarkProperties {
+        pub fn builder(name: PathBuf) -> BookmarkPropertiesBuilder {
+        let mut ret = BookmarkPropertiesBuilder::default();
+        ret.unknown_properties(HashMap::new());
+        ret.name(name);
+        ret
+    }
+}
+
+impl BookmarkPropertiesBuilder {
+    pub fn insert_unknown_property(&mut self, key: String, value: String) {
+        if let Some(ref mut props) = self.unknown_properties {
+            props.insert(key, value);
+        } else {
+            self.unknown_properties(HashMap::new());
+            self.insert_unknown_property(key, value);
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Properties {
     Filesystem(FilesystemProperties),
     Volume(VolumeProperties),
     Snapshot(SnapshotProperties),
+    Bookmark(BookmarkProperties),
     Unknown(HashMap<String, String>),
 }
 

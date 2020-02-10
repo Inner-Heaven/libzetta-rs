@@ -11,6 +11,7 @@ use crate::{parsers::zfs::{Rule, ZfsParser},
             zfs::properties::SnapshotProperties};
 use pest::Parser;
 use std::str::Lines;
+use crate::zfs::properties::BookmarkProperties;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
 static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
@@ -156,6 +157,7 @@ impl ZfsEngine for ZfsOpen3 {
                 "filesystem" => parse_filesystem_lines(&mut lines, path),
                 "snapshot" => parse_snapshot_lines(&mut lines, path),
                 "volume" => parse_volume_lines(&mut lines, path),
+                "bookmark" => parse_bookmark_lines(&mut lines, path),
                 _ => parse_unknown_lines(&mut lines),
             };
             Ok(ret)
@@ -247,6 +249,9 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             },
             "copies" => {
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "createtxg" => {
+                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
             },
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
@@ -357,6 +362,9 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properti
                 properties
                     .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
             },
+            "createtxg" => {
+                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+            },
             "creation" => {
                 properties.creation(parse_creation_into_timestamp(&value));
             },
@@ -440,6 +448,9 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
             "copies" => {
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
             },
+            "createtxg" => {
+                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+            },
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
             },
@@ -505,6 +516,29 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
     }
     Properties::Volume(properties.build().expect("Failed to build properties"))
 }
+
+
+pub(crate) fn parse_bookmark_lines(lines: &mut Lines, name: PathBuf) -> Properties {
+    let mut properties = BookmarkProperties::builder(name);
+    for (key, value) in lines.map(parse_prop_line) {
+        match key.as_ref() {
+            "createtxg" => {
+                properties.create_txg(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "creation" => {
+                properties.creation(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "guid" => {
+                properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "type" => { /* no-op */ },
+
+            _ => properties.insert_unknown_property(key, value),
+        }
+    }
+    Properties::Bookmark(properties.build().expect("Failed to build properties"))
+}
+
 fn parse_unknown_lines(lines: &mut Lines) -> Properties {
     let props = lines.map(parse_prop_line).collect();
     Properties::Unknown(props)
@@ -525,6 +559,7 @@ mod test {
     use crate::zfs::{properties::{AclInheritMode, AclMode, SnapshotProperties, SyncMode,
                                   VolumeMode}, CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
     use std::collections::HashMap;
+    use crate::zfs::properties::BookmarkProperties;
 
     #[test]
     fn test_hashmap_eq() {
@@ -546,7 +581,6 @@ mod test {
         // Goal to have zero unknown before 1.0
         let unknown = [
             ("casesensitivity", "sensitive"),
-            ("createtxg", "46918"),
             ("dedup", "off"),
             ("dnodesize", "legacy"),
             ("filesystem_count", "18446744073709551615"),
@@ -579,6 +613,7 @@ mod test {
             .compression(Compression::LZ4)
             .compression_ratio(1.25)
             .copies(Copies::One)
+            .create_txg(46918)
             .creation(1493670099)
             .devices(true)
             .exec(true)
@@ -624,7 +659,6 @@ mod test {
         let unknown = [
             ("mlslabel", ""),
             ("logbias", "latency"),
-            ("createtxg", "2432774"),
             ("snapshot_count", "18446744073709551615"),
             ("snapshot_limit", "18446744073709551615"),
             ("dedup", "off"),
@@ -641,6 +675,7 @@ mod test {
             .compression(Compression::LZ4)
             .compression_ratio(1.30)
             .copies(Copies::One)
+            .create_txg(2432774)
             .creation(1531943675)
             .guid(Some(8670277898870184975))
             .primary_cache(CacheMode::All)
@@ -667,7 +702,7 @@ mod test {
         assert_eq!(Properties::Volume(expected), result);
     }
 
-        #[test]
+    #[test]
     fn snapshot_properties_freebsd() {
         let stdout = include_str!("fixtures/snapshot_properties_freebsd.sorted");
         let name = PathBuf::from("z/usr@backup-2019-11-24");
@@ -679,7 +714,6 @@ mod test {
             ("mlslabel", ""),
             ("nbmand", "off"),
             ("normalization", "none"),
-            ("createtxg", "3034392"),
         ]
         .iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
@@ -688,6 +722,7 @@ mod test {
         let expected = SnapshotProperties::builder(name)
             .clones(None)
             .compression_ratio(1.0)
+            .create_txg(3034392)
             .creation(1574590597)
             .defer_destroy(false)
             .devices(true)
@@ -711,5 +746,21 @@ mod test {
             .unwrap();
 
         assert_eq!(Properties::Snapshot(expected), result);
+    }
+
+    #[test]
+    fn bookmark_properties_freebsd() {
+        let stdout = include_str!("fixtures/bookmark_properties_freebsd.sorted");
+        let name = PathBuf::from("z/var/tmp#backup-2019-08-08");
+        let result = parse_bookmark_lines(&mut stdout.lines(), name.clone());
+
+        let expected = BookmarkProperties::builder(name)
+            .create_txg(2967653)
+            .creation(1565321370)
+            .guid(Some(12396914211240477066))
+            .build()
+            .unwrap();
+
+        assert_eq!(Properties::Bookmark(expected), result);
     }
 }
