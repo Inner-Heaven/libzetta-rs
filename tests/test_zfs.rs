@@ -301,7 +301,7 @@ fn read_properties_of_filesystem() {
 
 #[test]
 #[cfg(target_os = "freebsd")]
-fn read_properties_of_snapshot_blessed_os() {
+fn read_properties_of_snapshot_and_bookmark_blessed_os() {
     let zpool = SHARED_ZPOOL.clone();
     let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
