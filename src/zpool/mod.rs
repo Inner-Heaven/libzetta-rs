@@ -3,8 +3,8 @@
 //! Somewhat poorly organized, but I'm afraid to do more refactoring here. The module consists of
 //! multiple parts:
 //!
-//!  - Regular expressions for error parsing. I
-//!    [want](https://github.com/Inner-Heaven/libzetta-rs/issues/45) to switch to pest at one point
+//!  - Regular expressions for error parsing. I [want](https://github.com/Inner-Heaven/libzetta-rs/issues/45)
+//!    to switch to pest at one point
 //!  - Error enums: [ZpoolError](enum.ZpoolError.html) and
 //!    [ZpoolErrorKind](enum.ZpoolErrorKind.html)
 //!     - ZPoolError is used as an actual error

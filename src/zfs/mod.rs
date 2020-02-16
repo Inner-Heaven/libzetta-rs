@@ -109,9 +109,9 @@ pub trait ZfsEngine {
 /// work on filesystems, some only on volumes.
 pub struct CreateDatasetRequest {
     /// Name of the dataset. First crumb of path is name of zpool.
-    name: PathBuf,
+    name:            PathBuf,
     /// Filesystem or Volume.
-    kind: DatasetKind,
+    kind:            DatasetKind,
     /// Optional user defined properties. User property names must conform to the following
     /// characteristics:
     ///
@@ -126,22 +126,22 @@ pub struct CreateDatasetRequest {
     // the rest is zfs native properties
     /// Controls how ACL entries inherited when files and directories created.
     #[builder(default)]
-    acl_inherit: AclInheritMode,
+    acl_inherit:       AclInheritMode,
     /// Controls how an ACL entry modified during a `chmod` operation.
     #[builder(default)]
-    acl_mode: Option<AclMode>,
+    acl_mode:          Option<AclMode>,
     /// Controls whether the access time for files updated when they are read.
     #[builder(default = "true")]
-    atime: bool,
+    atime:             bool,
     /// Controls whether a file system can be mounted.
     #[builder(default)]
-    can_mount: CanMount,
+    can_mount:         CanMount,
     /// Controls the checksum used to verify data integrity.
     #[builder(default)]
-    checksum: Checksum,
+    checksum:          Checksum,
     /// Enables or disables compression for a dataset.
     #[builder(default)]
-    compression: Compression,
+    compression:       Compression,
     /// Sets the number of copies of user data per file system. Available values are 1, 2, or 3.
     /// These copies are in addition to any pool-level redundancy. Disk space used by multiple
     /// copies of user data charged to the corresponding file and dataset, and counts against
@@ -149,55 +149,55 @@ pub struct CreateDatasetRequest {
     /// enabled. Consider setting this property when the file system created because changing this
     /// property on an existing file system only affects newly written data.
     #[builder(default)]
-    copies: Copies,
+    copies:            Copies,
     /// Controls whether device files in a file system can be opened.
     #[builder(default = "true")]
-    devices: bool,
+    devices:           bool,
     /// Controls whether programs in a file system allowed to be executed. Also, when set to
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     #[builder(default = "true")]
-    exec: bool,
+    exec:              bool,
     /// Controls the mount point used for this file system.
     #[builder(default)]
-    mount_point: Option<PathBuf>,
+    mount_point:       Option<PathBuf>,
     /// Controls what is cached in the primary cache (ARC).
     #[builder(default)]
-    primary_cache: CacheMode,
+    primary_cache:     CacheMode,
     /// Limits the amount of disk space a dataset and its descendants can consume.
     #[builder(default)]
-    quota: Option<u64>,
+    quota:             Option<u64>,
     /// Controls whether a dataset can be modified.
     #[builder(default = "false")]
-    readonly: bool,
+    readonly:          bool,
     /// Specifies a suggested block size for files in a file system in bytes. The size specified
     /// must be a power of two greater than or equal to 512 and less than or equal to 128 KiB.
     /// If the large_blocks feature is enabled on the pool, the size may be up to 1 MiB.
     #[builder(default)]
-    record_size: Option<u64>,
+    record_size:       Option<u64>,
     /// Sets the amount of disk space a dataset can consume. This property enforces a hard limit on
     /// the amount of space used. This hard limit does not include disk space used by descendents,
     /// such as snapshots and clones.
     #[builder(default)]
-    ref_quota: Option<u64>,
+    ref_quota:         Option<u64>,
     /// Sets the minimum amount of disk space is guaranteed to a dataset, not including
     /// descendants, such as snapshots and clones.
     #[builder(default)]
-    ref_reservation: Option<u64>,
+    ref_reservation:   Option<u64>,
     /// Sets the minimum amount of disk space guaranteed to a dataset and its descendants.
     #[builder(default)]
-    reservation: Option<u64>,
+    reservation:       Option<u64>,
     /// Controls what is cached in the secondary cache (L2ARC).
     #[builder(default)]
-    secondary_cache: CacheMode,
+    secondary_cache:   CacheMode,
     /// Controls whether the `setuid` bit is honored in a file system.
     #[builder(default = "true")]
-    setuid: bool,
+    setuid:            bool,
     /// Controls whether the .zfs directory is hidden or visible in the root of the file system
     #[builder(default)]
-    snap_dir: SnapDir,
+    snap_dir:          SnapDir,
     /// For volumes, specifies the logical size of the volume.
     #[builder(default)]
-    volume_size: Option<u64>,
+    volume_size:       Option<u64>,
     /// For volumes, specifies the block size of the volume in bytes. The block size cannot be
     /// changed after the volume has been written, so set the block size at volume creation time.
     /// The default block size for volumes is 8 KB. Any power of 2 from 512 bytes to 128 KB is
@@ -206,7 +206,7 @@ pub struct CreateDatasetRequest {
     volume_block_size: Option<u64>,
     /// Indicates whether extended attributes are enabled or disabled.
     #[builder(default = "true")]
-    xattr: bool,
+    xattr:             bool,
 }
 
 impl CreateDatasetRequest {

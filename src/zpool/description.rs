@@ -23,32 +23,32 @@ pub enum Reason {
 #[get = "pub"]
 pub struct Zpool {
     /// Name of the pool
-    name: String,
+    name:             String,
     /// UID of the pool. Only visible during import
     #[builder(default)]
-    id: Option<u64>,
+    id:               Option<u64>,
     /// Current Health status of the pool.
-    health: Health,
+    health:           Health,
     /// List of VDEVs
-    vdevs: Vec<Vdev>,
+    vdevs:            Vec<Vdev>,
     /// List of cache devices.
     #[builder(default)]
-    caches: Vec<Disk>,
+    caches:           Vec<Disk>,
     /// ZFS Intent Log (ZIL) devices.
     #[builder(default)]
-    logs: Vec<Vdev>,
+    logs:             Vec<Vdev>,
     /// Spare devices.
     #[builder(default)]
-    spares: Vec<Disk>,
+    spares:           Vec<Disk>,
     /// Value of action field what ever it is.
     #[builder(default)]
-    action: Option<String>,
+    action:           Option<String>,
     /// Errors?
     #[builder(default)]
-    errors: Option<String>,
+    errors:           Option<String>,
     /// Reason why this Zpool is not healthy.
     #[builder(default)]
-    reason: Option<Reason>,
+    reason:           Option<Reason>,
     /// Error statistics
     #[builder(default)]
     error_statistics: ErrorStatistics,
