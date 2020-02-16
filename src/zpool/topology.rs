@@ -48,28 +48,28 @@ use crate::zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, Cr
 /// Consumer friendly representation of zpool structure.
 pub struct CreateZpoolRequest {
     /// Name to give new zpool
-    name: String,
+    name:        String,
     /// Properties if new zpool
     #[builder(default)]
-    props: Option<ZpoolPropertiesWrite>,
+    props:       Option<ZpoolPropertiesWrite>,
     /// Altroot for zpool
     #[builder(default)]
-    altroot: Option<PathBuf>,
+    altroot:     Option<PathBuf>,
     /// Mount mount point for zpool
     #[builder(default)]
-    mount: Option<PathBuf>,
+    mount:       Option<PathBuf>,
     /// Use `-f` or not;
     #[builder(default)]
     create_mode: CreateMode,
     /// Devices used to store data
     #[builder(default)]
-    vdevs: Vec<CreateVdevRequest>,
+    vdevs:       Vec<CreateVdevRequest>,
     /// Adding a cache vdev to a pool will add the storage of the cache to the
     /// [L2ARC](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-l2arc). Cache devices
     /// cannot be mirrored. Since a cache device only stores additional copies
     /// of existing data, there is no risk of data loss.
     #[builder(default)]
-    caches: Vec<PathBuf>,
+    caches:      Vec<PathBuf>,
     /// ZFS Log Devices, also known as ZFS Intent Log ([ZIL](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-zil)) move the intent log from the regular
     /// pool devices to a dedicated device, typically an SSD. Having a dedicated
     /// log device can significantly improve the performance of applications
@@ -78,13 +78,13 @@ pub struct CreateZpoolRequest {
     /// If multiple log devices are used, writes will be load balanced across
     /// them
     #[builder(default)]
-    logs: Vec<CreateVdevRequest>,
+    logs:        Vec<CreateVdevRequest>,
     /// The hot spares feature enables you to identify disks that could be used to replace a failed
     /// or faulted device in one or more storage pools. Designating a device as a hot spare means
     /// that the device is not an active device in the pool, but if an active device in the pool
     /// fails, the hot spare automatically replaces the failed device.
     #[builder(default)]
-    spares: Vec<PathBuf>,
+    spares:      Vec<PathBuf>,
 }
 
 impl CreateZpoolRequest {

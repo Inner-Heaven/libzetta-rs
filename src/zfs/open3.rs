@@ -1,4 +1,5 @@
-use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, ZfsEngine, VolumeProperties};
+use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, VolumeProperties,
+                 ZfsEngine};
 use chrono::NaiveDateTime;
 use slog::{Drain, Logger};
 use slog_stdlog::StdLog;
@@ -8,10 +9,9 @@ use std::{ffi::OsString,
 
 use crate::{parsers::zfs::{Rule, ZfsParser},
             utils::parse_float,
-            zfs::properties::SnapshotProperties};
+            zfs::properties::{BookmarkProperties, SnapshotProperties}};
 use pest::Parser;
 use std::str::Lines;
-use crate::zfs::properties::BookmarkProperties;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
 static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
@@ -517,7 +517,6 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
     Properties::Volume(properties.build().expect("Failed to build properties"))
 }
 
-
 pub(crate) fn parse_bookmark_lines(lines: &mut Lines, name: PathBuf) -> Properties {
     let mut properties = BookmarkProperties::builder(name);
     for (key, value) in lines.map(parse_prop_line) {
@@ -556,10 +555,10 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::{properties::{AclInheritMode, AclMode, SnapshotProperties, SyncMode,
-                                  VolumeMode}, CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
+    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties,
+                                  SnapshotProperties, SyncMode, VolumeMode},
+                     CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
     use std::collections::HashMap;
-    use crate::zfs::properties::BookmarkProperties;
 
     #[test]
     fn test_hashmap_eq() {
@@ -666,9 +665,9 @@ mod test {
             ("logicalused", "3618551808"),
             ("redundant_metadata", "all"),
         ]
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
         let expected = VolumeProperties::builder(name)
             .available(175800672256)
             .checksum(Checksum::On)

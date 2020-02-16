@@ -37,9 +37,9 @@ use crate::zpool::{Health, Reason, ZpoolError};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ErrorStatistics {
     /// I/O errors that occurred while issuing a read request
-    pub read: u64,
+    pub read:     u64,
     /// I/O errors that occurred while issuing a write request
-    pub write: u64,
+    pub write:    u64,
     /// Checksum errors, meaning the device returned corrupted data as the
     /// result of a read request
     pub checksum: u64,
@@ -60,12 +60,12 @@ impl Default for ErrorStatistics {
 pub struct Disk {
     /// Path to a backing device or file. If path is relative, then it's
     /// relative to `/dev/`.
-    path: PathBuf,
+    path:             PathBuf,
     /// Current health of this specific device.
-    health: Health,
+    health:           Health,
     /// Reason why device is in this state.
     #[builder(default)]
-    reason: Option<Reason>,
+    reason:           Option<Reason>,
     /// How many read, write and checksum errors device encountered since last
     /// reset.
     #[builder(default)]
@@ -233,14 +233,14 @@ impl PartialEq<Vdev> for CreateVdevRequest {
 #[get = "pub"]
 pub struct Vdev {
     /// Type of Vdev
-    kind: VdevType,
+    kind:             VdevType,
     /// Current Health of Vdev
-    health: Health,
+    health:           Health,
     /// Reason why vdev is in this state
     #[builder(default)]
-    reason: Option<Reason>,
+    reason:           Option<Reason>,
     /// Backing devices for this vdev
-    disks: Vec<Disk>,
+    disks:            Vec<Disk>,
     /// How many read, write and checksum errors device encountered since last
     /// reset.
     #[builder(default)]

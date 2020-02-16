@@ -160,7 +160,7 @@ impl CacheType {
 pub struct ZpoolPropertiesWrite {
     /// Make zpool readonly. This can only be changed during import.
     #[builder(default = "false")]
-    read_only: bool,
+    read_only:   bool,
     /// Controls automatic pool expansion when the underlying LUN is grown.
     #[builder(default = "false")]
     auto_expand: bool,
@@ -185,7 +185,7 @@ pub struct ZpoolPropertiesWrite {
     /// this property.
     #[builder(default)]
     #[builder(setter(into))]
-    comment: String,
+    comment:    String,
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See zfs(8) for more
     /// information on ZFS delegated administration.
@@ -196,7 +196,7 @@ pub struct ZpoolPropertiesWrite {
     /// connectivity to the underlying storage device(s) or a failure of all
     /// devices within the pool.
     #[builder(default = "FailMode::Wait")]
-    fail_mode: FailMode,
+    fail_mode:  FailMode,
 }
 
 impl ZpoolPropertiesWrite {
@@ -244,76 +244,76 @@ impl ZpoolPropertiesWriteBuilder {
 pub struct ZpoolProperties {
     /// Amount of storage space within the pool that has been physically
     /// allocated.
-    alloc: usize,
+    alloc:         usize,
     /// Percentage of pool space used. Percentage.
-    capacity: u8,
+    capacity:      u8,
     /// A text string consisting of printable ASCII characters that will be
     /// stored such that it is
     /// available even if the pool becomes faulted. An administrator can
     /// provide additional information about a pool using this property.
-    comment: Option<String>,
+    comment:       Option<String>,
     /// The deduplication ratio specified for a pool, expressed as a
     /// multiplier.  For example,
     /// a dedupratio value of 1.76 indicates that 1.76 units of data were
     /// stored but only 1 unit
     /// of disk space was actually consumed. See `zfs(8)` for a description of
     /// the deduplication feature.
-    dedup_ratio: f64,
+    dedup_ratio:   f64,
     /// Amount of uninitialized space within the pool or device that
     /// can be used to increase the total capacity of the pool.
     /// Uninitialized space consists of any space on an EFI labeled
     /// vdev, which has not been brought online (i.e. zpool online
     /// -e).  This space occurs when a LUN is dynamically expanded.
-    expand_size: Option<usize>,
+    expand_size:   Option<usize>,
     /// The amount of fragmentation in the pool. In percents.
     fragmentation: i8,
     /// Number of blocks within the pool that are not allocated.
-    free: i64,
+    free:          i64,
     ///  After a file system or snapshot is destroyed, the space it
     ///  was using is returned to the pool asynchronously.  freeing is
     /// the amount of space remaining to be reclaimed.  Over time
     /// freeing will decrease while free increases.
-    freeing: i64,
+    freeing:       i64,
     /// A unique identifier for the pool.
-    guid: u64,
+    guid:          u64,
     /// The current health of the pool.
-    health: Health,
+    health:        Health,
     /// Total size of the storage pool.
-    size: usize,
+    size:          usize,
     /// Leaked space?
-    leaked: usize,
+    leaked:        usize,
     // writable
     /// Alternate root directory, can only be set during creation or import.
-    alt_root: Option<PathBuf>,
+    alt_root:      Option<PathBuf>,
     /// Pool is read only
-    read_only: bool,
+    read_only:     bool,
     /// Controls automatic pool expansion when the underlying LUN is grown.
-    auto_expand: bool,
+    auto_expand:   bool,
     /// Controls automatic device replacement. If set to "on", any new device,
     /// found in the
     /// same physical location as a device that previously belonged to the
     /// pool, is automatically
     /// formatted and replaced. The default behavior is "off".
-    auto_replace: bool,
+    auto_replace:  bool,
     ///  Identifies the default bootable dataset for the root pool.
-    boot_fs: Option<String>,
+    boot_fs:       Option<String>,
     /// Controls the location of where the pool configuration is cached.
-    cache_file: CacheType,
+    cache_file:    CacheType,
     /// Threshold for the number of block ditto copies. If the reference
     /// count for a deduplicated block increases above this number, a new
     /// ditto copy of this block is automatically stored. Default setting is
     /// 0 which causes no ditto copies to be created for deduplicated blocks.
     /// The minimum legal nonzero setting is 100.
-    dedup_ditto: usize,
+    dedup_ditto:   usize,
     /// Controls whether a non-privileged user is granted access based on the
     /// dataset permissions defined on the dataset. See `zfs(8)` for more
     /// information on ZFS delegated administration.
-    delegation: bool,
+    delegation:    bool,
     /// Controls the system behavior in the event of catastrophic pool
     /// failure. This condition is typically a result of a loss of
     /// connectivity to the underlying storage device(s) or a failure of all
     /// devices within the pool.
-    fail_mode: FailMode,
+    fail_mode:     FailMode,
 }
 
 fn parse_bool(val: Option<&str>) -> ZpoolResult<bool> {
