@@ -1,5 +1,5 @@
-use crate::zfs::{Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind, DestroyTiming,
-                 Error, Result, SnapDir, ValidationError, ZfsEngine};
+use crate::zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
+                 DatasetKind, DestroyTiming, Error, Result, SnapDir, ValidationError, ZfsEngine};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
@@ -141,12 +141,8 @@ impl ZfsEngine for ZfsLzc {
         snapshots: &[PathBuf],
         user_properties: Option<HashMap<String, String>>,
     ) -> Result<()> {
-        let validation_errors: Vec<ValidationError> = snapshots
-            .iter()
-            .map(PathBuf::validate)
-            .filter(Result::is_err)
-            .map(Result::unwrap_err)
-            .collect();
+        let validation_errors: Vec<ValidationError> =
+            snapshots.iter().map(PathBuf::validate).filter_map(Result::err).collect();
         if !validation_errors.is_empty() {
             return Err(ValidationErrors(validation_errors));
         }
@@ -169,6 +165,41 @@ impl ZfsEngine for ZfsLzc {
                 &mut errors_list_ptr,
             )
         };
+        if !errors_list_ptr.is_null() {
+            let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
+            if !errors.is_empty() {
+                return Err(Error::from(errors));
+            }
+        }
+        match errno {
+            0 => Ok(()),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
+    }
+
+    fn bookmark(&self, bookmarks: &[BookmarkRequest]) -> Result<()> {
+        let validation_errors: Vec<ValidationError> = bookmarks
+            .iter()
+            .flat_map(|BookmarkRequest { snapshot, bookmark }| vec![snapshot, bookmark])
+            .map(PathBuf::validate)
+            .filter_map(Result::err)
+            .collect();
+        if !validation_errors.is_empty() {
+            return Err(ValidationErrors(validation_errors));
+        }
+
+        let mut bookmarks_list = NvList::default();
+        for BookmarkRequest { snapshot, bookmark } in bookmarks {
+            bookmarks_list
+                .insert(&bookmark.to_string_lossy(), snapshot.to_string_lossy().as_ref())?;
+        }
+
+        let mut errors_list_ptr = null_mut();
+        let errno =
+            unsafe { zfs_core_sys::lzc_bookmark(bookmarks_list.as_ptr(), &mut errors_list_ptr) };
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
             if !errors.is_empty() {
@@ -208,6 +239,42 @@ impl ZfsEngine for ZfsLzc {
                 timing.as_c_uint(),
                 &mut errors_list_ptr,
             )
+        };
+        if !errors_list_ptr.is_null() {
+            let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
+            if !errors.is_empty() {
+                return Err(Error::from(errors));
+            }
+        }
+        match errno {
+            0 => Ok(()),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
+    }
+
+    fn destroy_bookmarks(&self, bookmarks: &[PathBuf]) -> Result<()> {
+        let validation_errors: Vec<ValidationError> = bookmarks
+            .iter()
+            .map(PathBuf::validate)
+            .filter(Result::is_err)
+            .map(Result::unwrap_err)
+            .collect();
+        if !validation_errors.is_empty() {
+            return Err(ValidationErrors(validation_errors));
+        }
+
+        let mut bookmarks_list = NvList::default();
+
+        for bookmark in bookmarks {
+            bookmarks_list.insert(&bookmark.to_string_lossy(), true)?;
+        }
+
+        let mut errors_list_ptr = null_mut();
+        let errno = unsafe {
+            zfs_core_sys::lzc_destroy_bookmarks(bookmarks_list.as_ptr(), &mut errors_list_ptr)
         };
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };

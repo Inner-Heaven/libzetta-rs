@@ -1,8 +1,5 @@
 #[macro_use] extern crate lazy_static;
 
-use rand;
-use slog_term;
-
 use std::{fs::{self, DirBuilder},
           panic,
           path::{Path, PathBuf},
@@ -12,8 +9,8 @@ use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
 use libzetta::{slog::*,
-               zfs::{Copies, CreateDatasetRequest, DatasetKind, Error, Properties, SnapDir,
-                     ZfsEngine, ZfsLzc},
+               zfs::{BookmarkRequest, Copies, CreateDatasetRequest, DatasetKind, Error,
+                     Properties, SnapDir, ZfsEngine, ZfsLzc},
                zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
 
 use libzetta::{zfs::{properties::VolumeMode, DelegatingZfsEngine, DestroyTiming},
@@ -21,7 +18,7 @@ use libzetta::{zfs::{properties::VolumeMode, DelegatingZfsEngine, DestroyTiming}
 
 static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
-static ZPOOL_NAME_PREFIX: &'static str = "tests-zfs-";
+static ZPOOL_NAME_PREFIX: &str = "tests-zfs-";
 lazy_static! {
     static ref INITIALIZED: Mutex<bool> = Mutex::new(false);
     static ref SHARED_ZPOOL: String = {
@@ -164,7 +161,7 @@ fn easy_invalid_zfs() {
     assert_eq!(Error::invalid_input(), res);
 
     let request = CreateDatasetRequest::builder()
-        .name(dataset_path.clone())
+        .name(dataset_path)
         .user_properties(std::collections::HashMap::new())
         .kind(DatasetKind::Volume)
         .build()
@@ -246,13 +243,13 @@ fn create_and_list() {
         .map(|e| (DatasetKind::Filesystem, e))
         .chain(expected_volumes.into_iter().map(|e| (DatasetKind::Volume, e)))
         .collect();
-    let datasets = zfs.list(root.clone()).unwrap();
+    let datasets = zfs.list(root).unwrap();
     assert_eq!(5, datasets.len());
     assert_eq!(expected, datasets);
 }
 
 #[test]
-fn easy_snapshot() {
+fn easy_snapshot_and_bookmark() {
     let zpool = SHARED_ZPOOL.clone();
     let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
@@ -267,14 +264,29 @@ fn easy_snapshot() {
 
     zfs.snapshot(&expected_snapshots, None).expect("Failed to create snapshots");
 
-    let snapshots =
-        zfs.list_snapshots(PathBuf::from(root.clone())).expect("failed to list snapshots");
+    let snapshots = zfs.list_snapshots(root.clone()).expect("failed to list snapshots");
     assert_eq!(expected_snapshots, snapshots);
-
     assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
+
+    let expected_bookmarks = vec![PathBuf::from(format!("{}/{}#snap-1", zpool, &root_name))];
+
+    let bookmark_requests: Vec<BookmarkRequest> = expected_snapshots
+        .iter()
+        .zip(expected_bookmarks.iter())
+        .map(|(snapshot, bookmark)| BookmarkRequest::new(snapshot.clone(), bookmark.clone()))
+        .collect();
+    zfs.bookmark(&bookmark_requests).expect("Failed to create bookmarks");
+
+    let bookmarks = zfs.list_bookmarks(root.clone()).expect("failed to list bookmarks");
+    assert_eq!(expected_bookmarks, bookmarks);
 
     zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
     assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
+
+    zfs.destroy_bookmarks(&expected_bookmarks).unwrap();
+    let bookmarks = zfs.list_bookmarks(root.clone());
+    let bookmarks = zfs.list_bookmarks(root).expect("failed to list bookmarks");
+    assert!(bookmarks.is_empty())
 }
 
 #[test]
@@ -307,7 +319,7 @@ fn read_properties_of_snapshot_and_bookmark_blessed_os() {
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
-        .name(root.clone())
+        .name(root)
         .kind(DatasetKind::Filesystem)
         .copies(Copies::Two)
         .snap_dir(SnapDir::Visible)
@@ -322,8 +334,22 @@ fn read_properties_of_snapshot_and_bookmark_blessed_os() {
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
         assert_eq!(&Some(VolumeMode::Default), properties.volume_mode());
+
+        let bookmark_name = format!("{}/{}#properties", zpool, &root_name);
+        let bookmark_request =
+            BookmarkRequest::new(PathBuf::from(&snapshot_name), PathBuf::from(&bookmark_name));
+        zfs.bookmark(&[bookmark_request]).expect("Failed to create snapshots");
+
+        if let Properties::Bookmark(properties_bookmark) =
+            zfs.read_properties(&bookmark_name).unwrap()
+        {
+            assert_eq!(properties.create_txg(), properties_bookmark.create_txg());
+            assert_eq!(properties.creation(), properties_bookmark.creation());
+        } else {
+            panic!("Read wrong properties");
+        }
     } else {
-        panic!("Read not fs properties");
+        panic!("Read wrong properties");
     }
 }
 #[test]
@@ -333,7 +359,7 @@ fn read_properties_of_snapshot() {
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
-        .name(root.clone())
+        .name(root)
         .kind(DatasetKind::Filesystem)
         .copies(Copies::Two)
         .snap_dir(SnapDir::Visible)
@@ -347,8 +373,22 @@ fn read_properties_of_snapshot() {
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
+
+        let bookmark_name = format!("{}/{}#properties", zpool, &root_name);
+        let bookmark_request =
+            BookmarkRequest::new(PathBuf::from(&snapshot_name), PathBuf::from(&bookmark_name));
+        zfs.bookmark(&[bookmark_request]).expect("Failed to create snapshots");
+
+        if let Properties::Bookmark(properties_bookmark) =
+            zfs.read_properties(&bookmark_name).unwrap()
+        {
+            assert_eq!(properties.create_txg(), properties_bookmark.create_txg());
+            assert_eq!(properties.creation(), properties_bookmark.creation());
+        } else {
+            panic!("Read wrong properties");
+        }
     } else {
-        panic!("Read not fs properties");
+        panic!("Read wrong properties");
     }
 }
 #[test]

@@ -1,6 +1,6 @@
 use crate::{slog::Logger,
-            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, CreateDatasetRequest, DatasetKind, DestroyTiming,
-                  Properties, Result, ZfsEngine}};
+            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest,
+                  DatasetKind, DestroyTiming, Properties, Result, ZfsEngine}};
 use std::{collections::HashMap, path::PathBuf};
 
 /// Handy wrapper that delegates your call to correct implementation.
@@ -30,10 +30,16 @@ impl ZfsEngine for DelegatingZfsEngine {
         self.lzc.snapshot(snapshots, user_properties)
     }
 
+    fn bookmark(&self, bookmarks: &[BookmarkRequest]) -> Result<()> { self.lzc.bookmark(bookmarks) }
+
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> { self.open3.destroy(name) }
 
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
         self.lzc.destroy_snapshots(snapshots, timing)
+    }
+
+    fn destroy_bookmarks(&self, bookmarks: &[PathBuf]) -> Result<()> {
+        self.lzc.destroy_bookmarks(bookmarks)
     }
 
     fn list<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
@@ -46,6 +52,10 @@ impl ZfsEngine for DelegatingZfsEngine {
 
     fn list_snapshots<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
         self.open3.list_snapshots(pool)
+    }
+
+    fn list_bookmarks<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
+        self.open3.list_bookmarks(pool)
     }
 
     fn list_volumes<N: Into<PathBuf>>(&self, pool: N) -> Result<Vec<PathBuf>> {
