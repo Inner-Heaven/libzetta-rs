@@ -1,5 +1,6 @@
 use crate::zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
-                 DatasetKind, DestroyTiming, Error, Result, SnapDir, ValidationError, ZfsEngine};
+                 DatasetKind, DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError,
+                 ZfsEngine};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::{Drain, Logger};
@@ -8,7 +9,7 @@ use slog_stdlog::StdLog;
 use crate::zfs::{errors::Error::ValidationErrors,
                  properties::{AclInheritMode, AclMode, ZfsProp},
                  PathExt};
-use std::{collections::HashMap, ffi::CString, path::PathBuf, ptr::null_mut};
+use std::{collections::HashMap, ffi::CString, os::unix::io::AsRawFd, path::PathBuf, ptr::null_mut};
 use zfs_core_sys as sys;
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
@@ -282,6 +283,33 @@ impl ZfsEngine for ZfsLzc {
                 return Err(Error::from(errors));
             }
         }
+        match errno {
+            0 => Ok(()),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
+    }
+
+    fn send<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        path: N,
+        from: Option<F>,
+        fd: FD,
+        flags: SendFlags,
+    ) -> Result<()> {
+        let snapshot = CString::new(path.into().to_str().unwrap())
+            .expect("Failed to create CString from path");
+        let snapshot_ptr = snapshot.as_ptr();
+        let from = from.map(|f| {
+            CString::new(f.into().to_str().unwrap()).expect("Failed to create CString from path")
+        });
+        let from_ptr = from.map(|cst| cst.as_ptr()).unwrap_or_else(|| std::ptr::null());
+        let fd_raw = fd.as_raw_fd();
+
+        let errno = unsafe { zfs_core_sys::lzc_send(snapshot_ptr, from_ptr, fd_raw, flags.bits) };
+
         match errno {
             0 => Ok(()),
             _ => {
