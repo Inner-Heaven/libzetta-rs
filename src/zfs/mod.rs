@@ -47,6 +47,17 @@ impl DestroyTiming {
     }
 }
 
+pub struct BookmarkRequest {
+    pub snapshot: PathBuf,
+    pub bookmark: PathBuf,
+}
+
+impl BookmarkRequest {
+    pub fn new(snapshot: PathBuf, bookmark: PathBuf) -> Self {
+        BookmarkRequest { snapshot, bookmark }
+    }
+}
+
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
     ///
@@ -69,6 +80,11 @@ pub trait ZfsEngine {
         Err(Error::Unimplemented)
     }
 
+    /// Create bookmarks as one atomic operation.
+    #[cfg_attr(tarpaulin, skip)]
+    fn bookmark(&self, _snapshots: &[BookmarkRequest]) -> Result<()> { Err(Error::Unimplemented) }
+
+    /// Deletes the dataset
     /// Deletes the dataset
     #[cfg_attr(tarpaulin, skip)]
     fn destroy<N: Into<PathBuf>>(&self, _name: N) -> Result<()> { Err(Error::Unimplemented) }
@@ -78,6 +94,10 @@ pub trait ZfsEngine {
     fn destroy_snapshots(&self, _snapshots: &[PathBuf], _timing: DestroyTiming) -> Result<()> {
         Err(Error::Unimplemented)
     }
+
+    /// Delete bookmarks as one atomic operation
+    #[cfg_attr(tarpaulin, skip)]
+    fn destroy_bookmarks(&self, _bookmarks: &[PathBuf]) -> Result<()> { Err(Error::Unimplemented) }
 
     #[cfg_attr(tarpaulin, skip)]
     fn list<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<(DatasetKind, PathBuf)>> {
@@ -89,6 +109,10 @@ pub trait ZfsEngine {
     }
     #[cfg_attr(tarpaulin, skip)]
     fn list_snapshots<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
+        Err(Error::Unimplemented)
+    }
+    #[cfg_attr(tarpaulin, skip)]
+    fn list_bookmarks<N: Into<PathBuf>>(&self, _pool: N) -> Result<Vec<PathBuf>> {
         Err(Error::Unimplemented)
     }
     #[cfg_attr(tarpaulin, skip)]
