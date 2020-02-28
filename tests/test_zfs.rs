@@ -432,7 +432,6 @@ fn send_snapshot() {
 
     let mut tmpfile = tempfile::tempfile().unwrap();
 
-    let from: Option<PathBuf> = Option::default();
 
-    zfs.send(snapshot, from, tmpfile, SendFlags::empty()).unwrap();
+    zfs.send_full(snapshot, tmpfile, SendFlags::empty()).unwrap();
 }

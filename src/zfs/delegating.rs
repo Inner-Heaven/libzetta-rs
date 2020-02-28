@@ -66,13 +66,22 @@ impl ZfsEngine for DelegatingZfsEngine {
         self.open3.read_properties(path)
     }
 
-    fn send<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+    fn send_full<N: Into<PathBuf>, FD: AsRawFd>(
         &self,
         path: N,
-        from: Option<F>,
         fd: FD,
         flags: SendFlags,
     ) -> Result<()> {
-        self.lzc.send(path, from, fd, flags)
+        self.lzc.send_full(path, fd, flags)
+    }
+
+    fn send_incremental<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        path: N,
+        from: F,
+        fd: FD,
+        flags: SendFlags,
+    ) -> Result<()> {
+        self.lzc.send_incremental(path, from, fd, flags)
     }
 }

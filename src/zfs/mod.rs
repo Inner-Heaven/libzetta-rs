@@ -138,14 +138,22 @@ pub trait ZfsEngine {
     }
 
     /// Send a full snapshot to a specified file descriptor.
-    /// * If "from" is NULL, a full (non-incremental) stream will be sent.
-    /// * If "from" is non-NULL, it must be the full name of a snapshot or bookmark to send an
-    ///   incremental from (e.g. "pool/fs@earlier_snap" or "pool/fs#earlier_bmark").
     #[cfg_attr(tarpaulin, skip)]
-    fn send<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+    fn send_full<N: Into<PathBuf>, FD: AsRawFd>(
         &self,
         _path: N,
-        _from: Option<F>,
+        _fd: FD,
+        _flags: SendFlags,
+    ) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
+
+    /// Send an incremental snapshot to a specified file descriptor.
+    #[cfg_attr(tarpaulin, skip)]
+    fn send_incremental<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        _path: N,
+        _from: F,
         _fd: FD,
         _flags: SendFlags,
     ) -> Result<()> {
