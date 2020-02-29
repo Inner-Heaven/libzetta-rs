@@ -1,7 +1,7 @@
 use crate::{slog::Logger,
             zfs::{lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest,
-                  DatasetKind, DestroyTiming, Properties, Result, ZfsEngine}};
-use std::{collections::HashMap, path::PathBuf};
+                  DatasetKind, DestroyTiming, Properties, Result, SendFlags, ZfsEngine}};
+use std::{collections::HashMap, os::unix::io::AsRawFd, path::PathBuf};
 
 /// Handy wrapper that delegates your call to correct implementation.
 pub struct DelegatingZfsEngine {
@@ -64,5 +64,24 @@ impl ZfsEngine for DelegatingZfsEngine {
 
     fn read_properties<N: Into<PathBuf>>(&self, path: N) -> Result<Properties> {
         self.open3.read_properties(path)
+    }
+
+    fn send_full<N: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        path: N,
+        fd: FD,
+        flags: SendFlags,
+    ) -> Result<()> {
+        self.lzc.send_full(path, fd, flags)
+    }
+
+    fn send_incremental<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        path: N,
+        from: F,
+        fd: FD,
+        flags: SendFlags,
+    ) -> Result<()> {
+        self.lzc.send_incremental(path, from, fd, flags)
     }
 }

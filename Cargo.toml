@@ -31,6 +31,7 @@ cstr-argument = "0.1.1"
 strum = "0.17.1"
 strum_macros = "0.17.1"
 chrono = "0.4.10"
+bitflags = "1.2.1"
 
 [dependencies.libnv]
 version = "0.2.2"
@@ -47,6 +48,7 @@ cavity = "1.1"
 rand = "0.7"
 slog-term = "2"
 tempdir = "0.3"
+tempfile = "3"
 
 [package.metadata.release]
 sign-commit = true

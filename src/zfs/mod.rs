@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::{os::unix::io::AsRawFd, path::PathBuf};
+
+use bitflags::bitflags;
 
 pub mod description;
 pub use description::DatasetKind;
@@ -58,6 +60,16 @@ impl BookmarkRequest {
     }
 }
 
+bitflags! {
+    #[derive(Default)]
+    pub struct SendFlags: u32 {
+        const LZC_SEND_FLAG_EMBED_DATA = 1 << 0;
+        const LZC_SEND_FLAG_LARGE_BLOCK = 1 << 1;
+        const LZC_SEND_FLAG_COMPRESS = 1 << 2;
+        const LZC_SEND_FLAG_RAW = 1 << 3;
+        const LZC_SEND_FLAG_SAVED = 1 << 4;
+    }
+}
 pub trait ZfsEngine {
     /// Check if a dataset (a filesystem, or a volume, or a snapshot with the given name exists.
     ///
@@ -122,6 +134,29 @@ pub trait ZfsEngine {
     /// Read all properties of filesystem/volume/snapshot/bookmark.
     #[cfg_attr(tarpaulin, skip)]
     fn read_properties<N: Into<PathBuf>>(&self, _path: N) -> Result<Properties> {
+        Err(Error::Unimplemented)
+    }
+
+    /// Send a full snapshot to a specified file descriptor.
+    #[cfg_attr(tarpaulin, skip)]
+    fn send_full<N: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        _path: N,
+        _fd: FD,
+        _flags: SendFlags,
+    ) -> Result<()> {
+        Err(Error::Unimplemented)
+    }
+
+    /// Send an incremental snapshot to a specified file descriptor.
+    #[cfg_attr(tarpaulin, skip)]
+    fn send_incremental<N: Into<PathBuf>, F: Into<PathBuf>, FD: AsRawFd>(
+        &self,
+        _path: N,
+        _from: F,
+        _fd: FD,
+        _flags: SendFlags,
+    ) -> Result<()> {
         Err(Error::Unimplemented)
     }
 }
