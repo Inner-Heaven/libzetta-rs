@@ -10,7 +10,6 @@
 
 ### Features
 
-* Add a single point of logging configuration ([#123](https://github.com/Inner-Heaven/libzetta-rs/issues/123)) ([3f4bba0](https://github.com/Inner-Heaven/libzetta-rs/commit/3f4bba0))
 * **zfs:** Ability to read filesystem dataset properties ([#111](https://github.com/Inner-Heaven/libzetta-rs/issues/111)) ([1f89fc3](https://github.com/Inner-Heaven/libzetta-rs/commit/1f89fc3))
 * **zfs:** Ability to send snapshot ([#119](https://github.com/Inner-Heaven/libzetta-rs/issues/119)) ([1ac0560](https://github.com/Inner-Heaven/libzetta-rs/commit/1ac0560))
 * **zfs:** Ability to work with bookmarks ([7721776](https://github.com/Inner-Heaven/libzetta-rs/commit/7721776))
@@ -23,37 +22,11 @@
 * **zfs:** Read properties of a snapshot ([#112](https://github.com/Inner-Heaven/libzetta-rs/issues/112)) ([1348a0f](https://github.com/Inner-Heaven/libzetta-rs/commit/1348a0f))
 * **zfs:** Read properties of a volume ([#113](https://github.com/Inner-Heaven/libzetta-rs/issues/113)) ([4361251](https://github.com/Inner-Heaven/libzetta-rs/commit/4361251))
 * **zfs:** Remove known unknowns from properties ([#121](https://github.com/Inner-Heaven/libzetta-rs/issues/121)) ([2ba858c](https://github.com/Inner-Heaven/libzetta-rs/commit/2ba858c))
+* Add a single point of logging configuration ([#123](https://github.com/Inner-Heaven/libzetta-rs/issues/123)) ([3f4bba0](https://github.com/Inner-Heaven/libzetta-rs/commit/3f4bba0))
 * Fuzzy testing target ([#90](https://github.com/Inner-Heaven/libzetta-rs/issues/90)) ([8c300ff](https://github.com/Inner-Heaven/libzetta-rs/commit/8c300ff))
 * Inception of ZFS module ([#83](https://github.com/Inner-Heaven/libzetta-rs/issues/83)) ([ce626a0](https://github.com/Inner-Heaven/libzetta-rs/commit/ce626a0))
 * remove unicode feature from regex crate ([#93](https://github.com/Inner-Heaven/libzetta-rs/issues/93)) ([e175499](https://github.com/Inner-Heaven/libzetta-rs/commit/e175499))
 
-
-## [0.1.1](https://github.com/Inner-Heaven/libzetta-rs/compare/2cbf197...v0.1.1) (2019-08-12)
-
-
-### Features
-
-* **zpool:** Add regex for another type of vdev reuse. Closes [#49](https://github.com/Inner-Heaven/libzetta-rs/issues/49) ([#69](https://github.com/Inner-Heaven/libzetta-rs/issues/69)) ([b7b0466](https://github.com/Inner-Heaven/libzetta-rs/commit/b7b0466))
-* **zpool:** Add replace_disk. Closes [#25](https://github.com/Inner-Heaven/libzetta-rs/issues/25) ([#67](https://github.com/Inner-Heaven/libzetta-rs/issues/67)) ([c4cfc40](https://github.com/Inner-Heaven/libzetta-rs/commit/c4cfc40))
-* **zpool:** Add Zpool::add ([#53](https://github.com/Inner-Heaven/libzetta-rs/issues/53)) ([2cbf197](https://github.com/Inner-Heaven/libzetta-rs/commit/2cbf197))
-* **zpool:** Fix parser for logs and caches. Add add_zil and add_cache ([#63](https://github.com/Inner-Heaven/libzetta-rs/issues/63)) ([ff2eda5](https://github.com/Inner-Heaven/libzetta-rs/commit/ff2eda5)), closes [#62](https://github.com/Inner-Heaven/libzetta-rs/issues/62) [#61](https://github.com/Inner-Heaven/libzetta-rs/issues/61)
-* **zpool:** Remove device from zpool ([#60](https://github.com/Inner-Heaven/libzetta-rs/issues/60)) ([28c90ff](https://github.com/Inner-Heaven/libzetta-rs/commit/28c90ff)), closes [#59](https://github.com/Inner-Heaven/libzetta-rs/issues/59)
-
-
-
-# [Unreleased](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v) (2019-08-24)
-
-
-### Features
-
-* **zfs:** Check existence of dataset. ([bc0b632](https://github.com/Inner-Heaven/libzetta-rs/commit/bc0b632))
-* Inception of ZFS module ([#83](https://github.com/Inner-Heaven/libzetta-rs/issues/83)) ([ce626a0](https://github.com/Inner-Heaven/libzetta-rs/commit/ce626a0))
-* Better documentation.
-
-
-## [0.1.2](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.1...v0.1.2) (2019-08-12)
-
- * Cosmetic changes to how project looks like on crates.io
 
 ## [0.1.1](https://github.com/Inner-Heaven/libzetta-rs/compare/2cbf197...v0.1.1) (2019-08-12)
 
