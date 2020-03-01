@@ -1,6 +1,6 @@
 #  (2020-03-01)
 
-# [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...0.2.0) (2020-03-01)
+# [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
 
 
 ### Bug Fixes
