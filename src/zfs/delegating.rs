@@ -1,6 +1,5 @@
-use crate::{slog::Logger,
-            zfs::{lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest,
-                  DatasetKind, DestroyTiming, Properties, Result, SendFlags, ZfsEngine}};
+use crate::zfs::{lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest, DatasetKind,
+                 DestroyTiming, Properties, Result, SendFlags, ZfsEngine};
 use std::{collections::HashMap, os::unix::io::AsRawFd, path::PathBuf};
 
 /// Handy wrapper that delegates your call to correct implementation.
@@ -10,9 +9,9 @@ pub struct DelegatingZfsEngine {
 }
 
 impl DelegatingZfsEngine {
-    pub fn new(root_logger: Option<Logger>) -> Result<Self> {
-        let lzc = ZfsLzc::new(root_logger.clone())?;
-        let open3 = ZfsOpen3::new(root_logger);
+    pub fn new() -> Result<Self> {
+        let lzc = ZfsLzc::new()?;
+        let open3 = ZfsOpen3::new();
         Ok(DelegatingZfsEngine { lzc, open3 })
     }
 }

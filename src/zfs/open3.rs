@@ -1,26 +1,20 @@
 use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, VolumeProperties,
                  ZfsEngine};
 use chrono::NaiveDateTime;
-use slog::{Drain, Logger};
-use slog_stdlog::StdLog;
+use slog::Logger;
 use std::{ffi::OsString,
           path::PathBuf,
           process::{Command, Stdio}};
 
 use crate::{parsers::zfs::{Rule, ZfsParser},
             utils::parse_float,
-            zfs::properties::{BookmarkProperties, SnapshotProperties}};
+            zfs::properties::{BookmarkProperties, SnapshotProperties},
+            Logger as GlobalLogger};
 use pest::Parser;
 use std::str::Lines;
 
 static FAILED_TO_PARSE: &str = "Failed to parse value";
 static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
-
-fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger
-        .into()
-        .new(o!("zetta_module" => "zfs", "zfs_impl" => "open3", "zetta_version" => crate::VERSION))
-}
 
 pub struct ZfsOpen3 {
     cmd_name: OsString,
@@ -30,15 +24,10 @@ pub struct ZfsOpen3 {
 impl ZfsOpen3 {
     /// Initialize libzfs_core backed ZfsEngine.
     /// If root logger is None, then StdLog drain used.
-    pub fn new(root_logger: Option<Logger>) -> Self {
-        let logger = {
-            if let Some(slog) = root_logger {
-                setup_logger(slog)
-            } else {
-                let slog = Logger::root(StdLog.fuse(), o!());
-                setup_logger(slog)
-            }
-        };
+    pub fn new() -> Self {
+        let logger = GlobalLogger::global().new(
+            o!("zetta_module" => "zfs", "zfs_impl" => "open3", "zetta_version" => crate::VERSION),
+        );
         let cmd_name = match std::env::var_os("ZFS_CMD") {
             Some(val) => val,
             None => "zfs".into(),

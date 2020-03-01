@@ -1,3 +1,4 @@
+#![allow(clippy::mutex_atomic)]
 #[macro_use] extern crate lazy_static;
 
 use std::{fs::{self, DirBuilder},
@@ -91,7 +92,7 @@ fn exists_on_fake() {
     let zpool = SHARED_ZPOOL.clone();
     let fake_dataset = format!("{}/very/fake/dataset", zpool);
 
-    let zfs = ZfsLzc::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = ZfsLzc::new().expect("Failed to initialize ZfsLzc");
 
     let result = zfs.exists(fake_dataset).unwrap();
 
@@ -103,7 +104,7 @@ fn create_dumb() {
     let zpool = SHARED_ZPOOL.clone();
     let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
 
-    let zfs = ZfsLzc::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = ZfsLzc::new().expect("Failed to initialize ZfsLzc");
 
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
@@ -124,7 +125,7 @@ fn easy_invalid_zfs() {
     let zpool = SHARED_ZPOOL.clone();
     let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
 
-    let zfs = ZfsLzc::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = ZfsLzc::new().expect("Failed to initialize ZfsLzc");
 
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
@@ -176,7 +177,7 @@ fn create_and_destroy() {
     let zpool = SHARED_ZPOOL.clone();
     let dataset_path = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
 
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let request = CreateDatasetRequest::builder()
         .name(dataset_path.clone())
         .user_properties(std::collections::HashMap::new())
@@ -197,7 +198,7 @@ fn create_and_destroy() {
 #[test]
 fn create_and_list() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root = PathBuf::from(format!("{}/{}", zpool, get_dataset_name()));
     let mut expected_filesystems = vec![root.clone()];
     let mut expected_volumes = Vec::with_capacity(2);
@@ -251,7 +252,7 @@ fn create_and_list() {
 #[test]
 fn easy_snapshot_and_bookmark() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
@@ -291,7 +292,7 @@ fn easy_snapshot_and_bookmark() {
 #[test]
 fn read_properties_of_filesystem() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
@@ -314,7 +315,7 @@ fn read_properties_of_filesystem() {
 #[cfg(target_os = "freebsd")]
 fn read_properties_of_snapshot_and_bookmark_blessed_os() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
@@ -354,7 +355,7 @@ fn read_properties_of_snapshot_and_bookmark_blessed_os() {
 #[test]
 fn read_properties_of_snapshot() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
@@ -393,7 +394,7 @@ fn read_properties_of_snapshot() {
 #[test]
 fn read_properties_of_volume() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
@@ -413,11 +414,11 @@ fn read_properties_of_volume() {
 #[test]
 fn send_snapshot() {
     let zpool = SHARED_ZPOOL.clone();
-    let zfs = DelegatingZfsEngine::new(None).expect("Failed to initialize ZfsLzc");
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
     let root_name = get_dataset_name();
     let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
     let request = CreateDatasetRequest::builder()
-        .name(root.clone())
+        .name(root)
         .kind(DatasetKind::Volume)
         .volume_size(ONE_MB_IN_BYTES)
         .build()
