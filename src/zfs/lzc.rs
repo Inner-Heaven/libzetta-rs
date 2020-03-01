@@ -9,7 +9,11 @@ use slog_stdlog::StdLog;
 use crate::zfs::{errors::Error::ValidationErrors,
                  properties::{AclInheritMode, AclMode, ZfsProp},
                  PathExt};
-use std::{collections::HashMap, ffi::CString, os::unix::io::AsRawFd, os::unix::io::RawFd, path::PathBuf, ptr::null_mut};
+use std::{collections::HashMap,
+          ffi::CString,
+          os::unix::io::{AsRawFd, RawFd},
+          path::PathBuf,
+          ptr::null_mut};
 use zfs_core_sys as sys;
 
 fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
@@ -46,7 +50,6 @@ impl ZfsLzc {
 
     pub fn logger(&self) -> &Logger { &self.logger }
 
-
     fn send(
         &self,
         path: PathBuf,
@@ -54,8 +57,8 @@ impl ZfsLzc {
         fd: RawFd,
         flags: SendFlags,
     ) -> Result<()> {
-        let snapshot = CString::new(path.to_str().unwrap())
-            .expect("Failed to create CString from path");
+        let snapshot =
+            CString::new(path.to_str().unwrap()).expect("Failed to create CString from path");
         let snapshot_ptr = snapshot.as_ptr();
         let from = from.map(|f| {
             CString::new(f.to_str().unwrap()).expect("Failed to create CString from path")

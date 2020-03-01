@@ -1,26 +1,26 @@
-z/usr@backup-2019-11-24	type	snapshot	-
-z/usr@backup-2019-11-24	creation	1574590597	-
-z/usr@backup-2019-11-24	used	0	-
-z/usr@backup-2019-11-24	referenced	90210	-
+z/usr@backup-2019-11-24	casesensitivity	sensitive	-
+z/usr@backup-2019-11-24	clones		-
 z/usr@backup-2019-11-24	compressratio	1.00x	-
+z/usr@backup-2019-11-24	createtxg	3034392	-
+z/usr@backup-2019-11-24	creation	1574590597	-
+z/usr@backup-2019-11-24	defer_destroy	off	-
 z/usr@backup-2019-11-24	devices	on	default
 z/usr@backup-2019-11-24	exec	on	default
-z/usr@backup-2019-11-24	setuid	on	default
-z/usr@backup-2019-11-24	createtxg	3034392	-
-z/usr@backup-2019-11-24	xattr	on	default
-z/usr@backup-2019-11-24	version	5	-
-z/usr@backup-2019-11-24	utf8only	off	-
-z/usr@backup-2019-11-24	normalization	none	-
-z/usr@backup-2019-11-24	casesensitivity	sensitive	-
-z/usr@backup-2019-11-24	nbmand	off	default
 z/usr@backup-2019-11-24	guid	6033436932844487115	-
-z/usr@backup-2019-11-24	primarycache	all	default
-z/usr@backup-2019-11-24	secondarycache	all	default
-z/usr@backup-2019-11-24	defer_destroy	off	-
-z/usr@backup-2019-11-24	userrefs	0	-
-z/usr@backup-2019-11-24	mlslabel		-
-z/usr@backup-2019-11-24	refcompressratio	1.00x	-
-z/usr@backup-2019-11-24	written	0	-
-z/usr@backup-2019-11-24	clones		-
 z/usr@backup-2019-11-24	logicalreferenced	37376	-
+z/usr@backup-2019-11-24	mlslabel		-
+z/usr@backup-2019-11-24	nbmand	off	default
+z/usr@backup-2019-11-24	normalization	none	-
+z/usr@backup-2019-11-24	primarycache	all	default
+z/usr@backup-2019-11-24	refcompressratio	1.00x	-
+z/usr@backup-2019-11-24	referenced	90210	-
+z/usr@backup-2019-11-24	secondarycache	all	default
+z/usr@backup-2019-11-24	setuid	on	default
+z/usr@backup-2019-11-24	type	snapshot	-
+z/usr@backup-2019-11-24	used	0	-
+z/usr@backup-2019-11-24	userrefs	0	-
+z/usr@backup-2019-11-24	utf8only	off	-
+z/usr@backup-2019-11-24	version	5	-
 z/usr@backup-2019-11-24	volmode	default	default
+z/usr@backup-2019-11-24	written	0	-
+z/usr@backup-2019-11-24	xattr	on	default

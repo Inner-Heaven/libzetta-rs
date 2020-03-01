@@ -284,7 +284,6 @@ fn easy_snapshot_and_bookmark() {
     assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
 
     zfs.destroy_bookmarks(&expected_bookmarks).unwrap();
-    let bookmarks = zfs.list_bookmarks(root.clone());
     let bookmarks = zfs.list_bookmarks(root).expect("failed to list bookmarks");
     assert!(bookmarks.is_empty())
 }
@@ -430,8 +429,7 @@ fn send_snapshot() {
 
     zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
 
-    let mut tmpfile = tempfile::tempfile().unwrap();
-
+    let tmpfile = tempfile::tempfile().unwrap();
 
     zfs.send_full(snapshot, tmpfile, SendFlags::empty()).unwrap();
 }

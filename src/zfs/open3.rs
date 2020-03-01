@@ -219,11 +219,11 @@ fn parse_list_of_pathbufs(value: &str) -> Option<Vec<PathBuf>> {
 
 fn parse_creation_into_timestamp(value: &str) -> i64 {
     if let Ok(timestamp) = value.parse() {
-        return timestamp;
+        timestamp
     } else {
         let date = NaiveDateTime::parse_from_str(value, DATE_FORMAT).expect(FAILED_TO_PARSE);
-        return date.timestamp();
-    };
+        date.timestamp()
+    }
 }
 
 pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Properties {
@@ -245,6 +245,9 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             "canmount" => {
                 properties.can_mount(value.parse().expect(FAILED_TO_PARSE));
             },
+            "casesensitivity" => {
+                properties.case_sensitivity(value.parse().expect(FAILED_TO_PARSE));
+            },
             "checksum" => {
                 properties.checksum(value.parse().expect(FAILED_TO_PARSE));
             },
@@ -264,11 +267,23 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
             },
+            "dedup" => {
+                properties.dedup(value.parse().expect(FAILED_TO_PARSE));
+            },
             "devices" => {
                 properties.devices(parse_bool(&value));
             },
+            "dnodesize" => {
+                properties.dnode_size(value.parse().expect(FAILED_TO_PARSE));
+            },
             "exec" => {
                 properties.exec(parse_bool(&value));
+            },
+            "filesystem_count" => {
+                properties.filesystem_count(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "filesystem_limit" => {
+                properties.filesystem_limit(value.parse().expect(FAILED_TO_PARSE));
             },
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
@@ -276,11 +291,29 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             "jailed" => {
                 properties.jailed(Some(parse_bool(&value)));
             },
+            "logbias" => {
+                properties.log_bias(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "logicalreferenced" => {
+                properties.logical_referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "logicalused" => {
+                properties.logical_used(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "mlslabel" => {
+                properties.mls_label(parse_mls_label(value));
+            },
             "mounted" => {
                 properties.mounted(parse_bool(&value));
             },
             "mountpoint" => {
                 properties.mount_point(parse_mount_point(&value));
+            },
+            "nbmand" => {
+                properties.nbmand(parse_bool(&value));
+            },
+            "normalization" => {
+                properties.normalization(value.parse().expect(FAILED_TO_PARSE));
             },
             "origin" => {
                 properties.origin(Some(value));
@@ -296,6 +329,13 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             },
             "recordsize" => {
                 properties.record_size(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "redundant_metadata" => {
+                properties.redundant_metadata(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "refcompressratio" => {
+                properties
+                    .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
             },
             "refquota" => {
                 properties.ref_quota(value.parse().expect(FAILED_TO_PARSE));
@@ -317,6 +357,12 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             },
             "snapdir" => {
                 properties.snap_dir(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "snapshot_count" => {
+                properties.snapshot_count(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "snapshot_limit" => {
+                properties.snapshot_limit(value.parse().expect(FAILED_TO_PARSE));
             },
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
@@ -345,6 +391,9 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             "volmode" => {
                 properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
             },
+            "vscan" => {
+                properties.vscan(parse_bool(&value));
+            },
             "written" => {
                 properties.written(value.parse().expect(FAILED_TO_PARSE));
             },
@@ -363,6 +412,9 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properti
     let mut properties = SnapshotProperties::builder(name);
     for (key, value) in lines.map(parse_prop_line) {
         match key.as_ref() {
+            "casesensitivity" => {
+                properties.case_sensitivity(value.parse().expect(FAILED_TO_PARSE));
+            },
             "clones" => {
                 properties.clones(parse_list_of_pathbufs(&value));
             },
@@ -390,6 +442,15 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properti
             },
             "logicalreferenced" => {
                 properties.logically_referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "mlslabel" => {
+                properties.mls_label(parse_mls_label(value));
+            },
+            "nbmand" => {
+                properties.nbmand(parse_bool(&value));
+            },
+            "normalization" => {
+                properties.normalization(value.parse().expect(FAILED_TO_PARSE));
             },
             "primarycache" => {
                 properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
@@ -462,14 +523,32 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
             },
+            "dedup" => {
+                properties.dedup(value.parse().expect(FAILED_TO_PARSE));
+            },
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
+            },
+            "logbias" => {
+                properties.log_bias(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "logicalreferenced" => {
+                properties.logical_referenced(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "logicalused" => {
+                properties.logical_used(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "mlslabel" => {
+                properties.mls_label(parse_mls_label(value));
             },
             "primarycache" => {
                 properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
             },
             "readonly" => {
                 properties.readonly(parse_bool(&value));
+            },
+            "redundant_metadata" => {
+                properties.redundant_metadata(value.parse().expect(FAILED_TO_PARSE));
             },
             "refcompressratio" => {
                 properties
@@ -486,6 +565,12 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
             },
             "secondarycache" => {
                 properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "snapshot_count" => {
+                properties.snapshot_count(value.parse().expect(FAILED_TO_PARSE));
+            },
+            "snapshot_limit" => {
+                properties.snapshot_limit(value.parse().expect(FAILED_TO_PARSE));
             },
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
@@ -559,11 +644,17 @@ fn parse_mount_point(val: &str) -> Option<PathBuf> {
         _ => Some(PathBuf::from(val)),
     }
 }
-
+fn parse_mls_label(val: String) -> Option<String> {
+    match val.as_str() {
+        "-" | "none" | "" => None,
+        _ => Some(val),
+    }
+}
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties,
+    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties, CaseSensitivity,
+                                  Dedup, DnodeSize, LogBias, Normalization, RedundantMetadata,
                                   SnapshotProperties, SyncMode, VolumeMode},
                      CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
     use std::collections::HashMap;
@@ -586,68 +677,65 @@ mod test {
         let result = parse_filesystem_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
-        let unknown = [
-            ("casesensitivity", "sensitive"),
-            ("dedup", "off"),
-            ("dnodesize", "legacy"),
-            ("filesystem_count", "18446744073709551615"),
-            ("filesystem_limit", "18446744073709551615"),
-            ("logbias", "latency"),
-            ("logicalreferenced", "117966950912"),
-            ("logicalused", "125882283520"),
-            ("mlslabel", ""),
-            ("nbmand", "off"),
-            ("normalization", "none"),
-            ("redundant_metadata", "all"),
-            ("refcompressratio", "1.23x"),
-            ("sharenfs", "off"),
-            ("sharesmb", "off"),
-            ("snapshot_count", "18446744073709551615"),
-            ("snapshot_limit", "18446744073709551615"),
-            ("vscan", "off"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
+        let unknown = [("sharenfs", "off"), ("sharesmb", "off")]
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
 
         let expected = FilesystemProperties::builder(name)
             .acl_inherit(AclInheritMode::Restricted)
             .acl_mode(Some(AclMode::Discard))
             .atime(false)
-            .available(161379753984)
+            .available(161_379_753_984)
             .can_mount(CanMount::On)
+            .case_sensitivity(CaseSensitivity::Sensitive)
             .checksum(Checksum::On)
             .compression(Compression::LZ4)
             .compression_ratio(1.25)
             .copies(Copies::One)
             .create_txg(Some(46918))
-            .creation(1493670099)
+            .creation(1_493_670_099)
+            .dedup(Dedup::Off)
             .devices(true)
+            .dnode_size(DnodeSize::Legacy)
             .exec(true)
-            .guid(Some(10533576440524459469))
+            .filesystem_count(0xFFFF_FFFF_FFFF_FFFF)
+            .filesystem_limit(0xFFFF_FFFF_FFFF_FFFF)
+            .guid(Some(10_533_576_440_524_459_469))
             .jailed(Some(false))
+            .log_bias(LogBias::Latency)
+            .logical_referenced(117_966_950_912)
+            .logical_used(125_882_283_520)
+            .mls_label(None)
             .mounted(true)
             .mount_point(Some(PathBuf::from("/usr/home")))
+            .nbmand(false)
+            .normalization(Normalization::None)
             .primary_cache(CacheMode::All)
             .quota(0)
             .readonly(false)
-            .record_size(131072)
-            .referenced(97392148480)
+            .record_size(0x0002_0000)
+            .redundant_metadata(RedundantMetadata::All)
+            .ref_compression_ratio(1.23)
+            .referenced(97_392_148_480)
             .ref_quota(0)
             .ref_reservation(0)
             .reservation(0)
             .secondary_cache(CacheMode::All)
             .setuid(true)
             .snap_dir(SnapDir::Hidden)
+            .snapshot_count(0xFFFF_FFFF_FFFF_FFFF)
+            .snapshot_limit(0xFFFF_FFFF_FFFF_FFFF)
             .sync(SyncMode::Standard)
-            .used(102563762176)
+            .used(102_563_762_176)
             .used_by_children(0)
-            .used_by_dataset(97392148480)
+            .used_by_dataset(97_392_148_480)
             .used_by_ref_reservation(0)
-            .used_by_snapshots(5171613696)
+            .used_by_snapshots(5_171_613_696)
             .utf8_only(Some(false))
             .version(5)
-            .written(35372666880)
+            .vscan(false)
+            .written(35_372_666_880)
             .xattr(false)
             .volume_mode(Some(VolumeMode::Default))
             .unknown_properties(unknown)
@@ -663,44 +751,40 @@ mod test {
         let result = parse_volume_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
-        let unknown = [
-            ("mlslabel", ""),
-            ("logbias", "latency"),
-            ("snapshot_count", "18446744073709551615"),
-            ("snapshot_limit", "18446744073709551615"),
-            ("dedup", "off"),
-            ("logicalreferenced", "3618547712"),
-            ("logicalused", "3618551808"),
-            ("redundant_metadata", "all"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
+        let unknown = HashMap::new();
         let expected = VolumeProperties::builder(name)
-            .available(175800672256)
+            .available(175_800_672_256)
             .checksum(Checksum::On)
             .compression(Compression::LZ4)
             .compression_ratio(1.30)
             .copies(Copies::One)
-            .create_txg(Some(2432774))
-            .creation(1531943675)
-            .guid(Some(8670277898870184975))
+            .create_txg(Some(2_432_774))
+            .creation(1_531_943_675)
+            .dedup(Dedup::Off)
+            .guid(Some(8_670_277_898_870_184_975))
+            .log_bias(LogBias::Latency)
+            .logical_referenced(3_618_547_712)
+            .logical_used(3_618_551_808)
+            .mls_label(None)
             .primary_cache(CacheMode::All)
             .readonly(false)
+            .redundant_metadata(RedundantMetadata::All)
             .ref_compression_ratio(1.30)
-            .referenced(2781577216)
-            .ref_reservation(70871154688)
+            .referenced(2_781_577_216)
+            .ref_reservation(70_871_154_688)
             .reservation(0)
             .secondary_cache(CacheMode::All)
+            .snapshot_count(0xFFFF_FFFF_FFFF_FFFF)
+            .snapshot_limit(0xFFFF_FFFF_FFFF_FFFF)
             .sync(SyncMode::Standard)
-            .used(73652740096)
+            .used(73_652_740_096)
             .used_by_children(0)
-            .used_by_dataset(2781577216)
-            .used_by_ref_reservation(70871146496)
-            .used_by_snapshots(16384)
+            .used_by_dataset(2_781_577_216)
+            .used_by_ref_reservation(70_871_146_496)
+            .used_by_snapshots(0x4000)
             .volume_block_size(8192)
             .volume_mode(Some(VolumeMode::Dev))
-            .volume_size(68719476736)
+            .volume_size(0x0010_0000_0000)
             .written(8192)
             .unknown_properties(unknown)
             .build()
@@ -716,26 +800,22 @@ mod test {
         let result = parse_snapshot_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
-        let unknown = [
-            ("casesensitivity", "sensitive"),
-            ("mlslabel", ""),
-            ("nbmand", "off"),
-            ("normalization", "none"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
+        let unknown = HashMap::new();
 
         let expected = SnapshotProperties::builder(name)
+            .case_sensitivity(CaseSensitivity::Sensitive)
             .clones(None)
             .compression_ratio(1.0)
-            .create_txg(Some(3034392))
-            .creation(1574590597)
+            .create_txg(Some(3_034_392))
+            .creation(1_574_590_597)
             .defer_destroy(false)
             .devices(true)
             .exec(true)
-            .guid(Some(6033436932844487115))
+            .guid(Some(6_033_436_932_844_487_115))
             .logically_referenced(37376)
+            .mls_label(None)
+            .nbmand(false)
+            .normalization(Normalization::None)
             .primary_cache(CacheMode::All)
             .ref_compression_ratio(1.0)
             .referenced(90210)
@@ -762,9 +842,9 @@ mod test {
         let result = parse_bookmark_lines(&mut stdout.lines(), name.clone());
 
         let expected = BookmarkProperties::builder(name)
-            .create_txg(Some(2967653))
-            .creation(1565321370)
-            .guid(Some(12396914211240477066))
+            .create_txg(Some(2_967_653))
+            .creation(1_565_321_370)
+            .guid(Some(12_396_914_211_240_477_066))
             .build()
             .unwrap();
 
