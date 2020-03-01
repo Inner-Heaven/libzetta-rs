@@ -28,7 +28,7 @@ use std::{env,
 
 use crate::{parsers::{Rule, StdoutParser},
             zpool::description::Zpool,
-            Logger as GlobalLogger};
+            GlobalLogger};
 use pest::Parser;
 use slog::Logger;
 
@@ -61,9 +61,8 @@ impl Default for ZpoolOpen3 {
             None => "zpool".into(),
         };
 
-        let logger = GlobalLogger::global().new(
-            o!("zetta_module" => "zpool", "zpool_impl" => "open3", "zetta_version" => crate::VERSION),
-        );
+        let logger =
+            GlobalLogger::get().new(o!("zetta_module" => "zpool", "zpool_impl" => "open3"));
         ZpoolOpen3 { cmd_name, logger }
     }
 }

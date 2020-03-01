@@ -1,22 +1,21 @@
-use libzetta::Logger;
-use slog::{o, Drain, Logger as SlogLogger, OwnedKVList};
+use libzetta::GlobalLogger;
+use slog::{o, Drain, Logger};
 use slog_stdlog::StdLog;
 
 #[test]
 fn test_default_logger() {
-    let logger = Logger::global();
+    let logger = GlobalLogger::get();
     let pairs = logger.list();
-    let expected = String::from("()");
-    let actual = format!("{:?}", OwnedKVList::from(pairs.clone()));
+    let expected = String::from("(zetta_version)");
+    let actual = format!("{:?}", pairs);
     assert_eq!(expected, actual);
 }
 #[test]
 fn test_not_default_logger() {
-    let root = SlogLogger::root(StdLog.fuse(), o!("wat" => "wat"));
-    Logger::setup(root).unwrap();
-
-    let pairs = Logger::global().list();
-    let expected = String::from("(wat)");
-    let actual = format!("{:?}", OwnedKVList::from(pairs.clone()));
+    let root = Logger::root(StdLog.fuse(), o!("wat" => "wat"));
+    GlobalLogger::setup(&root).unwrap();
+    let pairs = GlobalLogger::get().list();
+    let expected = String::from("(zetta_version, wat)");
+    let actual = format!("{:?}", pairs);
     assert_eq!(expected, actual);
 }

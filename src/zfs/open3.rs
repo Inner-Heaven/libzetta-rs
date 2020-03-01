@@ -9,7 +9,7 @@ use std::{ffi::OsString,
 use crate::{parsers::zfs::{Rule, ZfsParser},
             utils::parse_float,
             zfs::properties::{BookmarkProperties, SnapshotProperties},
-            Logger as GlobalLogger};
+            GlobalLogger};
 use pest::Parser;
 use std::str::Lines;
 
@@ -25,9 +25,7 @@ impl ZfsOpen3 {
     /// Initialize libzfs_core backed ZfsEngine.
     /// If root logger is None, then StdLog drain used.
     pub fn new() -> Self {
-        let logger = GlobalLogger::global().new(
-            o!("zetta_module" => "zfs", "zfs_impl" => "open3", "zetta_version" => crate::VERSION),
-        );
+        let logger = GlobalLogger::get().new(o!("zetta_module" => "zfs", "zfs_impl" => "open3"));
         let cmd_name = match std::env::var_os("ZFS_CMD") {
             Some(val) => val,
             None => "zfs".into(),

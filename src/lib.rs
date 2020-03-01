@@ -57,4 +57,4 @@ pub mod utils;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod log;
-pub use log::Logger;
+pub use log::GlobalLogger;

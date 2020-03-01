@@ -1,7 +1,7 @@
 use crate::{zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
                   DatasetKind, DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError,
                   ZfsEngine},
-            Logger as GlobalLogger};
+            GlobalLogger};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::Logger;
@@ -31,9 +31,7 @@ impl ZfsLzc {
             let io_error = std::io::Error::from_raw_os_error(errno);
             return Err(Error::LZCInitializationFailed(io_error));
         }
-        let logger = GlobalLogger::global().new(
-            o!("zetta_module" => "zfs", "zfs_impl" => "lzc", "zetta_version" => crate::VERSION),
-        );
+        let logger = GlobalLogger::get().new(o!("zetta_module" => "zfs", "zfs_impl" => "lzc"));
 
         Ok(ZfsLzc { logger })
     }
