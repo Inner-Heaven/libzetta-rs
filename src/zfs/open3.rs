@@ -275,7 +275,7 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
             },
             "dnodesize" => {
                 properties.dnode_size(value.parse().expect(FAILED_TO_PARSE));
-            }
+            },
             "exec" => {
                 properties.exec(parse_bool(&value));
             },
@@ -653,11 +653,11 @@ fn parse_mls_label(val: String) -> Option<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties,
+    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties, CaseSensitivity,
+                                  Dedup, DnodeSize, LogBias, Normalization, RedundantMetadata,
                                   SnapshotProperties, SyncMode, VolumeMode},
                      CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
     use std::collections::HashMap;
-    use crate::zfs::properties::{CaseSensitivity, Normalization, Dedup, LogBias, RedundantMetadata, DnodeSize};
 
     #[test]
     fn test_hashmap_eq() {
@@ -677,13 +677,10 @@ mod test {
         let result = parse_filesystem_lines(&mut stdout.lines(), name.clone());
 
         // Goal to have zero unknown before 1.0
-        let unknown = [
-            ("sharenfs", "off"),
-            ("sharesmb", "off"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
+        let unknown = [("sharenfs", "off"), ("sharesmb", "off")]
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
 
         let expected = FilesystemProperties::builder(name)
             .acl_inherit(AclInheritMode::Restricted)

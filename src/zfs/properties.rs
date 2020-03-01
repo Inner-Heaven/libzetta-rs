@@ -291,7 +291,8 @@ impl Default for VolumeMode {
     fn default() -> Self { VolumeMode::Default }
 }
 
-/// Indicates whether the file name matching algorithm used by the file system should be case-sensitive, case-insensitive, or allow a combination of both styles of matching.
+/// Indicates whether the file name matching algorithm used by the file system should be
+/// case-sensitive, case-insensitive, or allow a combination of both styles of matching.
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum CaseSensitivity {
@@ -299,18 +300,18 @@ pub enum CaseSensitivity {
     Sensitive,
     #[strum(serialize = "insensitive")]
     Insensitive,
-    /// File system can support requests for both case-sensitive and case-insensitive matching behavior.
+    /// File system can support requests for both case-sensitive and case-insensitive matching
+    /// behavior.
     #[strum(serialize = "mixed")]
     Mixed,
 }
 
 impl Default for CaseSensitivity {
-    fn default() -> Self {
-        CaseSensitivity::Sensitive
-    }
+    fn default() -> Self { CaseSensitivity::Sensitive }
 }
 
-/// Configures deduplication for a dataset. If set to verify, ZFS will do a byte-to-byte comparision in case of two blocks having the same signature to make sure the block contents are identical.
+/// Configures deduplication for a dataset. If set to verify, ZFS will do a byte-to-byte comparision
+/// in case of two blocks having the same signature to make sure the block contents are identical.
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum Dedup {
@@ -335,11 +336,10 @@ pub enum Dedup {
 }
 
 impl Default for Dedup {
-    fn default() -> Self {
-        Dedup::Off
-    }
+    fn default() -> Self { Dedup::Off }
 }
-///  Indicates whether the file system should perform a unicode normalization of file names whenever two filenames are compared, and which normalization algorithm should be used.
+///  Indicates whether the file system should perform a unicode normalization of file names whenever
+/// two filenames are compared, and which normalization algorithm should be used.
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum Normalization {
@@ -356,9 +356,7 @@ pub enum Normalization {
 }
 
 impl Default for Normalization {
-    fn default() -> Self {
-        Normalization::None
-    }
+    fn default() -> Self { Normalization::None }
 }
 
 /// Provide a hint to ZFS about handling of synchronous requests in this dataset.
@@ -368,34 +366,33 @@ pub enum LogBias {
     /// ZFS will use pool log devices (if configured) to handle the requests at low latency.
     #[strum(serialize = "latency")]
     Latency,
-    /// ZFS will not use configured pool log devices.  ZFS will instead optimize synchronous operations for global pool throughput and efficient use of resources.
+    /// ZFS will not use configured pool log devices.  ZFS will instead optimize synchronous
+    /// operations for global pool throughput and efficient use of resources.
     #[strum(serialize = "throughput")]
     Throughput,
-
 }
 
 impl Default for LogBias {
-    fn default() -> Self {
-        LogBias::Latency
-    }
+    fn default() -> Self { LogBias::Latency }
 }
 
 /// Controls what types of metadata are stored redundantly
 #[derive(AsRefStr, EnumString, Display, Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u64)]
 pub enum RedundantMetadata {
-    /// ZFS stores an extra copy of all metadata. If a single on-disk block is corrupt, at worst a single block of user data (which is recordsize bytes long can be lost.)
+    /// ZFS stores an extra copy of all metadata. If a single on-disk block is corrupt, at worst a
+    /// single block of user data (which is recordsize bytes long can be lost.)
     #[strum(serialize = "all")]
     All,
-    /// ZFS stores an extra copy of most types of metadata. This can improve performance of random writes, because less metadata must be written.  In practice, at worst about 100 blocks (of recordsize bytes each) of user data can be lost if a single on-disk block is corrupt.
+    /// ZFS stores an extra copy of most types of metadata. This can improve performance of random
+    /// writes, because less metadata must be written.  In practice, at worst about 100 blocks (of
+    /// recordsize bytes each) of user data can be lost if a single on-disk block is corrupt.
     #[strum(serialize = "most")]
     Most,
 }
 
 impl Default for RedundantMetadata {
-    fn default() -> Self {
-        RedundantMetadata::All
-    }
+    fn default() -> Self { RedundantMetadata::All }
 }
 
 /// Specifies a compatibility mode or literal value for the size of dnodes in the file system.
@@ -419,9 +416,7 @@ pub enum DnodeSize {
 }
 
 impl Default for DnodeSize {
-    fn default() -> Self {
-        DnodeSize::Legacy
-    }
+    fn default() -> Self { DnodeSize::Legacy }
 }
 /// Most of native properties of filesystem dataset - both immutable and mutable. Default values
 /// taken from FreeBSD 12.
@@ -451,8 +446,9 @@ pub struct FilesystemProperties {
     available:               i64,
     /// Controls whether a file system can be mounted.
     can_mount:               CanMount,
-    /// Indicates whether the file name matching algorithm used by the file system should be case-sensitive, case-insensitive, or allow a combination of both styles of matching.
-    case_sensitivity:      CaseSensitivity,
+    /// Indicates whether the file name matching algorithm used by the file system should be
+    /// case-sensitive, case-insensitive, or allow a combination of both styles of matching.
+    case_sensitivity:        CaseSensitivity,
     /// [Security label](https://docs.oracle.com/cd/E23824_01/html/821-1482/managezones-18.html)
     /// Controls the checksum used to verify data integrity.
     checksum:                Checksum,
@@ -475,19 +471,21 @@ pub struct FilesystemProperties {
     creation:                i64,
     /// Configures deduplication for a dataset.
     #[builder(default)]
-    dedup: Dedup,
+    dedup:                   Dedup,
     /// Controls whether device files in a file system can be opened.
     devices:                 bool,
     /// Specifies a compatibility mode or literal value for the size of dnodes in the file system.
     #[builder(default)]
-    dnode_size: DnodeSize,
+    dnode_size:              DnodeSize,
     /// Controls whether programs in a file system allowed to be executed. Also, when set to
     /// `false`, `mmap(2)` calls with `PROT_EXEC` disallowed.
     exec:                    bool,
-    /// The total number of filesystems that exist under this location in the dataset tree.  This value is only available when a filesystem_limit has been set somewhere in the tree under which the dataset resides.
-    filesystem_count: u64,
+    /// The total number of filesystems that exist under this location in the dataset tree.  This
+    /// value is only available when a filesystem_limit has been set somewhere in the tree under
+    /// which the dataset resides.
+    filesystem_count:        u64,
     /// Limits the number of filesystems that can be created on a dataset and its descendents.
-    filesystem_limit: u64,
+    filesystem_limit:        u64,
     /// GUID of the dataset
     #[builder(default)]
     guid:                    Option<u64>,
@@ -498,10 +496,11 @@ pub struct FilesystemProperties {
     mount_point:             Option<PathBuf>,
     /// [Cross-protocol locking](https://docs.oracle.com/cd/E19120-01/open.solaris/820-2429/configurecrossprotocollockingtask/index.html)
     #[builder(default)]
-    nbmand: bool,
-    ///  Indicates whether the file system should perform a unicode normalization of file names whenever two filenames are compared, and which normalization algorithm should be used.
+    nbmand:                  bool,
+    ///  Indicates whether the file system should perform a unicode normalization of file names
+    /// whenever two filenames are compared, and which normalization algorithm should be used.
     #[builder(default)]
-    normalization: Normalization,
+    normalization:           Normalization,
     /// Controls what is cached in the primary cache (ARC).
     primary_cache:           CacheMode,
     // Read-only property for cloned file systems or volumes that identifies the snapshot from
@@ -517,7 +516,7 @@ pub struct FilesystemProperties {
     /// If the large_blocks feature is enabled on the pool, the size may be up to 1 MiB.
     record_size:             u64,
     /// Controls what types of metadata are stored redundantly
-    redundant_metadata: RedundantMetadata,
+    redundant_metadata:      RedundantMetadata,
     /// Compression ratio achieved for the referenced space of this snapshot.
     ref_compression_ratio:   f64,
     /// Read-only property that identifies the amount of data accessible by a dataset, which might
@@ -538,10 +537,12 @@ pub struct FilesystemProperties {
     setuid:                  bool,
     /// Controls whether the .zfs directory is hidden or visible in the root of the file system
     snap_dir:                SnapDir,
-    /// The total number of snapshots that exist under this location in the dataset tree.  This value is only available when a snapshot_limit has been set somewhere in the tree under which the dataset resides.
-    snapshot_count: u64,
+    /// The total number of snapshots that exist under this location in the dataset tree.  This
+    /// value is only available when a snapshot_limit has been set somewhere in the tree under
+    /// which the dataset resides.
+    snapshot_count:          u64,
     /// Limits the number of snapshots that can be created on a dataset and its descendents.
-    snapshot_limit: u64,
+    snapshot_limit:          u64,
     /// Controls the behavior of synchronous requests.
     sync:                    SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -564,14 +565,14 @@ pub struct FilesystemProperties {
     #[builder(default)]
     jailed:                  Option<bool>,
     /// Provide a hint to ZFS about handling of synchronous requests in this dataset.
-    log_bias:              LogBias,
+    log_bias:                LogBias,
     /// The amount of space is "logically" accessible by this dataset.
-    logical_referenced: u64,
+    logical_referenced:      u64,
     ///  The amount of space is "logically" consumed by this dataset and all its descendents.
-    logical_used: u64,
+    logical_used:            u64,
     /// [Security label](https://docs.oracle.com/cd/E23824_01/html/821-1482/managezones-18.html)
     #[builder(default)]
-    mls_label:             Option<String>,
+    mls_label:               Option<String>,
     /// Indicates whether the file system should reject file names that include characters that are
     /// not present in the UTF-8 character code set. If this property is explicitly set to off, the
     /// normalization property must either not be explicitly set or be set to none.
@@ -585,7 +586,7 @@ pub struct FilesystemProperties {
     volume_mode:             Option<VolumeMode>,
     /// Virus scan - not used outside solaris
     #[builder(default)]
-    vscan: bool,
+    vscan:                   bool,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties:      HashMap<String, String>,
 }
@@ -649,26 +650,26 @@ pub struct VolumeProperties {
     creation:                i64,
     /// Configures deduplication for a dataset.
     #[builder(default)]
-    dedup: Dedup,
+    dedup:                   Dedup,
     /// GUID of the dataset
     #[builder(default)]
     guid:                    Option<u64>,
     /// Provide a hint to ZFS about handling of synchronous requests in this dataset.
-    log_bias:              LogBias,
+    log_bias:                LogBias,
     /// The amount of space is "logically" accessible by this dataset.
-    logical_referenced: u64,
+    logical_referenced:      u64,
     ///  The amount of space is "logically" consumed by this dataset and all its descendents.
-    logical_used: u64,
+    logical_used:            u64,
     /// [Security label](https://docs.oracle.com/cd/E23824_01/html/821-1482/managezones-18.html)
     #[builder(default)]
-    mls_label:             Option<String>,
+    mls_label:               Option<String>,
     /// Read-only property that indicates whether a file system, clone, or snapshot is currently
     /// Controls what is cached in the primary cache (ARC).
     primary_cache:           CacheMode,
     /// Controls whether a dataset can be modified.
     readonly:                bool,
     /// Controls what types of metadata are stored redundantly
-    redundant_metadata: RedundantMetadata,
+    redundant_metadata:      RedundantMetadata,
     /// Compression ratio achieved for the referenced space of this snapshot.
     ref_compression_ratio:   f64,
     /// Read-only property that identifies the amount of data accessible by a dataset, which might
@@ -681,10 +682,12 @@ pub struct VolumeProperties {
     reservation:             u64,
     /// Controls what is cached in the secondary cache (L2ARC).
     secondary_cache:         CacheMode,
-    /// The total number of snapshots that exist under this location in the dataset tree.  This value is only available when a snapshot_limit has been set somewhere in the tree under which the dataset resides.
-    snapshot_count: u64,
+    /// The total number of snapshots that exist under this location in the dataset tree.  This
+    /// value is only available when a snapshot_limit has been set somewhere in the tree under
+    /// which the dataset resides.
+    snapshot_count:          u64,
     /// Limits the number of snapshots that can be created on a dataset and its descendents.
-    snapshot_limit: u64,
+    snapshot_limit:          u64,
     /// Controls the behavior of synchronous requests.
     sync:                    SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -794,17 +797,19 @@ pub struct SnapshotProperties {
     /// Controls how the volume is exposed to the OS
     #[builder(default)]
     volume_mode:           Option<VolumeMode>,
-    /// Indicates whether the file name matching algorithm used by the file system should be case-sensitive, case-insensitive, or allow a combination of both styles of matching.
+    /// Indicates whether the file name matching algorithm used by the file system should be
+    /// case-sensitive, case-insensitive, or allow a combination of both styles of matching.
     case_sensitivity:      CaseSensitivity,
     /// [Security label](https://docs.oracle.com/cd/E23824_01/html/821-1482/managezones-18.html)
     #[builder(default)]
     mls_label:             Option<String>,
     /// [Cross-protocol locking](https://docs.oracle.com/cd/E19120-01/open.solaris/820-2429/configurecrossprotocollockingtask/index.html)
     #[builder(default)]
-    nbmand: bool,
-    ///  Indicates whether the file system should perform a unicode normalization of file names whenever two filenames are compared, and which normalization algorithm should be used.
+    nbmand:                bool,
+    ///  Indicates whether the file system should perform a unicode normalization of file names
+    /// whenever two filenames are compared, and which normalization algorithm should be used.
     #[builder(default)]
-    normalization: Normalization,
+    normalization:         Normalization,
     /// User defined properties and properties this library failed to recognize.
     unknown_properties:    HashMap<String, String>,
 }

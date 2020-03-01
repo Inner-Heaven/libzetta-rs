@@ -431,6 +431,5 @@ fn send_snapshot() {
 
     let tmpfile = tempfile::tempfile().unwrap();
 
-
     zfs.send_full(snapshot, tmpfile, SendFlags::empty()).unwrap();
 }
