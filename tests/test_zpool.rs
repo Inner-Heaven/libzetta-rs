@@ -347,7 +347,6 @@ fn test_export_import() {
         let vdev_dir = Path::new("/vdevs/import");
         setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
         let zpool = ZpoolOpen3::default();
-        //let zpool = ZpoolOpen3::with_logger(get_logger());
 
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
@@ -460,9 +459,6 @@ fn test_all_empty() {
         assert!(result.is_empty());
     });
 }
-
-#[test]
-fn test_zpool_with_logger() { let _zpool = ZpoolOpen3::with_logger(get_logger()); }
 
 #[test]
 fn test_zpool_scrub_not_found() {

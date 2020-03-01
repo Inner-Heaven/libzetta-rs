@@ -26,12 +26,11 @@ use std::{env,
           path::PathBuf,
           process::{Command, Output, Stdio}};
 
-use pest::Parser;
-use slog::{Drain, Logger};
-use slog_stdlog::StdLog;
-
 use crate::{parsers::{Rule, StdoutParser},
-            zpool::description::Zpool};
+            zpool::description::Zpool,
+            GlobalLogger};
+use pest::Parser;
+use slog::Logger;
 
 use super::{CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode,
             OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties,
@@ -46,12 +45,6 @@ lazy_static! {
         arg
     };
 }
-fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger.into().new(
-        o!("zetta_module" => "zpool", "zpool_impl" => "open3", "zetta_version" => crate::VERSION),
-    )
-}
-
 /// Open3 implementation of [`ZpoolEngine`](../trait.ZpoolEngine.html). You can use
 /// `ZpoolOpen3::default` to create it.
 pub struct ZpoolOpen3 {
@@ -68,8 +61,9 @@ impl Default for ZpoolOpen3 {
             None => "zpool".into(),
         };
 
-        let logger = Logger::root(StdLog.fuse(), o!());
-        ZpoolOpen3 { cmd_name, logger: setup_logger(logger) }
+        let logger =
+            GlobalLogger::get().new(o!("zetta_module" => "zpool", "zpool_impl" => "open3"));
+        ZpoolOpen3 { cmd_name, logger }
     }
 }
 impl ZpoolOpen3 {
@@ -78,13 +72,6 @@ impl ZpoolOpen3 {
     pub fn with_cmd<I: Into<OsString>>(cmd_name: I) -> ZpoolOpen3 {
         let mut z = ZpoolOpen3::default();
         z.cmd_name = cmd_name.into();
-        z
-    }
-
-    /// Create new using supplies logger and default cmd.
-    pub fn with_logger<L: Into<Logger>>(logger: L) -> ZpoolOpen3 {
-        let mut z = ZpoolOpen3::default();
-        z.logger = setup_logger(logger);
         z
     }
 

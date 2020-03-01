@@ -55,3 +55,6 @@ pub mod utils;
 #[cfg(fuzzing)] pub mod fuzzy;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub mod log;
+pub use log::GlobalLogger;

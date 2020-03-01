@@ -1,10 +1,10 @@
-use crate::zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
-                 DatasetKind, DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError,
-                 ZfsEngine};
+use crate::{zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
+                  DatasetKind, DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError,
+                  ZfsEngine},
+            GlobalLogger};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
-use slog::{Drain, Logger};
-use slog_stdlog::StdLog;
+use slog::Logger;
 
 use crate::zfs::{errors::Error::ValidationErrors,
                  properties::{AclInheritMode, AclMode, ZfsProp},
@@ -16,13 +16,7 @@ use std::{collections::HashMap,
           ptr::null_mut};
 use zfs_core_sys as sys;
 
-fn setup_logger<L: Into<Logger>>(logger: L) -> Logger {
-    logger
-        .into()
-        .new(o!("zetta_module" => "zfs", "zfs_impl" => "lzc", "zetta_version" => crate::VERSION))
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ZfsLzc {
     logger: Logger,
 }
@@ -30,21 +24,15 @@ pub struct ZfsLzc {
 impl ZfsLzc {
     /// Initialize libzfs_core backed ZfsEngine.
     /// If root logger is None, then StdLog drain used.
-    pub fn new(root_logger: Option<Logger>) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let errno = unsafe { sys::libzfs_core_init() };
 
         if errno != 0 {
             let io_error = std::io::Error::from_raw_os_error(errno);
             return Err(Error::LZCInitializationFailed(io_error));
         }
-        let logger = {
-            if let Some(slog) = root_logger {
-                setup_logger(slog)
-            } else {
-                let slog = Logger::root(StdLog.fuse(), o!());
-                setup_logger(slog)
-            }
-        };
+        let logger = GlobalLogger::get().new(o!("zetta_module" => "zfs", "zfs_impl" => "lzc"));
+
         Ok(ZfsLzc { logger })
     }
 
