@@ -1,6 +1,13 @@
-#  (2020-03-01)
+## [0.2.1](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.2.0...v0.2.1) (2020-03-22)
 
-# [v0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
+
+### Features
+
+* **zfs:** Fix dataset name parser for ZFS ([#127](https://github.com/Inner-Heaven/libzetta-rs/issues/127)) ([db90fc7](https://github.com/Inner-Heaven/libzetta-rs/commit/db90fc7))
+
+
+
+# [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
 
 
 ### Bug Fixes
@@ -10,6 +17,7 @@
 
 ### Features
 
+* Add a single point of logging configuration ([#123](https://github.com/Inner-Heaven/libzetta-rs/issues/123)) ([3f4bba0](https://github.com/Inner-Heaven/libzetta-rs/commit/3f4bba0))
 * **zfs:** Ability to read filesystem dataset properties ([#111](https://github.com/Inner-Heaven/libzetta-rs/issues/111)) ([1f89fc3](https://github.com/Inner-Heaven/libzetta-rs/commit/1f89fc3))
 * **zfs:** Ability to send snapshot ([#119](https://github.com/Inner-Heaven/libzetta-rs/issues/119)) ([1ac0560](https://github.com/Inner-Heaven/libzetta-rs/commit/1ac0560))
 * **zfs:** Ability to work with bookmarks ([7721776](https://github.com/Inner-Heaven/libzetta-rs/commit/7721776))
@@ -22,7 +30,6 @@
 * **zfs:** Read properties of a snapshot ([#112](https://github.com/Inner-Heaven/libzetta-rs/issues/112)) ([1348a0f](https://github.com/Inner-Heaven/libzetta-rs/commit/1348a0f))
 * **zfs:** Read properties of a volume ([#113](https://github.com/Inner-Heaven/libzetta-rs/issues/113)) ([4361251](https://github.com/Inner-Heaven/libzetta-rs/commit/4361251))
 * **zfs:** Remove known unknowns from properties ([#121](https://github.com/Inner-Heaven/libzetta-rs/issues/121)) ([2ba858c](https://github.com/Inner-Heaven/libzetta-rs/commit/2ba858c))
-* Add a single point of logging configuration ([#123](https://github.com/Inner-Heaven/libzetta-rs/issues/123)) ([3f4bba0](https://github.com/Inner-Heaven/libzetta-rs/commit/3f4bba0))
 * Fuzzy testing target ([#90](https://github.com/Inner-Heaven/libzetta-rs/issues/90)) ([8c300ff](https://github.com/Inner-Heaven/libzetta-rs/commit/8c300ff))
 * Inception of ZFS module ([#83](https://github.com/Inner-Heaven/libzetta-rs/issues/83)) ([ce626a0](https://github.com/Inner-Heaven/libzetta-rs/commit/ce626a0))
 * remove unicode feature from regex crate ([#93](https://github.com/Inner-Heaven/libzetta-rs/issues/93)) ([e175499](https://github.com/Inner-Heaven/libzetta-rs/commit/e175499))
