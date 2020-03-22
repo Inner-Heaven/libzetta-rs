@@ -125,4 +125,53 @@ bookmark        z/var/mail#backup-2019-08-08
             assert_eq!(expected[idx], (dataset_type.as_str(), dataset_name.as_str()));
         }
     }
+
+    #[test]
+    fn test_issue_126() {
+        let lines = r#"z/ROOT
+z/ROOT/default
+z/docker
+z/iohyve
+z/iohyve/Firmware
+z/iohyve/ISO
+z/iohyve/ISO/rancheros-v1.4.0.iso
+z/iohyve/rancher
+z/portshaker
+z/portshaker/cache
+z/portshaker/cache/andoriyu-local
+z/portshaker/cache/freebsd-svn
+z/portshaker/cache/vscode-git
+z/poudriere
+z/poudriere/data
+z/poudriere/data/.m
+z/poudriere/data/cache
+z/poudriere/data/logs
+z/poudriere/data/packages
+z/poudriere/data/wrkdirs
+z/poudriere/jails
+z/poudriere/jails/live
+z/poudriere/ports
+z/poudriere/ports/dev
+z/poudriere/ports/prestine
+z/poudriere/ports/system
+z/tmp
+z/usr
+z/usr/home
+z/usr/ports
+z/usr/ports/distfiles
+z/usr/src
+z/var
+z/var/ccache
+z/var/crash
+z/var/log
+z/var/mail
+z/var/tmp
+        "#;
+
+
+        let mut pairs = ZfsParser::parse(Rule::datasets, lines).unwrap();
+        let datasets_pairs = pairs.next().unwrap().into_inner();
+        assert_eq!(38, datasets_pairs.clone().count());
+
+    }
 }
