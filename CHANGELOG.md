@@ -1,13 +1,13 @@
 ## [0.2.1](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.2.0...v0.2.1) (2020-03-22)
 
 
-### Features
+### Bug Fixes
 
 * **zfs:** Fix dataset name parser for ZFS ([#127](https://github.com/Inner-Heaven/libzetta-rs/issues/127)) ([db90fc7](https://github.com/Inner-Heaven/libzetta-rs/commit/db90fc7))
 
 
 
-# [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
+## [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
 
 
 ### Bug Fixes
