@@ -42,7 +42,7 @@ Note that integration tests do a lot of zpool and zfs operations on live system.
 
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 | ✔      | ✔       | ✔              | ✔              | ✔     | ✔      | ✔      | ✔              | ✔ ¹         | ✔        | ✔            |
+| open3 | ✔      | ✔       | ✔              | ✔              | ✔     | ✔      | ✔      | ✔              | ✔¹         | ✔        | ✔            |
 
 1. Reads the status, but api isn't stable and does poor job at reporting scrubbing status.
 
@@ -54,18 +54,18 @@ Note that integration tests do a lot of zpool and zfs operations on live system.
 |         | Create    | Destroy     | List     | Get Properties    | Update Properties     |
 | ------- | --------- | ----------- | -------- | ----------------- | --------------------- |
 | open3   | ❌        | ❌          | ✔        | ✔                 | ❌                    |
-| lzc     | ✔[^1]     | ✔           | ❌       | ❌                | ❌                    |
+| lzc     | ✔¹        | ✔           | ❌       | ❌                | ❌                    |
 
-[^1]: Might not have all properties available.
+1. Might not have all properties available.
 
 #### Snapshot and bookmark
 
 |       	|  Create 	|   Destroy 	|   List 	|  Get Properties 	|   Send 	| Recv 	|
 |-------	|---------	|-----------	|--------	|-----------------	|--------	|------	|
 | open3 	| ❌       	| ❌         	| ✔      	| ✔               	| ❌      	| ❌    	|
-|  lzc  	| ✔[^1]   	| ✔         	| ❌      	| ❌               	| ✔      	| ❌    	|
+|  lzc  	| ✔¹     	| ✔         	| ❌      	| ❌               	| ✔      	| ❌    	|
 
-[^1]: Might not have all properties available.
+1. Might not have all properties available.
 
 ## Alternatives
 
