@@ -22,12 +22,14 @@
 //! Refer to the [zpool module documentation](zpool/index.html) for more information.
 //!
 //! ## zfs
-//! Work on bindings to `libzfs_core` is just starting, so support for it is non-existent at the
-//! moment.
+//! Most of functionality of `libzfs_core` is covered with some gaps filled in by `open3`.
+//!
+//! Refer to the [zfs module documentation](zfs/index.html) for more information.
 //!
 //! # Usage
-//! Right now there are no "library usage" instructions, but the zpool module can be used directly.
-//! In the future some sugar to setup logging will be added to the library level.
+//!
+//! This section is currently under contstruction. Meanwhile, look at integration tests for
+//! inspiration.
 //!
 //! # Project Structure
 //! ### parsers

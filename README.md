@@ -12,26 +12,29 @@
 > libzetta-rs is a stable interface for programmatic administration of ZFS
 
 ## Installation
-Not yet. It won't destroy your pool, but API might change any moment. Wait until 1.0.0. I have a pretty decent roadmap to 1.0.0.
+
+Not yet. It won't break your pool or kill your brother, but API might change. Wait until 1.0.0. I have a pretty decent roadmap to 1.0.0.
 
 ## Usage
-Public API for `zpool` interface is almost at the point where I'm going to stabilize it, but until I start work on `zfs` portion I don't want to call it stable.
+
+Public API for `zpool` stable. Public API for `zfs` might change after I actually get to use it in other projects. Consult the documention on usage.
 
 ### FreeBSD
-This library mostly focused on FreeBSD support. This should work on any FreeBSD version since 9.2.
-However, I have no intention on supporting legacy versions. Supported versions:
- - 11.3
- - 12.0
+
+This library focused on FreeBSD support. This should work on any FreeBSD version since 9.2. No intention on supporting legacy versions. Supported versions:
+ - 12.1
 
 ### Linux
-Right now it definitely works with `0.7.13` and entire `0.7.x` branch. However, only latest version used for tests.
+
+Right now it verified works with `0.7.13` and entire `0.7.x` branch.
 
 ## How it works
-ZFS doesn't have stable API at all. There is `libzfs_core` which supposed to be it, but it really isn't. While `libzfs_core` is somewhat stable `libnvpair` used in it isn't and `libnv` isn't available on Linux. I might embed portable `libnv`. Now the tricky part — `libzfs_core` is just for zfs, there is not `libzpool_core` which means you either have to rely on unstable (in terms of API) `libzpool` or use `zpool(8)`. I decided to use `zpool(8)` because that's a recommended way of doing it.
+
+ZFS doesn't have stable API at all.`libzfs_core`(`lzc`) fills some gaps, but not entirely. While `lzc` provides stable APi to some features of zfs, there is no such thing for zpool. This library resorts to `zfs(8)` and `zpool(8)` where `lzc` falls shorts.
 
 ## Running tests
 
-Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests in side that VM. Tests also take a lot of disk space because each vdev is at least 64mb file.
+Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests inside. Tests also take a lot of disk space because each vdev is at least 64mb file.
 
 ## Current feature status
 
@@ -39,20 +42,36 @@ Note that integration tests do a lot of zpool and zfs operations on live system.
 
 |       | Create | Destroy | Get Properties | Set Properties | Scrub | Export | Import | List Available | Read Status | Add vdev | Replace Disk |
 |-------|--------|---------|----------------|----------------|-------|--------|--------|----------------|-------------|----------|--------------|
-| open3 |    ✔   |    ✔    |        ✔       |        ✔       |   ✔   |    ✔   |    ✔   |     ✔    |      ✔ ¹     |     ✔    |       ✔      |
+| open3 | ✔      | ✔       | ✔              | ✔              | ✔     | ✔      | ✔      | ✔              | ✔ ¹         | ✔        | ✔            |
 
 1. Reads the status, but api isn't stable and does poor job at reporting scrubbing status.
 
 
 ### zfs
 
-Literally nothing works.
+#### Filesystem and ZVOL
+
+|         | Create    | Destroy     | List     | Get Properties    | Update Properties     |
+| ------- | --------- | ----------- | -------- | ----------------- | --------------------- |
+| open3   | ❌        | ❌          | ✔        | ✔                 | ❌                    |
+| lzc     | ✔[^1]     | ✔           | ❌       | ❌                | ❌                    |
+
+[^1]: Might not have all properties available.
+
+#### Snapshot and bookmark
+
+|       	|  Create 	|   Destroy 	|   List 	|  Get Properties 	|   Send 	| Recv 	|
+|-------	|---------	|-----------	|--------	|-----------------	|--------	|------	|
+| open3 	| ❌       	| ❌         	| ✔      	| ✔               	| ❌      	| ❌    	|
+|  lzc  	| ✔[^1]   	| ✔         	| ❌      	| ❌               	| ✔      	| ❌    	|
+
+[^1]: Might not have all properties available.
 
 ## Alternatives
 
 ### https://github.com/whamcloud/rust-libzfs
 
-Unlike them LibZetta doesn't link against private libraries no one supposed to link against. I also have docs and more sugar.
+Unlike them LibZetta doesn't link against private libraries of ZFS. `libzetta` also has more documention.
 
 ### https://github.com/jmesmon/rust-libzfs
 
