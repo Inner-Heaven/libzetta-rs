@@ -48,13 +48,15 @@ impl ZfsLzc {
         let snapshot =
             CString::new(path.to_str().unwrap()).expect("Failed to create CString from path");
         let snapshot_ptr = snapshot.as_ptr();
-        let from = from.map(|f| {
+        let from_cstr = from.map(|f| {
             CString::new(f.to_str().unwrap()).expect("Failed to create CString from path")
         });
-        let from_ptr = from.map(|cst| cst.as_ptr()).unwrap_or_else(|| std::ptr::null());
         let fd_raw = fd;
-
-        let errno = unsafe { zfs_core_sys::lzc_send(snapshot_ptr, from_ptr, fd_raw, flags.bits) };
+        let errno = if let Some(src) = from_cstr {
+            unsafe { zfs_core_sys::lzc_send(snapshot_ptr, src.as_ptr(), fd_raw, flags.bits) }
+        } else {
+            unsafe { zfs_core_sys::lzc_send(snapshot_ptr, std::ptr::null(), fd_raw, flags.bits) }
+        };
 
         match errno {
             0 => Ok(()),
