@@ -1,13 +1,22 @@
-## [0.2.1](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.2.0...v0.2.1) (2020-03-22)
+## [0.2.2](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.2.1...v0.2.2) (2020-04-26)
 
 
 ### Bug Fixes
+
+* **zfs:** Fix incremental send in LZC ([#128](https://github.com/Inner-Heaven/libzetta-rs/issues/128)) ([88c031b](https://github.com/Inner-Heaven/libzetta-rs/commit/88c031b))
+
+
+
+## [0.2.1](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.2.0...v0.2.1) (2020-03-22)
+
+
+### Features
 
 * **zfs:** Fix dataset name parser for ZFS ([#127](https://github.com/Inner-Heaven/libzetta-rs/issues/127)) ([db90fc7](https://github.com/Inner-Heaven/libzetta-rs/commit/db90fc7))
 
 
 
-## [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
+# [0.2.0](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.2...v0.2.0) (2020-03-01)
 
 
 ### Bug Fixes
@@ -35,6 +44,11 @@
 * remove unicode feature from regex crate ([#93](https://github.com/Inner-Heaven/libzetta-rs/issues/93)) ([e175499](https://github.com/Inner-Heaven/libzetta-rs/commit/e175499))
 
 
+
+## [0.1.2](https://github.com/Inner-Heaven/libzetta-rs/compare/v0.1.1...v0.1.2) (2019-08-12)
+
+
+
 ## [0.1.1](https://github.com/Inner-Heaven/libzetta-rs/compare/2cbf197...v0.1.1) (2019-08-12)
 
 
@@ -45,3 +59,6 @@
 * **zpool:** Add Zpool::add ([#53](https://github.com/Inner-Heaven/libzetta-rs/issues/53)) ([2cbf197](https://github.com/Inner-Heaven/libzetta-rs/commit/2cbf197))
 * **zpool:** Fix parser for logs and caches. Add add_zil and add_cache ([#63](https://github.com/Inner-Heaven/libzetta-rs/issues/63)) ([ff2eda5](https://github.com/Inner-Heaven/libzetta-rs/commit/ff2eda5)), closes [#62](https://github.com/Inner-Heaven/libzetta-rs/issues/62) [#61](https://github.com/Inner-Heaven/libzetta-rs/issues/61)
 * **zpool:** Remove device from zpool ([#60](https://github.com/Inner-Heaven/libzetta-rs/issues/60)) ([28c90ff](https://github.com/Inner-Heaven/libzetta-rs/commit/28c90ff)), closes [#59](https://github.com/Inner-Heaven/libzetta-rs/issues/59)
+
+
+
