@@ -80,7 +80,7 @@ where
 fn get_virtual_device() -> PathBuf { PathBuf::from("md1") }
 
 #[cfg(target_os = "linux")]
-fn get_virtual_device() -> PathBuf { PathBuf::from("loop0") }
+fn get_virtual_device() -> PathBuf { PathBuf::from("loop99") }
 
 // Only used for debugging
 #[allow(dead_code)]

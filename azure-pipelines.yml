@@ -32,8 +32,8 @@ jobs:
         sudo apt-get install zfs-dkms zfsutils-linux libnvpair1linux libzfslinux-dev
       displayName: Install ZFS on Linux
     - script: |
-        dd if=/dev/zero of=loop0 bs=1M count=96
-        sudo losetup /dev/loop0 `pwd`/loop0
+        dd if=/dev/zero of=loop99 bs=1M count=96
+        sudo losetup /dev/loop99 `pwd`/loop99
       displayName: Setup loop device
     - script: |
         curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity
