@@ -18,7 +18,7 @@ azure-devops = { project = "andoriyu/libpandemonium", pipeline = "libzetta-rs", 
 
 [dependencies]
 getset = "0.1.0"
-derive_builder = "0.9"
+derive_builder = "0.10"
 lazy_static = "1.2"
 libc = "0.2"
 pest = "2.1"
