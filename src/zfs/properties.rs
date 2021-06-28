@@ -345,13 +345,13 @@ impl Default for Dedup {
 pub enum Normalization {
     #[strum(serialize = "none")]
     None,
-    #[strum(serialize = "formc")]
+    #[strum(serialize = "formc", serialize = "formC")]
     FormC,
-    #[strum(serialize = "formd")]
+    #[strum(serialize = "formd", serialize = "formD")]
     FormD,
-    #[strum(serialize = "formkc")]
+    #[strum(serialize = "formkc", serialize = "formKC")]
     FormKC,
-    #[strum(serialize = "formkd")]
+    #[strum(serialize = "formkd", serialize = "formKD")]
     FormKD,
 }
 
