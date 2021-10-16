@@ -146,6 +146,8 @@ impl ZfsEngine for ZfsLzc {
                 name_c_string.as_ref().as_ptr(),
                 request.kind().as_c_uint(),
                 props.as_ptr(),
+                std::ptr::null_mut(),
+                0,
             )
         };
 
