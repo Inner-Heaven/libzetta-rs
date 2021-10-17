@@ -147,8 +147,8 @@ pub enum Compression {
     #[strum(serialize = "lz4")]
     LZ4     = 15,
     /// The zle compression algorithm compresses runs of zeros.
-    #[strum(serialize = "lze")]
-    LZE     = 14,
+    #[strum(serialize = "zle")]
+    ZLE     = 14,
     /// Fastest gzip level
     #[strum(serialize = "gzip-1")]
     Gzip1   = 5,
