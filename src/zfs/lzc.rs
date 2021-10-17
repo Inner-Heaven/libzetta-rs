@@ -419,8 +419,8 @@ impl ZfsEngine for ZfsLzc {
 // This should be mapped to values from nvpair.
 fn bool_to_u64(src: bool) -> u64 {
     if src {
-        0
-    } else {
         1
+    } else {
+        0
     }
 }
