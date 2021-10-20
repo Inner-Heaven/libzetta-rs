@@ -42,10 +42,11 @@
 #[macro_use] extern crate getset;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate quick_error;
-use strum;
 
 #[macro_use] pub extern crate slog;
 pub use pest;
+
+pub extern crate libnv;
 
 // library modules
 pub mod parsers;
