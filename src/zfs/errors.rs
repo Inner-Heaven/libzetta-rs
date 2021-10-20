@@ -30,6 +30,8 @@ quick_error! {
         MultiOpError(err: HashMap<String, libnv::nvpair::Value>) {
             from()
         }
+        ChanProgInval(err: HashMap<String, libnv::nvpair::Value>) {}
+        ChanProgRuntime(err: HashMap<String, libnv::nvpair::Value>) {}
         Unimplemented {}
     }
 }
@@ -49,6 +51,8 @@ impl Error {
             Error::Unknown | Error::UnknownSoFar(_) => ErrorKind::Unknown,
             Error::ValidationErrors(_) => ErrorKind::ValidationErrors,
             Error::MultiOpError(_) => ErrorKind::MultiOpError,
+            Error::ChanProgInval(_) => ErrorKind::ChanProgInval,
+            Error::ChanProgRuntime(_) => ErrorKind::ChanProgRuntime,
             Error::Unimplemented => ErrorKind::Unimplemented,
         }
     }
@@ -89,6 +93,8 @@ pub enum ErrorKind {
     ValidationErrors,
     Unimplemented,
     MultiOpError,
+    ChanProgInval,
+    ChanProgRuntime,
 }
 
 impl PartialEq for Error {

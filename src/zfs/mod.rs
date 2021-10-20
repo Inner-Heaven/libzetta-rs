@@ -159,6 +159,20 @@ pub trait ZfsEngine {
     ) -> Result<()> {
         Err(Error::Unimplemented)
     }
+
+    /// Run a channel program
+    #[cfg_attr(tarpaulin, skip)]
+    fn run_channel_program<N: Into<PathBuf>>(
+        &self,
+        _pool: N,
+        _program: &str,
+        _instr_limit: u64,
+        _mem_limit: u64,
+        _sync: bool,
+        _args: libnv::nvpair::NvList,
+    ) -> Result<libnv::nvpair::NvList> {
+        Err(Error::Unimplemented)
+    }
 }
 
 #[derive(Default, Builder, Debug, Clone, Getters)]

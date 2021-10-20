@@ -83,4 +83,16 @@ impl ZfsEngine for DelegatingZfsEngine {
     ) -> Result<()> {
         self.lzc.send_incremental(path, from, fd, flags)
     }
+
+    fn run_channel_program<N: Into<PathBuf>>(
+        &self,
+        pool: N,
+        program: &str,
+        instr_limit: u64,
+        mem_limit: u64,
+        sync: bool,
+        args: libnv::nvpair::NvList,
+    ) -> Result<libnv::nvpair::NvList> {
+        self.lzc.run_channel_program(pool, program, instr_limit, mem_limit, sync, args)
+    }
 }
