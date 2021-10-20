@@ -16,6 +16,11 @@ use std::{collections::HashMap,
           ptr::null_mut};
 use zfs_core_sys as sys;
 
+#[cfg(target_os = "freebsd")]
+const ECHRNG: libc::c_int = libc::ENXIO;
+#[cfg(target_os = "linux")]
+const ECHRNG: libc::c_int = libc::ECHRNG;
+
 #[derive(Debug, Clone)]
 pub struct ZfsLzc {
     logger: Logger,
@@ -332,6 +337,56 @@ impl ZfsEngine for ZfsLzc {
         flags: SendFlags,
     ) -> Result<()> {
         self.send(path.into(), Some(from.into()), fd.as_raw_fd(), flags)
+    }
+
+    fn run_channel_program<N: Into<PathBuf>>(
+        &self,
+        pool: N,
+        program: &str,
+        instr_limit: u64,
+        mem_limit: u64,
+        sync: bool,
+        args: NvList,
+    ) -> Result<NvList> {
+        let pool = pool.into();
+        let pool_c_string = pool.to_str().expect("Non UTF-8 pool name").into_cstr();
+        let prog_c_string = program.into_cstr();
+
+        let mut out_nvlist_ptr = null_mut();
+        let errno = unsafe {
+            if sync {
+                zfs_core_sys::lzc_channel_program(
+                    pool_c_string.as_ref().as_ptr(),
+                    prog_c_string.as_ref().as_ptr(),
+                    instr_limit,
+                    mem_limit,
+                    args.as_ptr(),
+                    &mut out_nvlist_ptr,
+                )
+            } else {
+                zfs_core_sys::lzc_channel_program_nosync(
+                    pool_c_string.as_ref().as_ptr(),
+                    prog_c_string.as_ref().as_ptr(),
+                    instr_limit,
+                    mem_limit,
+                    args.as_ptr(),
+                    &mut out_nvlist_ptr,
+                )
+            }
+        };
+        match errno {
+            0 => Ok(unsafe { NvList::from_ptr(out_nvlist_ptr) }),
+            libc::EINVAL => Err(Error::ChanProgInval(
+                unsafe { NvList::from_ptr(out_nvlist_ptr) }.into_hashmap(),
+            )),
+            ECHRNG => Err(Error::ChanProgRuntime(
+                unsafe { NvList::from_ptr(out_nvlist_ptr) }.into_hashmap(),
+            )),
+            _ => {
+                let io_error = std::io::Error::from_raw_os_error(errno);
+                Err(Error::Io(io_error))
+            },
+        }
     }
 }
 
