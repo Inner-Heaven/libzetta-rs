@@ -1,7 +1,6 @@
 use crate::parsers::zfs::{Rule, ZfsParser};
-use libnv::nvpair::NvList;
 use pest::Parser;
-use std::{borrow::Cow, io, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, io, path::PathBuf};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type ValidationResult<T = (), E = ValidationError> = std::result::Result<T, E>;
@@ -28,7 +27,7 @@ quick_error! {
         ValidationErrors(errors: Vec<ValidationError>) {
             from()
         }
-        MultiOpError(err: NvList) {
+        MultiOpError(err: HashMap<String, libnv::nvpair::Value>) {
             from()
         }
         Unimplemented {}

@@ -190,7 +190,7 @@ impl ZfsEngine for ZfsLzc {
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
             if !errors.is_empty() {
-                return Err(Error::from(errors));
+                return Err(Error::from(errors.into_hashmap()));
             }
         }
         match errno {
@@ -225,7 +225,7 @@ impl ZfsEngine for ZfsLzc {
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
             if !errors.is_empty() {
-                return Err(Error::from(errors));
+                return Err(Error::from(errors.into_hashmap()));
             }
         }
         match errno {
@@ -265,7 +265,7 @@ impl ZfsEngine for ZfsLzc {
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
             if !errors.is_empty() {
-                return Err(Error::from(errors));
+                return Err(Error::from(errors.into_hashmap()));
             }
         }
         match errno {
@@ -301,7 +301,7 @@ impl ZfsEngine for ZfsLzc {
         if !errors_list_ptr.is_null() {
             let errors = unsafe { NvList::from_ptr(errors_list_ptr) };
             if !errors.is_empty() {
-                return Err(Error::from(errors));
+                return Err(Error::from(errors.into_hashmap()));
             }
         }
         match errno {
