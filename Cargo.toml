@@ -52,5 +52,4 @@ tempdir = "0.3"
 tempfile = "3"
 
 [package.metadata.release]
-sign-commit = true
 dev-version-ext = "pre"
