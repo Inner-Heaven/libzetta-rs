@@ -12,7 +12,8 @@ jobs:
         which cargo
         which rustup
         rustup show
-        sudo env PATH=${PATH} rustup install stable
+        rustup install stable
+        sudo ln -s /home/vsts/.rustup /home/vsts/.rustup
         sudo apt-get update
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
