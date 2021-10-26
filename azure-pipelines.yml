@@ -9,6 +9,9 @@ jobs:
     vmImage: ubuntu-20.04
   steps:
     - script: |
+        echo which cargo
+        echo which rustup
+        rustup show
         sudo apt-get update
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
