@@ -37,15 +37,14 @@ jobs:
         sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
       displayName: Install suity
     - script: |
-        CARGO=$(which cargo)
-        RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
+        sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo test --no-run
         mkdir test-results
-        sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
+        sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo suity
       displayName: Run Tests
     - script: |
         sudo sh -c "zpool list -H -oname | grep test | xargs zpool destroy"
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
-        sudo RUSTFLAGS="-C link-dead-code" $(which cargo) tarpaulin --out Xml
+        sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
