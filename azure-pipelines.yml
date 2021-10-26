@@ -29,13 +29,13 @@ jobs:
         sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
       displayName: Install suity
     - script: |
-        export CARGO="/usr/share/rust/.cargo/bin/cargo"
+        export RUSTUP_HOME=/home/vsts/.rustup
         sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo +stable test --no-run
         mkdir test-results
         sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo +stable suity
       displayName: Run Tests
     - script: |
-        export CARGO="/usr/share/rust/.cargo/bin/cargo"
+        export RUSTUP_HOME=/home/vsts/.rustup
         sudo sh -c "zpool list -H -oname | grep test | xargs zpool destroy"
         RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +stable install cargo-tarpaulin -f
         sudo env PATH=${PATH}  RUSTFLAGS="-C link-dead-code" cargo +stable tarpaulin --out Xml
