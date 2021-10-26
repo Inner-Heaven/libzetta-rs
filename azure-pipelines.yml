@@ -9,8 +9,8 @@ jobs:
     vmImage: ubuntu-20.04
   steps:
     - script: |
-        echo which cargo
-        echo which rustup
+        which cargo
+        which rustup
         rustup show
         sudo apt-get update
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
@@ -28,14 +28,14 @@ jobs:
         sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
       displayName: Install suity
     - script: |
-        sudo RUSTFLAGS="-C link-dead-code" cargo test --no-run
+        sudo RUSTFLAGS="-C link-dead-code" cargo +stable test --no-run
         mkdir test-results
-        sudo RUSTFLAGS="-C link-dead-code" cargo suity
+        sudo RUSTFLAGS="-C link-dead-code" cargo +stable suity
       displayName: Run Tests
     - script: |
         sudo sh -c "zpool list -H -oname | grep test | xargs zpool destroy"
-        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
-        sudo RUSTFLAGS="-C link-dead-code" cargo tarpaulin --out Xml
+        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +stable install cargo-tarpaulin -f
+        sudo RUSTFLAGS="-C link-dead-code" cargo +stable tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
