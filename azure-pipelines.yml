@@ -5,31 +5,19 @@ pr:
 jobs:
 - job: run_tests
   displayName: Run Unit Tests
-  variables:
-    zol_rel: "0.7.12"
   pool:
-    vmImage: ubuntu-16.04
-  strategy:
-    matrix:
-      stable:
-        rustup_toolchain: stable
-      beta:
-        rustup_toolchain: beta
-      nightly:
-        rustup_toolchain: nightly
+    vmImage: ubuntu-20.04
   steps:
-    - script: |
-        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
-        echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-      displayName: Install rust
     - script: |
         sudo apt-get update
         sudo apt-get install -y libblkid-dev libattr1-dev libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libiberty-dev zlib1g-dev libssl-dev
       displayName: Install dependencies
     - script: |
-        sudo add-apt-repository ppa:jonathonf/zfs-0.7
+        sudo sh -c "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+        sudo env PATH=${PATH} rustup install stable
+    - script: |
         sudo apt-get update
-        sudo apt-get install zfs-dkms zfsutils-linux libnvpair1linux libzfslinux-dev
+        sudo apt-get install zfsutils-linux libnvpair1linux libzfslinux-dev
       displayName: Install ZFS on Linux
     - script: |
         dd if=/dev/zero of=loop99 bs=1M count=96
@@ -40,15 +28,14 @@ jobs:
         sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
       displayName: Install suity
     - script: |
-        CARGO=$(which cargo)
-        RUSTFLAGS="-C link-dead-code" $CARGO test --no-run
+        sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo +stable test --no-run
         mkdir test-results
-        sudo RUSTFLAGS="-C link-dead-code" $CARGO suity
+        sudo env PATH=${PATH} RUSTFLAGS="-C link-dead-code" cargo +stable suity
       displayName: Run Tests
     - script: |
         sudo sh -c "zpool list -H -oname | grep test | xargs zpool destroy"
-        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
-        sudo RUSTFLAGS="-C link-dead-code" $(which cargo) tarpaulin --out Xml
+        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +stable install cargo-tarpaulin -f
+        sudo env PATH=${PATH}  RUSTFLAGS="-C link-dead-code" cargo +stable tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash)
       displayName: Run Coverage
       condition: and(succeeded(),eq(variables['rustup_toolchain'], 'nightly'))
