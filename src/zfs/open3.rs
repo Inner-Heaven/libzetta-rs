@@ -267,10 +267,10 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
                 properties.exec(parse_bool(&value));
             },
             "filesystem_count" => {
-                properties.filesystem_count(value.parse().expect(FAILED_TO_PARSE));
+                properties.filesystem_count(parse_opt_num(&value));
             },
             "filesystem_limit" => {
-                properties.filesystem_limit(value.parse().expect(FAILED_TO_PARSE));
+                properties.filesystem_limit(parse_opt_num(&value));
             },
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
@@ -346,10 +346,10 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
                 properties.snap_dir(value.parse().expect(FAILED_TO_PARSE));
             },
             "snapshot_count" => {
-                properties.snapshot_count(value.parse().expect(FAILED_TO_PARSE));
+                properties.snapshot_count(parse_opt_num(&value));
             },
             "snapshot_limit" => {
-                properties.snapshot_limit(value.parse().expect(FAILED_TO_PARSE));
+                properties.snapshot_limit(parse_opt_num(&value));
             },
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
@@ -554,10 +554,10 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
                 properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
             },
             "snapshot_count" => {
-                properties.snapshot_count(value.parse().expect(FAILED_TO_PARSE));
+                properties.snapshot_count(parse_opt_num(&value));
             },
             "snapshot_limit" => {
-                properties.snapshot_limit(value.parse().expect(FAILED_TO_PARSE));
+                properties.snapshot_limit(parse_opt_num(&value));
             },
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
@@ -625,6 +625,13 @@ fn parse_unknown_lines(lines: &mut Lines) -> Properties {
 
 fn parse_bool(val: &str) -> bool { val == "yes" || val == "on" }
 
+fn parse_opt_num(val: &str) -> Option<u64> {
+    match val {
+        "-" | "none" | "" => None,
+        _ => Some(val.parse().expect(FAILED_TO_PARSE)),
+    }
+}
+
 fn parse_mount_point(val: &str) -> Option<PathBuf> {
     match val {
         "-" | "none" => None,
@@ -686,8 +693,8 @@ mod test {
             .devices(true)
             .dnode_size(DnodeSize::Legacy)
             .exec(true)
-            .filesystem_count(0xFFFF_FFFF_FFFF_FFFF)
-            .filesystem_limit(0xFFFF_FFFF_FFFF_FFFF)
+            .filesystem_count(Some(0xFFFF_FFFF_FFFF_FFFF))
+            .filesystem_limit(Some(0xFFFF_FFFF_FFFF_FFFF))
             .guid(Some(10_533_576_440_524_459_469))
             .jailed(Some(false))
             .log_bias(LogBias::Latency)
@@ -711,8 +718,8 @@ mod test {
             .secondary_cache(CacheMode::All)
             .setuid(true)
             .snap_dir(SnapDir::Hidden)
-            .snapshot_count(0xFFFF_FFFF_FFFF_FFFF)
-            .snapshot_limit(0xFFFF_FFFF_FFFF_FFFF)
+            .snapshot_count(Some(0xFFFF_FFFF_FFFF_FFFF))
+            .snapshot_limit(Some(0xFFFF_FFFF_FFFF_FFFF))
             .sync(SyncMode::Standard)
             .used(102_563_762_176)
             .used_by_children(0)
@@ -761,8 +768,8 @@ mod test {
             .ref_reservation(70_871_154_688)
             .reservation(0)
             .secondary_cache(CacheMode::All)
-            .snapshot_count(0xFFFF_FFFF_FFFF_FFFF)
-            .snapshot_limit(0xFFFF_FFFF_FFFF_FFFF)
+            .snapshot_count(Some(0xFFFF_FFFF_FFFF_FFFF))
+            .snapshot_limit(Some(0xFFFF_FFFF_FFFF_FFFF))
             .sync(SyncMode::Standard)
             .used(73_652_740_096)
             .used_by_children(0)

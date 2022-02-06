@@ -483,9 +483,9 @@ pub struct FilesystemProperties {
     /// The total number of filesystems that exist under this location in the dataset tree.  This
     /// value is only available when a filesystem_limit has been set somewhere in the tree under
     /// which the dataset resides.
-    filesystem_count:        u64,
+    filesystem_count:        Option<u64>,
     /// Limits the number of filesystems that can be created on a dataset and its descendents.
-    filesystem_limit:        u64,
+    filesystem_limit:        Option<u64>,
     /// GUID of the dataset
     #[builder(default)]
     guid:                    Option<u64>,
@@ -540,9 +540,9 @@ pub struct FilesystemProperties {
     /// The total number of snapshots that exist under this location in the dataset tree.  This
     /// value is only available when a snapshot_limit has been set somewhere in the tree under
     /// which the dataset resides.
-    snapshot_count:          u64,
+    snapshot_count:          Option<u64>,
     /// Limits the number of snapshots that can be created on a dataset and its descendents.
-    snapshot_limit:          u64,
+    snapshot_limit:          Option<u64>,
     /// Controls the behavior of synchronous requests.
     sync:                    SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
@@ -685,9 +685,9 @@ pub struct VolumeProperties {
     /// The total number of snapshots that exist under this location in the dataset tree.  This
     /// value is only available when a snapshot_limit has been set somewhere in the tree under
     /// which the dataset resides.
-    snapshot_count:          u64,
+    snapshot_count:          Option<u64>,
     /// Limits the number of snapshots that can be created on a dataset and its descendents.
-    snapshot_limit:          u64,
+    snapshot_limit:          Option<u64>,
     /// Controls the behavior of synchronous requests.
     sync:                    SyncMode,
     /// Read-only property that identifies the amount of disk space consumed by a dataset and all
