@@ -61,6 +61,22 @@ mod test {
     }
 
     #[test]
+    fn test_see_line_https() {
+        let see_line = "   see: https://openzfs.github.io/openzfs-docs/msg/ZFS-8000-4J\n";
+
+        parses_to! {
+            parser: StdoutParser,
+            input: see_line,
+            rule: Rule::see,
+            tokens: [
+                see(0, 63, [
+                    url(8, 62)
+                ])
+            ]
+        }
+    }
+
+    #[test]
     fn test_naked_good() {
         let stdout_valid_two_disks = r#"pool: naked_test
      id: 3364973538352047455
