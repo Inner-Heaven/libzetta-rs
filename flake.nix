@@ -39,22 +39,24 @@
         devShell = clangStdenv.mkDerivation rec {
         name = "rust";
         nativeBuildInputs = [
-            git-cliff
             bacon
             binutils
             cargo-cache
             cargo-deny
             cargo-diet
             cargo-expand-nightly
+            cargo-outdated
             cargo-sort
             cargo-sweep
             cargo-wipe
-            cargo-outdated
             cmake
+            git-cliff
             gnumake
             pkgconfig
             rust
             rusty-man
+            vagrant
+            just
             zlib
         ];
         PROJECT_ROOT = builtins.toString ./.;
