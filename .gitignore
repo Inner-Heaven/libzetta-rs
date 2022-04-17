@@ -8,3 +8,4 @@ target*
 *.fmt
 test-results/
 .direnv
+.vagrant
