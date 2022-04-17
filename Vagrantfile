@@ -20,6 +20,15 @@ Vagrant.configure("2") do |config|
       env ASSUME_ALWAYS_YES=YES pkg install curl pkgconf rsync openzfs
     SHELL
   end
+
+  config.vm.define "zetta-freebsd12" do |c|
+    c.vm.box = "generic/freebsd12"
+    c.vm.hostname = "zetta-freebsd12"
+    c.vm.provision "shell", inline: <<-SHELL
+      env ASSUME_ALWAYS_YES=YES pkg install curl pkgconf rsync
+    SHELL
+  end
+
   config.vm.box_check_update = false
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
