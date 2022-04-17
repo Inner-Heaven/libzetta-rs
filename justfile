@@ -1,9 +1,16 @@
 workspace := "~/libzetta-rs"
 ubuntu_host := "zetta-ubuntu"
 freebsd13_host := "zetta-freebsd13"
+freebsd12_host := "zetta-freebsd12"
 rsync_exclude := "--exclude .git --exclude .idea --exclude target --exclude libzfs_core-sys/target"
 
 set positional-arguments
+
+test-freebsd12 args='':
+    just delete-test-pool-on {{freebsd12_host}}
+    just copy-code-to {{freebsd12_host}}
+    -ssh {{freebsd12_host}} "sudo sh -c 'mdconfig -d -u 1; mdconfig -a -s 96m -u1'"
+    ssh {{freebsd12_host}} '. "$HOME/.cargo/env";cd {{workspace}} && sudo env PATH=$PATH cargo test {{args}}'
 
 test-freebsd13 args='':
     just delete-test-pool-on {{freebsd13_host}}
