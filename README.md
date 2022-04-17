@@ -17,16 +17,20 @@ Not yet. It won't break your pool or kill your brother, but API might change. Wa
 
 ## Usage
 
-Public API for `zpool` stable. Public API for `zfs` might change after I actually get to use it in other projects. Consult the documention on usage.
+Public API for `zpool` stable. Public API for `zfs` might change after I actually get to use it in other projects. Consult the [documention](https://docs.rs/libzetta/latest/libzetta/) on usage.
 
 ### FreeBSD
 
 This library focused on FreeBSD support. This should work on any FreeBSD version since 9.2. No intention on supporting legacy versions. Supported versions:
  - 12.1
+ - 13.0 (No CI setup for it)
+ 
+*NOTE*: FreeBSD 13.0 borked `libzfs_core` dependencies. Until it's fixed solution is to use `LD_PRELOAD` to load `libzfs_core` from ports.
+*NOTE*: Since FreeBSD switched to OpenZFS, support for "legacy" will be dropped at first breakage.
 
 ### Linux
 
-Right now it verified works with `0.7.13` and entire `0.7.x` branch.
+Verified on what is avaiable for Ubuntu 20.04 at the time of writting it's `0.8.3`.
 
 ## How it works
 
@@ -34,7 +38,18 @@ ZFS doesn't have stable API at all.`libzfs_core`(`lzc`) fills some gaps, but not
 
 ## Running tests
 
-Note that integration tests do a lot of zpool and zfs operations on live system. I recommend spin up a VM and use `run_tests.sh` to run integration tests inside. Tests also take a lot of disk space because each vdev is at least 64mb file.
+`Vagrantfile` has 3 VMS: ubuntu-20.04, FreeBSD 12 and FreeBSD 13 to use them:
+
+ - Spin up either one of those
+ - Install [`just`](https://github.com/casey/just)
+ - Run `just test-ubuntu` or `just test-freebsd12` to run tests in the VM
+ - To run a specific test run `just test-ubuntu "-- easy_snapshot_and_bookmark"`
+
+*NOTE*: Integration tests must be run as a root. Zpools and datasets will be created/modified/destroyed. If it wipes your system datasets that's on you for running it outside of VM.
+
+## Nix
+
+Project is [nix-flake](https://nixos.wiki/wiki/Flakes) enabled, but it flake itself isn't enough: you need to provide `libzfs_core` and its dependencies yourself. This is on-purpose. 
 
 ## Current feature status
 
