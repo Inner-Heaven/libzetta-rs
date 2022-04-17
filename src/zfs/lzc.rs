@@ -324,7 +324,7 @@ impl ZfsEngine for ZfsLzc {
         let mut bookmarks_list = NvList::default();
 
         for bookmark in bookmarks {
-            bookmarks_list.insert(&bookmark.to_string_lossy(), true)?;
+            bookmarks_list.insert_boolean(&bookmark.to_string_lossy())?;
         }
 
         let mut errors_list_ptr = null_mut();

@@ -9,3 +9,5 @@ target*
 test-results/
 .direnv
 .vagrant
+libfuckery
+build.rs

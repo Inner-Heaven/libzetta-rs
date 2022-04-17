@@ -61,3 +61,9 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod log;
 pub use log::GlobalLogger;
+
+pub mod fuckery {
+   extern {
+       pub(crate) fn fuckery_make_nvlist() -> *mut zfs_core_sys::nvlist_t;
+   }
+}
