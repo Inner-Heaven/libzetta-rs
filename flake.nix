@@ -58,6 +58,7 @@
             vagrant
             just
             zlib
+            cmake
         ];
         PROJECT_ROOT = builtins.toString ./.;
         RUST_SRC_PATH = "${rust}/lib/rustlib/src/rust/library";

@@ -35,7 +35,7 @@ bitflags = "1.2.1"
 once_cell = "1.3.1"
 
 [dependencies.libnv]
-version = "0.2.3"
+version = "0.3.0"
 default-features = false
 features = ["nvpair"]
 
@@ -50,6 +50,9 @@ rand = "0.8"
 slog-term = "2"
 tempdir = "0.3"
 tempfile = "3"
+
+[build-dependencies]
+cmake = "0.1"
 
 [package.metadata.release]
 dev-version-ext = "pre"
