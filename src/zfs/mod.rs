@@ -313,7 +313,7 @@ pub(crate) mod validators {
         if name.ends_with('/') {
             return Err(ValidationError::MissingName(dataset.to_owned()));
         }
-        if dataset.has_root() || dataset.components().count() < 2 {
+        if dataset.has_root() {
             return Err(ValidationError::MissingPool(dataset.to_owned()));
         }
         dataset
