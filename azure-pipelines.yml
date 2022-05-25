@@ -24,7 +24,8 @@ jobs:
         sudo losetup /dev/loop99 `pwd`/loop99
       displayName: Setup loop device
     - script: |
-        curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity
+        curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git andoriyu/cargo-suity --tag v0.3.0 
+        
         sudo ln -s /home/vsts/.cargo/bin/cargo-suity /usr/local/bin/
       displayName: Install suity
     - script: |
