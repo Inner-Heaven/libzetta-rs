@@ -480,6 +480,7 @@ fn snapshot_entire_pool() {
     zfs.snapshot(&expected_snapshots, None).expect("Failed to create snapshots");
 
     let snapshots = zfs.list_snapshots(root.clone()).expect("failed to list snapshots");
+    dbg!(&snapshots);
     assert_eq!(expected_snapshots, snapshots);
     assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
 
