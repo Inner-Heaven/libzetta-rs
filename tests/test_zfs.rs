@@ -461,3 +461,28 @@ fn send_snapshot_incremental() {
 
     zfs.send_incremental(snapshot, src_snapshot, tmpfile, SendFlags::empty()).unwrap();
 }
+
+// Issue #172
+#[test]
+fn snapshot_entire_pool() {
+    let zpool = SHARED_ZPOOL.clone();
+    let zfs = DelegatingZfsEngine::new().expect("Failed to initialize ZfsLzc");
+    let root_name = get_dataset_name();
+    let root = PathBuf::from(format!("{}/{}", zpool, &root_name));
+    let request = CreateDatasetRequest::builder()
+        .name(root.clone())
+        .kind(DatasetKind::Filesystem)
+        .build()
+        .unwrap();
+    zfs.create(request).expect("Failed to create a root dataset");
+    let expected_snapshots = vec![PathBuf::from(format!("{}@whole-pool-snap-1", zpool))];
+
+    zfs.snapshot(&expected_snapshots, None).expect("Failed to create snapshots");
+
+    let snapshots = zfs.list_snapshots(root.clone()).expect("failed to list snapshots");
+    assert_eq!(expected_snapshots, snapshots);
+    assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
+
+    zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
+    assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
+}
