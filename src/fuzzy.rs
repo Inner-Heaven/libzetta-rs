@@ -1,6 +1,8 @@
-use crate::{parsers::{Rule, StdoutParser},
-            pest::Parser,
-            zpool::Zpool};
+use crate::{
+    parsers::{Rule, StdoutParser},
+    pest::Parser,
+    zpool::Zpool,
+};
 
 pub fn fuzzy_target_1(data: &[u8]) {
     if let Ok(s) = std::str::from_utf8(data) {

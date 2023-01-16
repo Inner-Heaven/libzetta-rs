@@ -14,11 +14,15 @@ pub struct GlobalLogger {
 impl Deref for GlobalLogger {
     type Target = SlogLogger;
 
-    fn deref(&self) -> &Self::Target { self.inner.borrow() }
+    fn deref(&self) -> &Self::Target {
+        self.inner.borrow()
+    }
 }
 
 impl GlobalLogger {
-    fn new(logger: SlogLogger) -> Self { GlobalLogger { inner: logger } }
+    fn new(logger: SlogLogger) -> Self {
+        GlobalLogger { inner: logger }
+    }
 
     /// Get global logger. If you didn't call `Logger::setup` prior calling this then default logger
     /// created with `StdLog` as drain.

@@ -1,10 +1,12 @@
-use crate::zfs::{lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest, DatasetKind,
-                 DestroyTiming, Properties, Result, SendFlags, ZfsEngine};
+use crate::zfs::{
+    lzc::ZfsLzc, open3::ZfsOpen3, BookmarkRequest, CreateDatasetRequest, DatasetKind,
+    DestroyTiming, Properties, Result, SendFlags, ZfsEngine,
+};
 use std::{collections::HashMap, os::unix::io::AsRawFd, path::PathBuf};
 
 /// Handy wrapper that delegates your call to correct implementation.
 pub struct DelegatingZfsEngine {
-    lzc:   ZfsLzc,
+    lzc: ZfsLzc,
     open3: ZfsOpen3,
 }
 
@@ -17,9 +19,13 @@ impl DelegatingZfsEngine {
 }
 
 impl ZfsEngine for DelegatingZfsEngine {
-    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> { self.lzc.exists(name) }
+    fn exists<N: Into<PathBuf>>(&self, name: N) -> Result<bool> {
+        self.lzc.exists(name)
+    }
 
-    fn create(&self, request: CreateDatasetRequest) -> Result<()> { self.lzc.create(request) }
+    fn create(&self, request: CreateDatasetRequest) -> Result<()> {
+        self.lzc.create(request)
+    }
 
     fn snapshot(
         &self,
@@ -29,9 +35,13 @@ impl ZfsEngine for DelegatingZfsEngine {
         self.lzc.snapshot(snapshots, user_properties)
     }
 
-    fn bookmark(&self, bookmarks: &[BookmarkRequest]) -> Result<()> { self.lzc.bookmark(bookmarks) }
+    fn bookmark(&self, bookmarks: &[BookmarkRequest]) -> Result<()> {
+        self.lzc.bookmark(bookmarks)
+    }
 
-    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> { self.open3.destroy(name) }
+    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
+        self.open3.destroy(name)
+    }
 
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
         self.lzc.destroy_snapshots(snapshots, timing)
@@ -93,6 +103,7 @@ impl ZfsEngine for DelegatingZfsEngine {
         sync: bool,
         args: libnv::nvpair::NvList,
     ) -> Result<libnv::nvpair::NvList> {
-        self.lzc.run_channel_program(pool, program, instr_limit, mem_limit, sync, args)
+        self.lzc
+            .run_channel_program(pool, program, instr_limit, mem_limit, sync, args)
     }
 }

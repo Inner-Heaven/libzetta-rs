@@ -11,3 +11,4 @@ test-results/
 .vagrant
 libfuckery
 build.rs
+.pre-commit-config.yaml

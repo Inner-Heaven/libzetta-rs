@@ -122,7 +122,10 @@ bookmark        z/var/mail#backup-2019-08-08
             let mut dataset_with_type_pair = pair.into_inner();
             let dataset_type = dataset_with_type_pair.next().unwrap();
             let dataset_name = dataset_with_type_pair.next().unwrap();
-            assert_eq!(expected[idx], (dataset_type.as_str(), dataset_name.as_str()));
+            assert_eq!(
+                expected[idx],
+                (dataset_type.as_str(), dataset_name.as_str())
+            );
         }
     }
 
@@ -168,10 +171,8 @@ z/var/mail
 z/var/tmp
         "#;
 
-
         let mut pairs = ZfsParser::parse(Rule::datasets, lines).unwrap();
         let datasets_pairs = pairs.next().unwrap().into_inner();
         assert_eq!(38, datasets_pairs.clone().count());
-
     }
 }

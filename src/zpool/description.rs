@@ -5,9 +5,13 @@ use std::{path::PathBuf, str::FromStr};
 
 use pest::iterators::{Pair, Pairs};
 
-use crate::{parsers::Rule,
-            zpool::{vdev::{ErrorStatistics, Vdev, VdevType},
-                    CreateZpoolRequest, Disk, Health}};
+use crate::{
+    parsers::Rule,
+    zpool::{
+        vdev::{ErrorStatistics, Vdev, VdevType},
+        CreateZpoolRequest, Disk, Health,
+    },
+};
 
 /// The reason why zpool is in this state. Right now it's just a wrapper around `String`, but in the
 /// future there _might_ be a more machine friendly format.
@@ -23,32 +27,32 @@ pub enum Reason {
 #[get = "pub"]
 pub struct Zpool {
     /// Name of the pool
-    name:             String,
+    name: String,
     /// UID of the pool. Only visible during import
     #[builder(default)]
-    id:               Option<u64>,
+    id: Option<u64>,
     /// Current Health status of the pool.
-    health:           Health,
+    health: Health,
     /// List of VDEVs
-    vdevs:            Vec<Vdev>,
+    vdevs: Vec<Vdev>,
     /// List of cache devices.
     #[builder(default)]
-    caches:           Vec<Disk>,
+    caches: Vec<Disk>,
     /// ZFS Intent Log (ZIL) devices.
     #[builder(default)]
-    logs:             Vec<Vdev>,
+    logs: Vec<Vdev>,
     /// Spare devices.
     #[builder(default)]
-    spares:           Vec<Disk>,
+    spares: Vec<Disk>,
     /// Value of action field what ever it is.
     #[builder(default)]
-    action:           Option<String>,
+    action: Option<String>,
     /// Errors?
     #[builder(default)]
-    errors:           Option<String>,
+    errors: Option<String>,
     /// Reason why this Zpool is not healthy.
     #[builder(default)]
-    reason:           Option<Reason>,
+    reason: Option<Reason>,
     /// Error statistics
     #[builder(default)]
     error_statistics: ErrorStatistics,
@@ -56,7 +60,9 @@ pub struct Zpool {
 
 impl Zpool {
     /// Create a builder - the preferred way to create a structure.
-    pub fn builder() -> ZpoolBuilder { ZpoolBuilder::default() }
+    pub fn builder() -> ZpoolBuilder {
+        ZpoolBuilder::default()
+    }
 
     #[allow(clippy::option_unwrap_used, clippy::wildcard_enum_match_arm)]
     pub(crate) fn from_pest_pair(pair: Pair<'_, Rule>) -> Zpool {
@@ -67,36 +73,36 @@ impl Zpool {
             match pair.as_rule() {
                 Rule::pool_name => {
                     zpool.name(get_string_from_pair(pair));
-                },
+                }
                 Rule::pool_id => {
                     zpool.id(Some(get_u64_from_pair(pair)));
-                },
+                }
                 Rule::state => {
                     zpool.health(get_health_from_pair(pair));
-                },
+                }
                 Rule::action => {
                     zpool.action(Some(get_string_from_pair(pair)));
-                },
+                }
                 Rule::errors => {
                     zpool.errors(get_error_from_pair(pair));
-                },
+                }
                 Rule::vdevs => {
                     zpool.vdevs(get_vdevs_from_pair(pair));
-                },
+                }
                 Rule::pool_line => {
                     set_stats_and_reason_from_pool_line(pair, &mut zpool);
-                },
+                }
                 Rule::logs => {
                     zpool.logs(get_logs_from_pair(pair));
-                },
+                }
                 Rule::caches => {
                     zpool.caches(get_caches_from_pair(pair));
-                },
+                }
                 Rule::spares => {
                     zpool.spares(get_spares_from_pair(pair));
-                },
-                Rule::config | Rule::status | Rule::see | Rule::pool_headers => {},
-                Rule::scan_line => {},
+                }
+                Rule::config | Rule::status | Rule::see | Rule::pool_headers => {}
+                Rule::scan_line => {}
                 _ => unreachable!(),
             }
         }
@@ -115,18 +121,42 @@ impl PartialEq<CreateZpoolRequest> for Zpool {
 }
 
 impl PartialEq<Zpool> for CreateZpoolRequest {
-    fn eq(&self, other: &Zpool) -> bool { other == self }
+    fn eq(&self, other: &Zpool) -> bool {
+        other == self
+    }
 }
 
 #[inline]
-#[allow(clippy::option_unwrap_used, clippy::result_unwrap_used, clippy::wildcard_enum_match_arm)]
+#[allow(
+    clippy::option_unwrap_used,
+    clippy::result_unwrap_used,
+    clippy::wildcard_enum_match_arm
+)]
 fn get_error_statistics_from_pair(pair: Pair<'_, Rule>) -> ErrorStatistics {
     debug_assert_eq!(Rule::error_statistics, pair.as_rule());
     let mut inner = pair.into_inner();
     ErrorStatistics {
-        read:     inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
-        write:    inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
-        checksum: inner.next().unwrap().as_span().as_str().parse().unwrap_or(std::u64::MAX),
+        read: inner
+            .next()
+            .unwrap()
+            .as_span()
+            .as_str()
+            .parse()
+            .unwrap_or(std::u64::MAX),
+        write: inner
+            .next()
+            .unwrap()
+            .as_span()
+            .as_str()
+            .parse()
+            .unwrap_or(std::u64::MAX),
+        checksum: inner
+            .next()
+            .unwrap()
+            .as_span()
+            .as_str()
+            .parse()
+            .unwrap_or(std::u64::MAX),
     }
 }
 
@@ -139,18 +169,21 @@ fn set_stats_and_reason_from_pool_line(pool_line: Pair<'_, Rule>, zpool: &mut Zp
         match pair.as_rule() {
             Rule::reason => {
                 zpool.reason(Some(Reason::Other(String::from(pair.as_span().as_str()))));
-            },
+            }
             Rule::error_statistics => {
                 zpool.error_statistics(get_error_statistics_from_pair(pair));
-            },
-            _ => { /* no-op */ },
+            }
+            _ => { /* no-op */ }
         };
     }
 }
 
 #[inline]
 fn get_vdev_type(raid_name: Pair<'_, Rule>) -> VdevType {
-    let raid_enum = raid_name.into_inner().next().expect("Failed to parse raid_enum");
+    let raid_enum = raid_name
+        .into_inner()
+        .next()
+        .expect("Failed to parse raid_enum");
     debug_assert!(raid_enum.as_rule() == Rule::raid_enum);
     VdevType::from_str(raid_enum.as_str()).expect("Failed to parse raid type")
 }
@@ -199,7 +232,7 @@ fn get_stats_and_reason_from_pairs(pairs: Pairs<'_, Rule>) -> (ErrorStatistics, 
             Rule::reason => reason = Some(Reason::Other(String::from(pair.as_span().as_str()))),
             _ => {
                 unreachable!();
-            },
+            }
         }
     }
     (stats.unwrap_or_default(), reason)
@@ -224,7 +257,7 @@ fn get_vdevs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
                     .disks(vec![disk])
                     .build()
                     .expect("Failed to build Vdev")
-            },
+            }
             Rule::raided_vdev => {
                 let mut inner = vdev.into_inner();
                 let raid_line = inner.next().unwrap();
@@ -244,10 +277,10 @@ fn get_vdevs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
                     .reason(reason)
                     .build()
                     .expect("Failed to build vdev")
-            },
+            }
             _ => {
                 unreachable!();
-            },
+            }
         })
         .collect()
 }
@@ -260,7 +293,10 @@ fn get_health_from_pair(pair: Pair<'_, Rule>) -> Health {
 
 #[inline]
 fn get_u64_from_pair(pair: Pair<'_, Rule>) -> u64 {
-    get_value_from_pair(pair).as_str().parse().expect("Failed to unwrap u64")
+    get_value_from_pair(pair)
+        .as_str()
+        .parse()
+        .expect("Failed to unwrap u64")
 }
 
 #[inline]
@@ -326,11 +362,19 @@ mod test {
         let zpool = Zpool::builder()
             .name("wat")
             .health(Health::Online)
-            .caches(vec![Disk::builder().path("hd1").health(Health::Online).build().unwrap()])
+            .caches(vec![Disk::builder()
+                .path("hd1")
+                .health(Health::Online)
+                .build()
+                .unwrap()])
             .logs(vec![Vdev::builder()
                 .kind(VdevType::SingleDisk)
                 .health(Health::Online)
-                .disks(vec![Disk::builder().path("hd0").health(Health::Online).build().unwrap()])
+                .disks(vec![Disk::builder()
+                    .path("hd0")
+                    .health(Health::Online)
+                    .build()
+                    .unwrap()])
                 .build()
                 .unwrap()])
             .vdevs(vec![])
@@ -347,8 +391,12 @@ mod test {
             .zil(CreateVdevRequest::SingleDisk(PathBuf::from("hd0")))
             .build()
             .unwrap();
-        let zpool =
-            Zpool::builder().name("wat").health(Health::Online).vdevs(vec![]).build().unwrap();
+        let zpool = Zpool::builder()
+            .name("wat")
+            .health(Health::Online)
+            .vdevs(vec![])
+            .build()
+            .unwrap();
         assert_ne!(request, zpool);
     }
 }
