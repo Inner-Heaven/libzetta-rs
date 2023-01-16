@@ -49,6 +49,7 @@
             cargo-sort
             cargo-sweep
             cargo-wipe
+            cargo-release
             cmake
             git-cliff
             gnumake

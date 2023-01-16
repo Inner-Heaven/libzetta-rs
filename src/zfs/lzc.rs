@@ -169,7 +169,7 @@ impl ZfsEngine for ZfsLzc {
         }
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
-                props.insert_string(key, value)?;
+                props.insert_string(key.as_str(), value)?;
             }
         }
         let errno = unsafe {
