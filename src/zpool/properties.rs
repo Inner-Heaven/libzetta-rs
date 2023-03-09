@@ -48,6 +48,8 @@ pub enum Health {
     Unavailable,
     /// Physically removed while the system was running.
     Removed,
+    /// Spare has taken over for failed device.
+    Inuse,
 }
 
 impl Health {
@@ -63,6 +65,7 @@ impl Health {
             "AVAIL" => Ok(Health::Available),
             "UNAVAIL" => Ok(Health::Unavailable),
             "REMOVED" => Ok(Health::Removed),
+            "INUSE" => Ok(Health::Inuse),
             _ => Err(ZpoolError::ParseError),
         }
     }

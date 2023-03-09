@@ -475,4 +475,53 @@ errors: No known data errors
         let pair = pairs.next().unwrap();
         let _zpool = Zpool::from_pest_pair(pair);
     }
+
+    #[test]
+    fn test_zpool_inuse_spares() {
+        let stdout = r#"  pool: sparepool
+ state: DEGRADED
+status: One or more devices are faulted in response to persistent errors.
+	Sufficient replicas exist for the pool to continue functioning in a
+	degraded state.
+action: Replace the faulted device, or use 'zpool clear' to mark the device
+	repaired.
+  scan: resilvered 5.00G in 00:01:16 with 0 errors on Thu Jan 19 12:32:16 2023
+config:
+
+	NAME                          STATE     READ WRITE CKSUM
+	sparepool                     DEGRADED     0     0     0
+	  raidz1-0                    DEGRADED     0     0     0
+	    spare-0                   DEGRADED     0     0     0
+	      wwn-0x500000000000000a  FAULTED      0 4.11K     0  too many errors
+	      wwn-0x500000000000000d  ONLINE       0     0     0
+	    wwn-0x500000000000000b    ONLINE       0     0     0
+	    wwn-0x500000000000000c    ONLINE       0     0     0
+	spares
+	  wwn-0x500000000000000d      INUSE     currently in use
+
+errors: No known data errors
+        "#;
+
+        let mut pairs =
+            StdoutParser::parse(Rule::zpool, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+
+        let drives = vec![
+            PathBuf::from("spare-0"),
+            PathBuf::from("wwn-0x500000000000000a"),
+            PathBuf::from("wwn-0x500000000000000d"),
+            PathBuf::from("wwn-0x500000000000000b"),
+            PathBuf::from("wwn-0x500000000000000c"),
+        ];
+        let spare = vec![PathBuf::from("wwn-0x500000000000000d")];
+
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("sparepool")
+            .vdevs(vec![CreateVdevRequest::RaidZ(drives.clone())])
+            .spares(spare)
+            .build()
+            .unwrap();
+        assert_eq!(&topo, &zpool);
+    }
 }
