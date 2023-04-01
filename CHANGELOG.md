@@ -2,19 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2023-04-01
+
+### Bug Fixes
+
+- Fix solaris build by using forked zfs-core-sys ([#185](https://github.com/ZeroAssumptions/aide-de-camp/issues/185))
+
 ## [0.4.0] - 2023-04-01
 
 ### Bug Fixes
 
 - **zfs:** Allow snapshotting of entire pool ([#173](https://github.com/ZeroAssumptions/aide-de-camp/issues/173))
+- **zpool:** Handling of in-use spares
 
 ### Documentation
 
 - **README:** Bring it more closer to reality. ([#171](https://github.com/ZeroAssumptions/aide-de-camp/issues/171))
-
-### Ci
-
-- Update cirrus config
 
 ## [0.3.1] - 2022-04-17
 

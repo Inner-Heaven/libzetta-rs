@@ -1,6 +1,6 @@
 [package]
 authors = ["Andrey Sno <andoriyu@gmail.com>"]
-version = "0.4.0"
+version = "0.4.1"
 description = "libzetta is a stable interface for programmatic administration of ZFS"
 repository = "https://github.com/Inner-Heaven/libzetta-rs"
 keywords = ["zfs", "freebsd", "zol", "os", "open3"]
