@@ -1,15 +1,20 @@
-use crate::zfs::{DatasetKind, Error, FilesystemProperties, Properties, Result, VolumeProperties,
-                 ZfsEngine};
+use crate::zfs::{
+    DatasetKind, Error, FilesystemProperties, Properties, Result, VolumeProperties, ZfsEngine,
+};
 use chrono::NaiveDateTime;
 use slog::Logger;
-use std::{ffi::OsString,
-          path::PathBuf,
-          process::{Command, Stdio}};
+use std::{
+    ffi::OsString,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
-use crate::{parsers::zfs::{Rule, ZfsParser},
-            utils::parse_float,
-            zfs::properties::{BookmarkProperties, SnapshotProperties},
-            GlobalLogger};
+use crate::{
+    parsers::zfs::{Rule, ZfsParser},
+    utils::parse_float,
+    zfs::properties::{BookmarkProperties, SnapshotProperties},
+    GlobalLogger,
+};
 use pest::Parser;
 use std::str::Lines;
 
@@ -18,7 +23,7 @@ static DATE_FORMAT: &str = "%a %b %e %k:%M %Y";
 
 pub struct ZfsOpen3 {
     cmd_name: OsString,
-    logger:   Logger,
+    logger: Logger,
 }
 
 impl ZfsOpen3 {
@@ -34,9 +39,13 @@ impl ZfsOpen3 {
         ZfsOpen3 { logger, cmd_name }
     }
 
-    pub fn logger(&self) -> &Logger { &self.logger }
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
 
-    fn zfs(&self) -> Command { Command::new(&self.cmd_name) }
+    fn zfs(&self) -> Command {
+        Command::new(&self.cmd_name)
+    }
 
     #[allow(dead_code)]
     /// Force disable logging by using `/dev/null` as drain.
@@ -219,175 +228,175 @@ pub(crate) fn parse_filesystem_lines(lines: &mut Lines, name: PathBuf) -> Proper
         match key.as_ref() {
             "aclinherit" => {
                 properties.acl_inherit(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "aclmode" => {
                 properties.acl_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "atime" => {
                 properties.atime(parse_bool(&value));
-            },
+            }
             "available" => {
                 properties.available(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "canmount" => {
                 properties.can_mount(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "casesensitivity" => {
                 properties.case_sensitivity(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "checksum" => {
                 properties.checksum(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "compression" => {
                 properties.compression(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "compressratio" => {
                 properties
                     .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "copies" => {
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "createtxg" => {
                 properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "dedup" => {
                 properties.dedup(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "devices" => {
                 properties.devices(parse_bool(&value));
-            },
+            }
             "dnodesize" => {
                 properties.dnode_size(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "exec" => {
                 properties.exec(parse_bool(&value));
-            },
+            }
             "filesystem_count" => {
                 properties.filesystem_count(parse_opt_num(&value));
-            },
+            }
             "filesystem_limit" => {
                 properties.filesystem_limit(parse_opt_num(&value));
-            },
+            }
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "jailed" => {
                 properties.jailed(Some(parse_bool(&value)));
-            },
+            }
             "logbias" => {
                 properties.log_bias(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "logicalreferenced" => {
                 properties.logical_referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "logicalused" => {
                 properties.logical_used(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "mlslabel" => {
                 properties.mls_label(parse_mls_label(value));
-            },
+            }
             "mounted" => {
                 properties.mounted(parse_bool(&value));
-            },
+            }
             "mountpoint" => {
                 properties.mount_point(parse_mount_point(&value));
-            },
+            }
             "nbmand" => {
                 properties.nbmand(parse_bool(&value));
-            },
+            }
             "normalization" => {
                 properties.normalization(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "origin" => {
                 properties.origin(Some(value));
-            },
+            }
             "primarycache" => {
                 properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "quota" => {
                 properties.quota(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "readonly" => {
                 properties.readonly(parse_bool(&value));
-            },
+            }
             "recordsize" => {
                 properties.record_size(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "redundant_metadata" => {
                 properties.redundant_metadata(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "refcompressratio" => {
                 properties
                     .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "refquota" => {
                 properties.ref_quota(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "refreservation" => {
                 properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "referenced" => {
                 properties.referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "reservation" => {
                 properties.reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "secondarycache" => {
                 properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "setuid" => {
                 properties.setuid(parse_bool(&value));
-            },
+            }
             "snapdir" => {
                 properties.snap_dir(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "snapshot_count" => {
                 properties.snapshot_count(parse_opt_num(&value));
-            },
+            }
             "snapshot_limit" => {
                 properties.snapshot_limit(parse_opt_num(&value));
-            },
+            }
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "used" => {
                 properties.used(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbychildren" => {
                 properties.used_by_children(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbydataset" => {
                 properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbyrefreservation" => {
                 properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbysnapshots" => {
                 properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "utf8only" => {
                 properties.utf8_only(Some(parse_bool(&value)));
-            },
+            }
             "version" => {
                 properties.version(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "volmode" => {
                 properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "vscan" => {
                 properties.vscan(parse_bool(&value));
-            },
+            }
             "written" => {
                 properties.written(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "xattr" => {
                 properties.xattr(parse_bool(&value));
-            },
-            "type" => { /* no-op */ },
+            }
+            "type" => { /* no-op */ }
 
             _ => properties.insert_unknown_property(key, value),
         };
@@ -401,82 +410,82 @@ pub(crate) fn parse_snapshot_lines(lines: &mut Lines, name: PathBuf) -> Properti
         match key.as_ref() {
             "casesensitivity" => {
                 properties.case_sensitivity(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "clones" => {
                 properties.clones(parse_list_of_pathbufs(&value));
-            },
+            }
             "compressratio" => {
                 properties
                     .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "createtxg" => {
                 properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "creation" => {
                 properties.creation(parse_creation_into_timestamp(&value));
-            },
+            }
             "defer_destroy" => {
                 properties.defer_destroy(parse_bool(&value));
-            },
+            }
             "devices" => {
                 properties.devices(parse_bool(&value));
-            },
+            }
             "exec" => {
                 properties.exec(parse_bool(&value));
-            },
+            }
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "logicalreferenced" => {
                 properties.logically_referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "mlslabel" => {
                 properties.mls_label(parse_mls_label(value));
-            },
+            }
             "nbmand" => {
                 properties.nbmand(parse_bool(&value));
-            },
+            }
             "normalization" => {
                 properties.normalization(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "primarycache" => {
                 properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "refcompressratio" => {
                 properties
                     .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "referenced" => {
                 properties.referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "secondarycache" => {
                 properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "setuid" => {
                 properties.setuid(parse_bool(&value));
-            },
+            }
             "used" => {
                 properties.used(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "userrefs" => {
                 properties.user_refs(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "utf8only" => {
                 properties.utf8_only(Some(parse_bool(&value)));
-            },
+            }
             "version" => {
                 properties.version(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "volmode" => {
                 properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "written" => {
                 properties.written(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "xattr" => {
                 properties.xattr(parse_bool(&value));
-            },
-            "type" => { /* no-op */ },
+            }
+            "type" => { /* no-op */ }
 
             _ => properties.insert_unknown_property(key, value),
         };
@@ -490,106 +499,106 @@ pub(crate) fn parse_volume_lines(lines: &mut Lines, name: PathBuf) -> Properties
         match key.as_ref() {
             "available" => {
                 properties.available(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "checksum" => {
                 properties.checksum(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "compression" => {
                 properties.compression(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "compressratio" => {
                 properties
                     .compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "copies" => {
                 properties.copies(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "createtxg" => {
                 properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "dedup" => {
                 properties.dedup(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "logbias" => {
                 properties.log_bias(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "logicalreferenced" => {
                 properties.logical_referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "logicalused" => {
                 properties.logical_used(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "mlslabel" => {
                 properties.mls_label(parse_mls_label(value));
-            },
+            }
             "primarycache" => {
                 properties.primary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "readonly" => {
                 properties.readonly(parse_bool(&value));
-            },
+            }
             "redundant_metadata" => {
                 properties.redundant_metadata(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "refcompressratio" => {
                 properties
                     .ref_compression_ratio(parse_float(&mut value.clone()).expect(FAILED_TO_PARSE));
-            },
+            }
             "referenced" => {
                 properties.referenced(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "refreservation" => {
                 properties.ref_reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "reservation" => {
                 properties.reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "secondarycache" => {
                 properties.secondary_cache(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "snapshot_count" => {
                 properties.snapshot_count(parse_opt_num(&value));
-            },
+            }
             "snapshot_limit" => {
                 properties.snapshot_limit(parse_opt_num(&value));
-            },
+            }
             "sync" => {
                 properties.sync(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "used" => {
                 properties.used(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbychildren" => {
                 properties.used_by_children(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbydataset" => {
                 properties.used_by_dataset(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbyrefreservation" => {
                 properties.used_by_ref_reservation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "usedbysnapshots" => {
                 properties.used_by_snapshots(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "volblocksize" => {
                 properties.volume_block_size(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "volmode" => {
                 properties.volume_mode(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "volsize" => {
                 properties.volume_size(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "written" => {
                 properties.written(value.parse().expect(FAILED_TO_PARSE));
-            },
-            "type" => { /* no-op */ },
+            }
+            "type" => { /* no-op */ }
 
             _ => properties.insert_unknown_property(key, value),
         };
@@ -603,14 +612,14 @@ pub(crate) fn parse_bookmark_lines(lines: &mut Lines, name: PathBuf) -> Properti
         match key.as_ref() {
             "createtxg" => {
                 properties.create_txg(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
+            }
             "creation" => {
                 properties.creation(value.parse().expect(FAILED_TO_PARSE));
-            },
+            }
             "guid" => {
                 properties.guid(Some(value.parse().expect(FAILED_TO_PARSE)));
-            },
-            "type" => { /* no-op */ },
+            }
+            "type" => { /* no-op */ }
 
             _ => properties.insert_unknown_property(key, value),
         }
@@ -623,7 +632,9 @@ fn parse_unknown_lines(lines: &mut Lines) -> Properties {
     Properties::Unknown(props)
 }
 
-fn parse_bool(val: &str) -> bool { val == "yes" || val == "on" }
+fn parse_bool(val: &str) -> bool {
+    val == "yes" || val == "on"
+}
 
 fn parse_opt_num(val: &str) -> Option<u64> {
     match val {
@@ -647,10 +658,13 @@ fn parse_mls_label(val: String) -> Option<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::zfs::{properties::{AclInheritMode, AclMode, BookmarkProperties, CaseSensitivity,
-                                  Dedup, DnodeSize, LogBias, Normalization, RedundantMetadata,
-                                  SnapshotProperties, SyncMode, VolumeMode},
-                     CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties};
+    use crate::zfs::{
+        properties::{
+            AclInheritMode, AclMode, BookmarkProperties, CaseSensitivity, Dedup, DnodeSize,
+            LogBias, Normalization, RedundantMetadata, SnapshotProperties, SyncMode, VolumeMode,
+        },
+        CacheMode, CanMount, Checksum, Compression, Copies, SnapDir, VolumeProperties,
+    };
     use std::collections::HashMap;
 
     #[test]

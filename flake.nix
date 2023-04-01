@@ -1,24 +1,8 @@
 {
-  description = "Minimal Rust Development Environment";
+  description = "libZetta Development Environment";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
-    };
-    andoriyu = {
-      url = "github:andoriyu/flakes";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        rust-overlay.follows = "rust-overlay";
-        flake-utils.follows = "flake-utils";
-        devshell.follows = "devshell";
-      };
-    };
     devshell = {
       url = "github:numtide/devshell/master";
       inputs = {
@@ -26,42 +10,76 @@
         flake-utils.follows = "flake-utils";
       };
     };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
   outputs =
-    { self, nixpkgs, rust-overlay, flake-utils, andoriyu, devshell, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+    { self
+    , nixpkgs
+    , fenix
+    , flake-utils
+    , devshell
+    , pre-commit-hooks
+    , ...
+    }:
+    flake-utils.lib.eachSystem [
+      "x86_64-linux"
+      "aarch64-linux"
+      "aarch64-darwin"
+    ]
+      (system:
       let
-        cwd = builtins.toString ./.;
-        overlays = [ devshell.overlay rust-overlay.overlay andoriyu.overlay andoriyu.overlays.rust-analyzer ];
+        overlays = [ devshell.overlay fenix.overlay ];
         pkgs = import nixpkgs { inherit system overlays; };
-        rust = pkgs.rust-bin.fromRustupToolchainFile "${cwd}/rust-toolchain.toml";
-      in with pkgs; {
+      in
+      with pkgs; {
+        checks = {
+          pre-commit-check = pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              nixpkgs-fmt.enable = true;
+              shellcheck.enable = true;
+              statix.enable = true;
+              nix-linter.enable = true;
+            };
+          };
+        };
+
         devShell = clangStdenv.mkDerivation rec {
-        name = "rust";
-        nativeBuildInputs = [
+          inherit (self.checks.${system}.pre-commit-check) shellHook;
+          name = "libzetta-env";
+          nativeBuildInputs = [
+            (pkgs.fenix.complete.withComponents [
+              "cargo"
+              "clippy"
+              "rust-src"
+              "rustc"
+              "rustfmt"
+            ])
+            rust-analyzer-nightly
             bacon
-            binutils
             cargo-cache
             cargo-deny
             cargo-diet
-            cargo-expand-nightly
-            cargo-outdated
             cargo-sort
             cargo-sweep
             cargo-wipe
-            cmake
+            cargo-outdated
+            cargo-release
             git-cliff
-            gnumake
-            pkgconfig
-            rust
-            rusty-man
-            vagrant
-            just
-            zlib
             cmake
-        ];
-        PROJECT_ROOT = builtins.toString ./.;
-        RUST_SRC_PATH = "${rust}/lib/rustlib/src/rust/library";
+            gnumake
+            openssl.dev
+            pkg-config
+            nixpkgs-fmt
+            zfs.dev
+            just
+            vagrant
+          ];
+          PROJECT_ROOT = builtins.toString ./.;
         };
       });
 }

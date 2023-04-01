@@ -48,28 +48,28 @@ use crate::zpool::{properties::ZpoolPropertiesWrite, vdev::CreateVdevRequest, Cr
 /// Consumer friendly representation of zpool structure.
 pub struct CreateZpoolRequest {
     /// Name to give new zpool
-    name:        String,
+    name: String,
     /// Properties if new zpool
     #[builder(default)]
-    props:       Option<ZpoolPropertiesWrite>,
+    props: Option<ZpoolPropertiesWrite>,
     /// Altroot for zpool
     #[builder(default)]
-    altroot:     Option<PathBuf>,
+    altroot: Option<PathBuf>,
     /// Mount mount point for zpool
     #[builder(default)]
-    mount:       Option<PathBuf>,
+    mount: Option<PathBuf>,
     /// Use `-f` or not;
     #[builder(default)]
     create_mode: CreateMode,
     /// Devices used to store data
     #[builder(default)]
-    vdevs:       Vec<CreateVdevRequest>,
+    vdevs: Vec<CreateVdevRequest>,
     /// Adding a cache vdev to a pool will add the storage of the cache to the
     /// [L2ARC](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-l2arc). Cache devices
     /// cannot be mirrored. Since a cache device only stores additional copies
     /// of existing data, there is no risk of data loss.
     #[builder(default)]
-    caches:      Vec<PathBuf>,
+    caches: Vec<PathBuf>,
     /// ZFS Log Devices, also known as ZFS Intent Log ([ZIL](https://www.freebsd.org/doc/handbook/zfs-term.html#zfs-term-zil)) move the intent log from the regular
     /// pool devices to a dedicated device, typically an SSD. Having a dedicated
     /// log device can significantly improve the performance of applications
@@ -78,18 +78,20 @@ pub struct CreateZpoolRequest {
     /// If multiple log devices are used, writes will be load balanced across
     /// them
     #[builder(default)]
-    logs:        Vec<CreateVdevRequest>,
+    logs: Vec<CreateVdevRequest>,
     /// The hot spares feature enables you to identify disks that could be used to replace a failed
     /// or faulted device in one or more storage pools. Designating a device as a hot spare means
     /// that the device is not an active device in the pool, but if an active device in the pool
     /// fails, the hot spare automatically replaces the failed device.
     #[builder(default)]
-    spares:      Vec<PathBuf>,
+    spares: Vec<PathBuf>,
 }
 
 impl CreateZpoolRequest {
     /// A preferred way to create this.
-    pub fn builder() -> CreateZpoolRequestBuilder { CreateZpoolRequestBuilder::default() }
+    pub fn builder() -> CreateZpoolRequestBuilder {
+        CreateZpoolRequestBuilder::default()
+    }
 
     /// Verify that given topology can be used to update existing pool.
     pub fn is_suitable_for_update(&self) -> bool {
@@ -120,7 +122,10 @@ impl CreateZpoolRequest {
     pub(crate) fn into_args(self) -> Vec<OsString> {
         let mut ret: Vec<OsString> = Vec::with_capacity(13);
 
-        let vdevs = self.vdevs.into_iter().flat_map(CreateVdevRequest::into_args);
+        let vdevs = self
+            .vdevs
+            .into_iter()
+            .flat_map(CreateVdevRequest::into_args);
         ret.extend(vdevs);
 
         if !self.logs.is_empty() {
@@ -154,7 +159,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.vdevs = Some(Vec::new());
                 return self.vdev(vdev);
-            },
+            }
         }
         self
     }
@@ -169,7 +174,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.caches = Some(Vec::new());
                 return self.cache(disk);
-            },
+            }
         }
         self
     }
@@ -183,7 +188,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.logs = Some(Vec::with_capacity(1));
                 return self.zil(log);
-            },
+            }
         }
         self
     }
@@ -197,7 +202,7 @@ impl CreateZpoolRequestBuilder {
             None => {
                 self.spares = Some(Vec::new());
                 return self.spare(disk);
-            },
+            }
         }
         self
     }
@@ -254,8 +259,11 @@ mod test {
         assert!(topo.is_suitable_for_create());
 
         // Just add L2ARC to zpool
-        let topo =
-            CreateZpoolRequestBuilder::default().name("tank").cache(file_path).build().unwrap();
+        let topo = CreateZpoolRequestBuilder::default()
+            .name("tank")
+            .cache(file_path)
+            .build()
+            .unwrap();
 
         assert!(topo.is_suitable_for_update());
         assert!(!topo.is_suitable_for_create());

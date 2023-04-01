@@ -21,20 +21,25 @@
 //!
 //! It's called [open3](https://docs.ruby-lang.org/en/2.0.0/Open3.html) because it opens `stdin`, `stdout`, `stderr`.
 
-use std::{env,
-          ffi::{OsStr, OsString},
-          path::PathBuf,
-          process::{Command, Output, Stdio}};
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    path::PathBuf,
+    process::{Command, Output, Stdio},
+};
 
-use crate::{parsers::{Rule, StdoutParser},
-            zpool::description::Zpool,
-            GlobalLogger};
+use crate::{
+    parsers::{Rule, StdoutParser},
+    zpool::description::Zpool,
+    GlobalLogger,
+};
 use pest::Parser;
 use slog::Logger;
 
-use super::{CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode,
-            OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties,
-            ZpoolResult};
+use super::{
+    CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode, OfflineMode,
+    OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult,
+};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -49,7 +54,7 @@ lazy_static! {
 /// `ZpoolOpen3::default` to create it.
 pub struct ZpoolOpen3 {
     cmd_name: OsString,
-    logger:   Logger,
+    logger: Logger,
 }
 
 impl Default for ZpoolOpen3 {
@@ -75,7 +80,9 @@ impl ZpoolOpen3 {
         z
     }
 
-    fn zpool(&self) -> Command { Command::new(&self.cmd_name) }
+    fn zpool(&self) -> Command {
+        Command::new(&self.cmd_name)
+    }
 
     #[allow(dead_code)]
     /// Force disable logging by using `/dev/null` as drain.
@@ -256,8 +263,9 @@ impl ZpoolEngine for ZpoolOpen3 {
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
-        let zpools =
-            self.zpools_from_import(out).expect("Failed to unwrap zpool from status check");
+        let zpools = self
+            .zpools_from_import(out)
+            .expect("Failed to unwrap zpool from status check");
         if zpools.is_empty() {
             return Err(ZpoolError::PoolNotFound);
         }

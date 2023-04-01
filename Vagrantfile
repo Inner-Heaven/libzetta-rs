@@ -21,9 +21,9 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
-  config.vm.define "zetta-freebsd12" do |c|
-    c.vm.box = "generic/freebsd12"
-    c.vm.hostname = "zetta-freebsd12"
+  config.vm.define "zetta-freebsd14" do |c|
+    c.vm.box = "generic/freebsd14"
+    c.vm.hostname = "zetta-freebsd14"
     c.vm.provision "shell", inline: <<-SHELL
       env ASSUME_ALWAYS_YES=YES pkg install curl pkgconf rsync
     SHELL

@@ -1,17 +1,38 @@
----
-task:
-  freebsd_instance:
-    matrix:
-      image: freebsd-12-1-release-amd64
-
+setup: &FREEBSD_SETUP
   env:
-    CIRRUS_SHELL: /bin/sh
-  install_script: |
-    pkg install -y curl
-    curl https://sh.rustup.rs -sSf | sh -s -- -y
-    . $HOME/.cargo/env
+    HOME: /tmp # cargo needs it
+    RUST_BACKTRACE: full  # Better info for debugging test failures.
+  setup_script:
+    - pkg install -y llvm
+    - fetch https://sh.rustup.rs -o rustup.sh
+    - sh rustup.sh -y --profile=minimal --default-toolchain ${VERSION}
+
+build: &BUILD_TEST
   cargo_cache:
     folder: $HOME/.cargo/registry
-  build_script: env PATH="$HOME/.cargo/bin:$PATH" cargo build --all-features
-  test_script: mdconfig -a -s 96m -u1; env PATH="$HOME/.cargo/bin:$PATH" cargo test --all-features
+    fingerprint_script: cat Cargo.lock || echo ""
+  build_script:
+    - env PATH="$HOME/.cargo/bin:$PATH" cargo build --all-features
+  test_script:
+    - mdconfig -a -s 96m -u1
+    - env PATH="$HOME/.cargo/bin:$PATH" cargo test --all-features
+
+task:
+  name: FreeBSD 14
+  env:
+    VERSION: stable
+  freebsd_instance:
+    image_family: freebsd-14-0-snap
+  << : *FREEBSD_SETUP
+  << : *BUILD_TEST
+  before_cache_script: rm -rf $HOME/.cargo/registry/index
+
+task:
+  name: FreeBSD 13
+  env:
+    VERSION: stable
+  freebsd_instance:
+    image: freebsd-13-1-release-amd64
+  << : *FREEBSD_SETUP
+  << : *BUILD_TEST
   before_cache_script: rm -rf $HOME/.cargo/registry/index

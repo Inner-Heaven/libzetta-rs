@@ -6,9 +6,15 @@ pub trait PathExt {
     fn get_snapshot(&self) -> Option<String>;
     fn get_bookmark(&self) -> Option<String>;
 
-    fn is_snapshot(&self) -> bool { self.get_snapshot().is_some() }
-    fn is_bookmark(&self) -> bool { self.get_bookmark().is_some() }
-    fn is_volume_or_dataset(&self) -> bool { !self.is_bookmark() && !self.is_snapshot() }
+    fn is_snapshot(&self) -> bool {
+        self.get_snapshot().is_some()
+    }
+    fn is_bookmark(&self) -> bool {
+        self.get_bookmark().is_some()
+    }
+    fn is_volume_or_dataset(&self) -> bool {
+        !self.is_bookmark() && !self.is_snapshot()
+    }
 
     fn is_valid(&self) -> bool {
         if let Ok(()) = self.validate() {
@@ -53,17 +59,27 @@ impl PathExt for Path {
         None
     }
 
-    fn validate(&self) -> ValidationResult { crate::zfs::validators::validate_name(self) }
+    fn validate(&self) -> ValidationResult {
+        crate::zfs::validators::validate_name(self)
+    }
 }
 
 impl<P: AsRef<Path>> PathExt for P {
-    fn get_pool(&self) -> Option<String> { self.as_ref().get_pool() }
+    fn get_pool(&self) -> Option<String> {
+        self.as_ref().get_pool()
+    }
 
-    fn get_snapshot(&self) -> Option<String> { self.as_ref().get_snapshot() }
+    fn get_snapshot(&self) -> Option<String> {
+        self.as_ref().get_snapshot()
+    }
 
-    fn get_bookmark(&self) -> Option<String> { self.as_ref().get_bookmark() }
+    fn get_bookmark(&self) -> Option<String> {
+        self.as_ref().get_bookmark()
+    }
 
-    fn validate(&self) -> ValidationResult { self.as_ref().validate() }
+    fn validate(&self) -> ValidationResult {
+        self.as_ref().validate()
+    }
 }
 
 #[cfg(test)]

@@ -1,21 +1,30 @@
 #![allow(clippy::mutex_atomic)]
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
-use std::{fs::{self, DirBuilder},
-          panic,
-          path::{Path, PathBuf},
-          sync::Mutex};
+use std::{
+    fs::{self, DirBuilder},
+    panic,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
-use libzetta::{slog::*,
-               zfs::{BookmarkRequest, Copies, CreateDatasetRequest, DatasetKind, Error,
-                     Properties, SendFlags, SnapDir, ZfsEngine, ZfsLzc},
-               zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3}};
+use libzetta::{
+    slog::*,
+    zfs::{
+        BookmarkRequest, Copies, CreateDatasetRequest, DatasetKind, Error, Properties, SendFlags,
+        SnapDir, ZfsEngine, ZfsLzc,
+    },
+    zpool::{CreateVdevRequest, CreateZpoolRequest, ZpoolEngine, ZpoolOpen3},
+};
 
-use libzetta::{zfs::{properties::VolumeMode, DelegatingZfsEngine, DestroyTiming},
-               zpool::CreateMode};
+use libzetta::{
+    zfs::{DelegatingZfsEngine, DestroyTiming},
+    zpool::CreateMode,
+};
 
 static ONE_MB_IN_BYTES: u64 = 1024 * 1024;
 
@@ -84,7 +93,13 @@ fn setup_vdev<P: AsRef<Path>>(path: P, bytes: &Bytes) -> PathBuf {
 #[allow(dead_code)]
 fn get_logger() -> Option<Logger> {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    Some(Logger::root(slog_term::FullFormat::new(plain).use_original_order().build().fuse(), o!()))
+    Some(Logger::root(
+        slog_term::FullFormat::new(plain)
+            .use_original_order()
+            .build()
+            .fuse(),
+        o!(),
+    ))
 }
 
 #[test]
@@ -207,7 +222,8 @@ fn create_and_list() {
         .kind(DatasetKind::Filesystem)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     for idx in 0..2 {
         let mut path = root.clone();
@@ -242,7 +258,11 @@ fn create_and_list() {
     let expected: Vec<(DatasetKind, PathBuf)> = expected_filesystems
         .into_iter()
         .map(|e| (DatasetKind::Filesystem, e))
-        .chain(expected_volumes.into_iter().map(|e| (DatasetKind::Volume, e)))
+        .chain(
+            expected_volumes
+                .into_iter()
+                .map(|e| (DatasetKind::Volume, e)),
+        )
         .collect();
     let datasets = zfs.list(root).unwrap();
     assert_eq!(5, datasets.len());
@@ -260,12 +280,16 @@ fn easy_snapshot_and_bookmark() {
         .kind(DatasetKind::Filesystem)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
     let expected_snapshots = vec![PathBuf::from(format!("{}/{}@snap-1", zpool, &root_name))];
 
-    zfs.snapshot(&expected_snapshots, None).expect("Failed to create snapshots");
+    zfs.snapshot(&expected_snapshots, None)
+        .expect("Failed to create snapshots");
 
-    let snapshots = zfs.list_snapshots(root.clone()).expect("failed to list snapshots");
+    let snapshots = zfs
+        .list_snapshots(root.clone())
+        .expect("failed to list snapshots");
     assert_eq!(expected_snapshots, snapshots);
     assert_eq!(Ok(true), zfs.exists(expected_snapshots[0].clone()));
 
@@ -276,12 +300,16 @@ fn easy_snapshot_and_bookmark() {
         .zip(expected_bookmarks.iter())
         .map(|(snapshot, bookmark)| BookmarkRequest::new(snapshot.clone(), bookmark.clone()))
         .collect();
-    zfs.bookmark(&bookmark_requests).expect("Failed to create bookmarks");
+    zfs.bookmark(&bookmark_requests)
+        .expect("Failed to create bookmarks");
 
-    let bookmarks = zfs.list_bookmarks(root.clone()).expect("failed to list bookmarks");
+    let bookmarks = zfs
+        .list_bookmarks(root.clone())
+        .expect("failed to list bookmarks");
     assert_eq!(expected_bookmarks, bookmarks);
 
-    zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow).unwrap();
+    zfs.destroy_snapshots(&expected_snapshots, DestroyTiming::RightNow)
+        .unwrap();
     assert_eq!(Ok(false), zfs.exists(expected_snapshots[0].clone()));
 
     zfs.destroy_bookmarks(&expected_bookmarks).unwrap();
@@ -302,7 +330,8 @@ fn read_properties_of_filesystem() {
         .snap_dir(SnapDir::Visible)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
     if let Properties::Filesystem(properties) = zfs.read_properties(&root).unwrap() {
         assert_eq!(&SnapDir::Visible, properties.snap_dir());
         assert_eq!(&Copies::Two, properties.copies());
@@ -325,20 +354,23 @@ fn read_properties_of_snapshot_and_bookmark_blessed_os() {
         .snap_dir(SnapDir::Visible)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     let snapshot_name = format!("{}/{}@properties", zpool, &root_name);
 
-    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None)
+        .expect("Failed to create snapshots");
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
-        assert_eq!(&Some(VolumeMode::Default), properties.volume_mode());
+        assert!(properties.volume_mode().is_none());
 
         let bookmark_name = format!("{}/{}#properties", zpool, &root_name);
         let bookmark_request =
             BookmarkRequest::new(PathBuf::from(&snapshot_name), PathBuf::from(&bookmark_name));
-        zfs.bookmark(&[bookmark_request]).expect("Failed to create snapshots");
+        zfs.bookmark(&[bookmark_request])
+            .expect("Failed to create snapshots");
 
         if let Properties::Bookmark(properties_bookmark) =
             zfs.read_properties(&bookmark_name).unwrap()
@@ -365,11 +397,13 @@ fn read_properties_of_snapshot() {
         .snap_dir(SnapDir::Visible)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     let snapshot_name = format!("{}/{}@properties", zpool, &root_name);
 
-    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None)
+        .expect("Failed to create snapshots");
 
     if let Properties::Snapshot(properties) = zfs.read_properties(&snapshot_name).unwrap() {
         assert_eq!(&None, properties.clones());
@@ -377,7 +411,8 @@ fn read_properties_of_snapshot() {
         let bookmark_name = format!("{}/{}#properties", zpool, &root_name);
         let bookmark_request =
             BookmarkRequest::new(PathBuf::from(&snapshot_name), PathBuf::from(&bookmark_name));
-        zfs.bookmark(&[bookmark_request]).expect("Failed to create snapshots");
+        zfs.bookmark(&[bookmark_request])
+            .expect("Failed to create snapshots");
 
         if let Properties::Bookmark(properties_bookmark) =
             zfs.read_properties(&bookmark_name).unwrap()
@@ -403,7 +438,8 @@ fn read_properties_of_volume() {
         .volume_size(ONE_MB_IN_BYTES)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     if let Properties::Volume(properties) = zfs.read_properties(&root).unwrap() {
         assert_eq!(&root, properties.name());
@@ -423,16 +459,19 @@ fn send_snapshot() {
         .volume_size(ONE_MB_IN_BYTES)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     let snapshot_name = format!("{}/{}@tosend", zpool, &root_name);
     let snapshot = PathBuf::from(&snapshot_name);
 
-    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None)
+        .expect("Failed to create snapshots");
 
     let tmpfile = tempfile::tempfile().unwrap();
 
-    zfs.send_full(snapshot, tmpfile, SendFlags::empty()).unwrap();
+    zfs.send_full(snapshot, tmpfile, SendFlags::empty())
+        .unwrap();
 }
 #[test]
 fn send_snapshot_incremental() {
@@ -446,18 +485,21 @@ fn send_snapshot_incremental() {
         .volume_size(ONE_MB_IN_BYTES)
         .build()
         .unwrap();
-    zfs.create(request).expect("Failed to create a root dataset");
+    zfs.create(request)
+        .expect("Failed to create a root dataset");
 
     let src_snapshot_name = format!("{}/{}@first", zpool, &root_name);
     let src_snapshot = PathBuf::from(&src_snapshot_name);
-    zfs.snapshot(&[PathBuf::from(&src_snapshot_name)], None).expect("Failed to create snapshots");
+    zfs.snapshot(&[PathBuf::from(&src_snapshot_name)], None)
+        .expect("Failed to create snapshots");
 
     let snapshot_name = format!("{}/{}@tosend", zpool, &root_name);
     let snapshot = PathBuf::from(&snapshot_name);
-    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None).expect("Failed to create snapshots");
-
+    zfs.snapshot(&[PathBuf::from(&snapshot_name)], None)
+        .expect("Failed to create snapshots");
 
     let tmpfile = tempfile::tempfile().unwrap();
 
-    zfs.send_incremental(snapshot, src_snapshot, tmpfile, SendFlags::empty()).unwrap();
+    zfs.send_incremental(snapshot, src_snapshot, tmpfile, SendFlags::empty())
+        .unwrap();
 }

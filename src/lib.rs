@@ -1,5 +1,11 @@
 #![recursion_limit = "256"]
-#![deny(nonstandard_style, future_incompatible, clippy::all, clippy::restriction, clippy::nursery)]
+#![deny(
+    nonstandard_style,
+    future_incompatible,
+    clippy::all,
+    clippy::restriction,
+    clippy::nursery
+)]
 #![allow(
     clippy::module_name_repetitions,
     clippy::multiple_inherent_impl,
@@ -38,12 +44,17 @@
 //! ### zpool
 //! This module contains everything you need to work with zpools.
 
-#[macro_use] extern crate derive_builder;
-#[macro_use] extern crate getset;
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate quick_error;
+#[macro_use]
+extern crate derive_builder;
+#[macro_use]
+extern crate getset;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate quick_error;
 
-#[macro_use] pub extern crate slog;
+#[macro_use]
+pub extern crate slog;
 pub use pest;
 
 pub extern crate libnv;
@@ -55,7 +66,8 @@ pub mod zpool;
 
 pub mod utils;
 
-#[cfg(fuzzing)] pub mod fuzzy;
+#[cfg(fuzzing)]
+pub mod fuzzy;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -63,7 +75,7 @@ pub mod log;
 pub use log::GlobalLogger;
 
 pub mod fuckery {
-   extern {
-       pub(crate) fn fuckery_make_nvlist() -> *mut zfs_core_sys::nvlist_t;
-   }
+    extern "C" {
+        pub(crate) fn fuckery_make_nvlist() -> *mut zfs_core_sys::nvlist_t;
+    }
 }

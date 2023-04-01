@@ -24,10 +24,12 @@
 //! let vdev = CreateVdevRequest::SingleDisk(path);
 //! ```
 
-use std::{default::Default,
-          ffi::OsString,
-          path::{Path, PathBuf},
-          str::FromStr};
+use std::{
+    default::Default,
+    ffi::OsString,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use crate::zpool::{Health, Reason, ZpoolError};
 
@@ -37,16 +39,22 @@ use crate::zpool::{Health, Reason, ZpoolError};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ErrorStatistics {
     /// I/O errors that occurred while issuing a read request
-    pub read:     u64,
+    pub read: u64,
     /// I/O errors that occurred while issuing a write request
-    pub write:    u64,
+    pub write: u64,
     /// Checksum errors, meaning the device returned corrupted data as the
     /// result of a read request
     pub checksum: u64,
 }
 
 impl Default for ErrorStatistics {
-    fn default() -> ErrorStatistics { ErrorStatistics { read: 0, write: 0, checksum: 0 } }
+    fn default() -> ErrorStatistics {
+        ErrorStatistics {
+            read: 0,
+            write: 0,
+            checksum: 0,
+        }
+    }
 }
 
 /// Basic building block of vdev.
@@ -60,12 +68,12 @@ impl Default for ErrorStatistics {
 pub struct Disk {
     /// Path to a backing device or file. If path is relative, then it's
     /// relative to `/dev/`.
-    path:             PathBuf,
+    path: PathBuf,
     /// Current health of this specific device.
-    health:           Health,
+    health: Health,
     /// Reason why device is in this state.
     #[builder(default)]
-    reason:           Option<Reason>,
+    reason: Option<Reason>,
     /// How many read, write and checksum errors device encountered since last
     /// reset.
     #[builder(default)]
@@ -73,28 +81,40 @@ pub struct Disk {
 }
 
 impl Disk {
-    pub fn builder() -> DiskBuilder { DiskBuilder::default() }
+    pub fn builder() -> DiskBuilder {
+        DiskBuilder::default()
+    }
 }
 
 /// Equal if path is the same.
 impl PartialEq for Disk {
-    fn eq(&self, other: &Disk) -> bool { self.path == other.path }
+    fn eq(&self, other: &Disk) -> bool {
+        self.path == other.path
+    }
 }
 
 impl PartialEq<Path> for Disk {
-    fn eq(&self, other: &Path) -> bool { self.path.as_path() == other }
+    fn eq(&self, other: &Path) -> bool {
+        self.path.as_path() == other
+    }
 }
 
 impl PartialEq<PathBuf> for Disk {
-    fn eq(&self, other: &PathBuf) -> bool { &self.path == other }
+    fn eq(&self, other: &PathBuf) -> bool {
+        &self.path == other
+    }
 }
 
 impl PartialEq<Disk> for PathBuf {
-    fn eq(&self, other: &Disk) -> bool { other == self }
+    fn eq(&self, other: &Disk) -> bool {
+        other == self
+    }
 }
 
 impl PartialEq<Disk> for Path {
-    fn eq(&self, other: &Disk) -> bool { other == self }
+    fn eq(&self, other: &Disk) -> bool {
+        other == self
+    }
 }
 
 /// A [type](https://www.freebsd.org/doc/handbook/zfs-term.html) of Vdev.
@@ -220,7 +240,9 @@ impl CreateVdevRequest {
 }
 
 impl PartialEq<Vdev> for CreateVdevRequest {
-    fn eq(&self, other: &Vdev) -> bool { other == self }
+    fn eq(&self, other: &Vdev) -> bool {
+        other == self
+    }
 }
 
 /// Basic zpool building block.
@@ -233,14 +255,14 @@ impl PartialEq<Vdev> for CreateVdevRequest {
 #[get = "pub"]
 pub struct Vdev {
     /// Type of Vdev
-    kind:             VdevType,
+    kind: VdevType,
     /// Current Health of Vdev
-    health:           Health,
+    health: Health,
     /// Reason why vdev is in this state
     #[builder(default)]
-    reason:           Option<Reason>,
+    reason: Option<Reason>,
     /// Backing devices for this vdev
-    disks:            Vec<Disk>,
+    disks: Vec<Disk>,
     /// How many read, write and checksum errors device encountered since last
     /// reset.
     #[builder(default)]
@@ -249,7 +271,9 @@ pub struct Vdev {
 
 impl Vdev {
     /// Create a builder - a referred way of creating Vdev structure.
-    pub fn builder() -> VdevBuilder { VdevBuilder::default() }
+    pub fn builder() -> VdevBuilder {
+        VdevBuilder::default()
+    }
 }
 /// Vdevs are equal of their type and backing disks are equal.
 impl PartialEq for Vdev {
@@ -264,7 +288,7 @@ impl PartialEq<CreateVdevRequest> for Vdev {
             match other {
                 CreateVdevRequest::SingleDisk(ref d) => {
                     self.disks().first().map(Disk::path) == Some(d)
-                },
+                }
                 CreateVdevRequest::Mirror(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ(ref disks) => self.disks() == disks,
                 CreateVdevRequest::RaidZ2(ref disks) => self.disks() == disks,
@@ -388,8 +412,11 @@ mod test {
         let vdev = CreateVdevRequest::Mirror(get_disks(2, &file_path));
 
         let args = vdev.into_args();
-        let expected: Vec<OsString> =
-            vec!["mirror".into(), file_path.clone().into(), file_path.clone().into()];
+        let expected: Vec<OsString> = vec![
+            "mirror".into(),
+            file_path.clone().into(),
+            file_path.clone().into(),
+        ];
         assert_eq!(expected, args);
     }
 
@@ -446,7 +473,11 @@ mod test {
     #[test]
     fn test_path_eq_disk() {
         let path = PathBuf::from("wat");
-        let disk = Disk::builder().path("wat").health(Health::Online).build().unwrap();
+        let disk = Disk::builder()
+            .path("wat")
+            .health(Health::Online)
+            .build()
+            .unwrap();
         assert_eq!(path, disk);
         assert_eq!(path.as_path(), &disk);
         assert_eq!(disk, path);
@@ -456,7 +487,11 @@ mod test {
     #[test]
     fn test_path_ne_disk() {
         let path = PathBuf::from("wat");
-        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
+        let disk = Disk::builder()
+            .path("notwat")
+            .health(Health::Online)
+            .build()
+            .unwrap();
         assert_ne!(path, disk);
         assert_ne!(path.as_path(), &disk);
         assert_ne!(disk, path);
@@ -465,7 +500,11 @@ mod test {
 
     #[test]
     fn test_vdev_eq_vdev() {
-        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
+        let disk = Disk::builder()
+            .path("notwat")
+            .health(Health::Online)
+            .build()
+            .unwrap();
 
         let left = Vdev::builder()
             .kind(VdevType::SingleDisk)
@@ -478,7 +517,11 @@ mod test {
 
     #[test]
     fn test_vdev_ne_vdev() {
-        let disk = Disk::builder().path("notwat").health(Health::Online).build().unwrap();
+        let disk = Disk::builder()
+            .path("notwat")
+            .health(Health::Online)
+            .build()
+            .unwrap();
 
         let left = Vdev::builder()
             .kind(VdevType::SingleDisk)
@@ -496,7 +539,11 @@ mod test {
 
         assert_ne!(left, right);
 
-        let disk2 = Disk::builder().path("wat").health(Health::Online).build().unwrap();
+        let disk2 = Disk::builder()
+            .path("wat")
+            .health(Health::Online)
+            .build()
+            .unwrap();
         let right = Vdev::builder()
             .kind(VdevType::RaidZ)
             .health(Health::Online)

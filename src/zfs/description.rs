@@ -12,7 +12,9 @@ pub enum DatasetKind {
 }
 
 impl Default for DatasetKind {
-    fn default() -> Self { DatasetKind::Filesystem }
+    fn default() -> Self {
+        DatasetKind::Filesystem
+    }
 }
 
 impl DatasetKind {

@@ -12,21 +12,26 @@
 //!  - Some enums for various fields to avoid using boring `bool`
 //!  - Main [trait](trait.ZpoolEngine.html) for everything Zpool related
 //!     - It's implemented as trait for easy mocking
-//!
-use std::{default::Default,
-          ffi::OsStr,
-          io,
-          num::{ParseFloatError, ParseIntError},
-          path::PathBuf};
+use std::{
+    default::Default,
+    ffi::OsStr,
+    io,
+    num::{ParseFloatError, ParseIntError},
+    path::PathBuf,
+};
 
 use regex::Regex;
 
-pub use self::{description::{Reason, Zpool},
-               open3::ZpoolOpen3,
-               properties::{CacheType, FailMode, Health, PropPair, ZpoolProperties,
-                            ZpoolPropertiesWrite, ZpoolPropertiesWriteBuilder},
-               topology::{CreateZpoolRequest, CreateZpoolRequestBuilder},
-               vdev::{CreateVdevRequest, Disk, Vdev, VdevType}};
+pub use self::{
+    description::{Reason, Zpool},
+    open3::ZpoolOpen3,
+    properties::{
+        CacheType, FailMode, Health, PropPair, ZpoolProperties, ZpoolPropertiesWrite,
+        ZpoolPropertiesWriteBuilder,
+    },
+    topology::{CreateZpoolRequest, CreateZpoolRequestBuilder},
+    vdev::{CreateVdevRequest, Disk, Vdev, VdevType},
+};
 
 pub mod open3;
 pub mod properties;
@@ -293,7 +298,9 @@ pub enum ExportMode {
 }
 
 impl Default for CreateMode {
-    fn default() -> CreateMode { CreateMode::Gentle }
+    fn default() -> CreateMode {
+        CreateMode::Gentle
+    }
 }
 
 /// Interface to manage zpools. This documentation implies that you know how to use [`zpool(8)`](https://www.freebsd.org/cgi/man.cgi?zpool(8)).
@@ -350,7 +357,11 @@ pub trait ZpoolEngine {
         }
 
         // remove comment
-        let desired = if props.comment().is_empty() { None } else { Some(props.comment().clone()) };
+        let desired = if props.comment().is_empty() {
+            None
+        } else {
+            Some(props.comment().clone())
+        };
         if current.comment() != &desired {
             self.set_property(&name, "comment", props.comment())?;
         }

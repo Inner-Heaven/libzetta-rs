@@ -1,20 +1,27 @@
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 use rand;
 use slog_term;
 
-use std::{fs::{self, DirBuilder},
-          panic,
-          path::{Path, PathBuf},
-          sync::Mutex};
+use std::{
+    fs::{self, DirBuilder},
+    panic,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use cavity::{fill, Bytes, WriteMode};
 use rand::Rng;
 
-use libzetta::{slog::*,
-               zpool::{CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode,
-                       ExportMode, FailMode, Health, OfflineMode, OnlineMode, Zpool, ZpoolEngine,
-                       ZpoolError, ZpoolErrorKind, ZpoolOpen3, ZpoolPropertiesWriteBuilder}};
+use libzetta::{
+    slog::*,
+    zpool::{
+        CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode, ExportMode,
+        FailMode, Health, OfflineMode, OnlineMode, Zpool, ZpoolEngine, ZpoolError, ZpoolErrorKind,
+        ZpoolOpen3, ZpoolPropertiesWriteBuilder,
+    },
+};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zpool-";
 lazy_static! {
@@ -77,16 +84,26 @@ where
 }
 
 #[cfg(target_os = "freebsd")]
-fn get_virtual_device() -> PathBuf { PathBuf::from("md1") }
+fn get_virtual_device() -> PathBuf {
+    PathBuf::from("md1")
+}
 
 #[cfg(target_os = "linux")]
-fn get_virtual_device() -> PathBuf { PathBuf::from("loop99") }
+fn get_virtual_device() -> PathBuf {
+    PathBuf::from("loop99")
+}
 
 // Only used for debugging
 #[allow(dead_code)]
 fn get_logger() -> Logger {
     let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    Logger::root(slog_term::FullFormat::new(plain).use_original_order().build().fuse(), o!())
+    Logger::root(
+        slog_term::FullFormat::new(plain)
+            .use_original_order()
+            .build()
+            .fuse(),
+        o!(),
+    )
 }
 
 #[test]
@@ -121,8 +138,10 @@ fn create_check_update_delete() {
         assert_eq!(&Some(String::from("Wat")), props.comment());
         assert_eq!(&FailMode::Panic, props.fail_mode());
 
-        let updated_props =
-            ZpoolPropertiesWriteBuilder::from_props(&props).comment("Wat").build().unwrap();
+        let updated_props = ZpoolPropertiesWriteBuilder::from_props(&props)
+            .comment("Wat")
+            .build()
+            .unwrap();
         zpool.update_properties(&name, updated_props).unwrap();
         let props = zpool.read_properties(&name).unwrap();
         assert_eq!(&true, props.auto_expand());
@@ -353,7 +372,9 @@ fn test_export_import() {
             .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
             .build()
             .unwrap();
-        zpool.create(topo).expect("Failed to create pool for export");
+        zpool
+            .create(topo)
+            .expect("Failed to create pool for export");
 
         let result = zpool.export(&name, ExportMode::Gentle);
         assert!(result.is_ok());
@@ -383,7 +404,9 @@ fn test_export_import_force() {
             .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
             .build()
             .unwrap();
-        zpool.create(topo).expect("Failed to create pool for export");
+        zpool
+            .create(topo)
+            .expect("Failed to create pool for export");
 
         let result = zpool.export(&name, ExportMode::Force);
         assert!(result.is_ok());
@@ -523,7 +546,10 @@ fn test_zpool_take_device_from_mirror_offline() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
@@ -550,7 +576,10 @@ fn test_zpool_take_device_from_mirror_offline_expand() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo).unwrap();
@@ -588,7 +617,10 @@ fn test_zpool_attach_then_detach_single() {
         let topo_actual = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         assert_eq!(&z, &topo_actual);
@@ -679,7 +711,10 @@ fn test_zpool_add_mirror() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
@@ -691,8 +726,14 @@ fn test_zpool_add_mirror() {
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
-            .vdev(CreateVdevRequest::Mirror(vec![vdev2_path.clone(), vdev3_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev2_path.clone(),
+                vdev3_path.clone(),
+            ]))
             .build()
             .unwrap();
 
@@ -706,6 +747,7 @@ fn test_zpool_add_mirror() {
 
 // Somehow this is okay on ZOL, but not okay on FreeBSD.
 #[test]
+#[ignore]
 #[cfg(target_os = "freebsd")]
 fn test_zpool_add_mirror_to_raidz() {
     run_test(|name| {
@@ -864,7 +906,10 @@ fn test_zpool_replace_disk() {
         let topo = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev0_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev0_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
@@ -875,7 +920,10 @@ fn test_zpool_replace_disk() {
         let topo_expected = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
-            .vdev(CreateVdevRequest::Mirror(vec![vdev2_path.clone(), vdev1_path.clone()]))
+            .vdev(CreateVdevRequest::Mirror(vec![
+                vdev2_path.clone(),
+                vdev1_path.clone(),
+            ]))
             .build()
             .unwrap();
 

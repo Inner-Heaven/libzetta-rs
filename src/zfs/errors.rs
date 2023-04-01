@@ -37,7 +37,9 @@ quick_error! {
 }
 
 impl From<ValidationError> for Error {
-    fn from(err: ValidationError) -> Error { Error::ValidationErrors(vec![err]) }
+    fn from(err: ValidationError) -> Error {
+        Error::ValidationErrors(vec![err])
+    }
 }
 
 impl Error {
@@ -57,7 +59,9 @@ impl Error {
         }
     }
 
-    fn unknown_so_far(stderr: Cow<'_, str>) -> Self { Error::UnknownSoFar(stderr.into()) }
+    fn unknown_so_far(stderr: Cow<'_, str>) -> Self {
+        Error::UnknownSoFar(stderr.into())
+    }
 
     #[allow(clippy::option_unwrap_used)]
     #[allow(clippy::wildcard_enum_match_arm)]
@@ -70,7 +74,7 @@ impl Error {
                 Rule::dataset_not_found => {
                     let dataset_name_pair = error_pair.into_inner().next().unwrap();
                     Error::DatasetNotFound(PathBuf::from(dataset_name_pair.as_str()))
-                },
+                }
                 _ => Self::unknown_so_far(stderr),
             }
         } else {
@@ -78,7 +82,9 @@ impl Error {
         }
     }
 
-    pub fn invalid_input() -> Self { Error::Io(io::Error::from(io::ErrorKind::InvalidInput)) }
+    pub fn invalid_input() -> Self {
+        Error::Io(io::Error::from(io::ErrorKind::InvalidInput))
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]

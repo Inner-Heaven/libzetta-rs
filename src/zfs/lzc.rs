@@ -1,19 +1,26 @@
-use crate::{zfs::{BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest,
-                  DatasetKind, DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError,
-                  ZfsEngine},
-            GlobalLogger};
+use crate::{
+    zfs::{
+        BookmarkRequest, Checksum, Compression, Copies, CreateDatasetRequest, DatasetKind,
+        DestroyTiming, Error, Result, SendFlags, SnapDir, ValidationError, ZfsEngine,
+    },
+    GlobalLogger,
+};
 use cstr_argument::CStrArgument;
 use libnv::nvpair::NvList;
 use slog::Logger;
 
-use crate::zfs::{errors::Error::ValidationErrors,
-                 properties::{AclInheritMode, AclMode, ZfsProp},
-                 PathExt};
-use std::{collections::HashMap,
-          ffi::CString,
-          os::unix::io::{AsRawFd, RawFd},
-          path::PathBuf,
-          ptr::null_mut};
+use crate::zfs::{
+    errors::Error::ValidationErrors,
+    properties::{AclInheritMode, AclMode, ZfsProp},
+    PathExt,
+};
+use std::{
+    collections::HashMap,
+    ffi::CString,
+    os::unix::io::{AsRawFd, RawFd},
+    path::PathBuf,
+    ptr::null_mut,
+};
 use zfs_core_sys as sys;
 
 #[cfg(target_os = "freebsd")]
@@ -41,7 +48,9 @@ impl ZfsLzc {
         Ok(ZfsLzc { logger })
     }
 
-    pub fn logger(&self) -> &Logger { &self.logger }
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
 
     fn send(
         &self,
@@ -68,7 +77,7 @@ impl ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 }
@@ -169,7 +178,7 @@ impl ZfsEngine for ZfsLzc {
         }
         if let Some(user_props) = request.user_properties() {
             for (key, value) in user_props {
-                props.insert_string(key, value)?;
+                props.insert_string(key.as_str(), value.as_str())?;
             }
         }
         let errno = unsafe {
@@ -187,7 +196,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 
@@ -196,8 +205,11 @@ impl ZfsEngine for ZfsLzc {
         snapshots: &[PathBuf],
         user_properties: Option<HashMap<String, String>>,
     ) -> Result<()> {
-        let validation_errors: Vec<ValidationError> =
-            snapshots.iter().map(PathBuf::validate).filter_map(Result::err).collect();
+        let validation_errors: Vec<ValidationError> = snapshots
+            .iter()
+            .map(PathBuf::validate)
+            .filter_map(Result::err)
+            .collect();
         if !validation_errors.is_empty() {
             return Err(ValidationErrors(validation_errors));
         }
@@ -205,12 +217,12 @@ impl ZfsEngine for ZfsLzc {
         let mut snapshots_list = NvList::default();
         let mut props = NvList::default();
         for snap in snapshots {
-            snapshots_list.insert(&snap.to_string_lossy(), true)?;
+            snapshots_list.insert(&*snap.to_string_lossy(), true)?;
         }
         let mut errors_list_ptr = null_mut();
         if let Some(user_properties) = user_properties {
             for (key, value) in user_properties {
-                props.insert_string(&key, &value)?;
+                props.insert_string(key.as_str(), value.as_str())?;
             }
         }
         let errno = unsafe {
@@ -231,7 +243,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 
@@ -248,8 +260,10 @@ impl ZfsEngine for ZfsLzc {
 
         let mut bookmarks_list = NvList::default();
         for BookmarkRequest { snapshot, bookmark } in bookmarks {
-            bookmarks_list
-                .insert(&bookmark.to_string_lossy(), snapshot.to_string_lossy().as_ref())?;
+            bookmarks_list.insert(
+                &*bookmark.to_string_lossy(),
+                snapshot.to_string_lossy().as_ref(),
+            )?;
         }
 
         let mut errors_list_ptr = null_mut();
@@ -266,7 +280,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 
@@ -284,7 +298,7 @@ impl ZfsEngine for ZfsLzc {
         let mut snapshots_list = NvList::default();
 
         for snap in snapshots {
-            snapshots_list.insert(&snap.to_string_lossy(), true)?;
+            snapshots_list.insert(&*snap.to_string_lossy(), true)?;
         }
 
         let mut errors_list_ptr = null_mut();
@@ -306,7 +320,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 
@@ -324,7 +338,7 @@ impl ZfsEngine for ZfsLzc {
         let mut bookmarks_list = NvList::default();
 
         for bookmark in bookmarks {
-            bookmarks_list.insert_boolean(&bookmark.to_string_lossy())?;
+            bookmarks_list.insert_boolean(&*bookmark.to_string_lossy())?;
         }
 
         let mut errors_list_ptr = null_mut();
@@ -342,7 +356,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 
@@ -411,7 +425,7 @@ impl ZfsEngine for ZfsLzc {
             _ => {
                 let io_error = std::io::Error::from_raw_os_error(errno);
                 Err(Error::Io(io_error))
-            },
+            }
         }
     }
 }
