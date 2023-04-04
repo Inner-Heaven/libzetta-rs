@@ -1,4 +1,4 @@
-use bitflags::_core::ops::Deref;
+use std::ops::Deref;
 use once_cell::sync::OnceCell;
 use slog::{Drain, Logger as SlogLogger};
 use slog_stdlog::StdLog;
