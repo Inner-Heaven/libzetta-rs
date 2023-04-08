@@ -12,7 +12,7 @@ url = @{ ("https" | "http") ~ ":/" ~ path }
 state_enum = { "ONLINE" | "OFFLINE" | "UNAVAIL" | "DEGRADED" | "FAULTED" | "AVAIL" | "INUSE" }
 raid_enum = { "mirror" | "raidz1" | "raidz2" | "raidz3" }
 raid_name = ${ raid_enum ~ ("-" ~ digits)? }
-name = @{ ("_" | "-" | "."| alpha_num)+ }
+name = @{ ("_" | "-" | "."| ":" | alpha_num)+ }
 
 pool_name = { whitespace* ~ "pool:" ~ whitespace ~ name ~ "\n" }
 pool_id = { whitespace* ~ "id:" ~ whitespace ~ digits ~ "\n" }
