@@ -20,6 +20,7 @@ use std::{
     path::PathBuf,
 };
 
+use crate::zpool::open3::StatusOptions;
 use regex::Regex;
 
 pub use self::{
@@ -419,6 +420,9 @@ pub trait ZpoolEngine {
 
     /// Get a status of each active (imported) pool in the system
     fn all(&self) -> ZpoolResult<Vec<Zpool>>;
+
+    /// Query status with options
+    fn status_all(&self, opts: StatusOptions) -> ZpoolResult<Vec<Zpool>>;
 
     /// Begins a scrub or resumes a paused scrub. The scrub examines all data
     /// in the specified pools to verify that it checksums correctly. For

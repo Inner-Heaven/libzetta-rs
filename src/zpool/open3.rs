@@ -108,6 +108,16 @@ impl ZpoolOpen3 {
     }
 }
 
+#[derive(Default, Builder, Debug, Clone, Getters)]
+#[builder(setter(into))]
+#[get = "pub"]
+pub struct StatusOptions {
+    #[builder(default)]
+    full_paths: bool,
+    #[builder(default)]
+    resolve_links: bool,
+}
+
 impl ZpoolEngine for ZpoolOpen3 {
     fn exists<N: AsRef<str>>(&self, name: N) -> ZpoolResult<bool> {
         let mut z = self.zpool_mute();
@@ -279,6 +289,20 @@ impl ZpoolEngine for ZpoolOpen3 {
     fn all(&self) -> ZpoolResult<Vec<Zpool>> {
         let mut z = self.zpool();
         z.arg("status");
+        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
+        let out = z.output()?;
+        self.zpools_from_import(out)
+    }
+
+    fn status_all(&self, opts: StatusOptions) -> ZpoolResult<Vec<Zpool>> {
+        let mut z = self.zpool();
+        z.arg("status");
+        if opts.full_paths {
+            z.arg("-P");
+        }
+        if opts.resolve_links {
+            z.arg("-L");
+        }
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
         self.zpools_from_import(out)
