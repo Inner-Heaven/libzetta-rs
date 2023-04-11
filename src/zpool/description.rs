@@ -101,7 +101,7 @@ impl Zpool {
                 Rule::spares => {
                     zpool.spares(get_spares_from_pair(pair));
                 }
-                Rule::config | Rule::status | Rule::see | Rule::pool_headers => {}
+                Rule::config | Rule::status | Rule::see | Rule::pool_headers | Rule::comment => {}
                 Rule::scan_line => {}
                 _ => unreachable!(),
             }
