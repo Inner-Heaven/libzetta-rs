@@ -1,0 +1,14 @@
+  pool: eden
+ state: ONLINE
+  scan: scrub repaired 1M in 15:03:34 with 0 errors on Sat Mar  4 01:12:20 2023
+config:
+
+        NAME                           STATE     READ WRITE CKSUM
+        eden                           ONLINE       0     0     0
+          raidz2-0                     ONLINE       0     0     0
+            /dev/diskid/DISK-ZCT2K2R6  ONLINE       0     0     0
+            /dev/diskid/DISK-ZCT2QVET  ONLINE       0     0     0
+            /dev/diskid/DISK-WSD6B5L6  ONLINE       0     0     0
+            /dev/diskid/DISK-ZCT2QWL9  ONLINE       0     0     0
+            /dev/diskid/DISK-ZCT2QXEL  ONLINE       0     0     0
+            /dev/diskid/DISK-ZCT2RH0W  ONLINE       0     0     0
