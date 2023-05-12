@@ -3,13 +3,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    devshell = {
-      url = "github:numtide/devshell/master";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
-    };
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,7 +14,6 @@
     , nixpkgs
     , fenix
     , flake-utils
-    , devshell
     , pre-commit-hooks
     , ...
     }:
@@ -32,7 +24,7 @@
     ]
       (system:
       let
-        overlays = [ devshell.overlay fenix.overlay ];
+        overlays = [ fenix.overlays.default ];
         pkgs = import nixpkgs { inherit system overlays; };
       in
       with pkgs; {
@@ -43,7 +35,6 @@
               nixpkgs-fmt.enable = true;
               shellcheck.enable = true;
               statix.enable = true;
-              nix-linter.enable = true;
             };
           };
         };
