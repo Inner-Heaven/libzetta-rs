@@ -270,6 +270,7 @@ impl ZpoolEngine for ZpoolOpen3 {
     fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
         let mut z = self.zpool();
         z.arg("status");
+        z.arg("-P");
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
@@ -551,4 +552,31 @@ impl ZpoolEngine for ZpoolOpen3 {
             Err(ZpoolError::from_stderr(&out.stderr))
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use std::assert_eq;
+
+    use super::*;
+
+    #[test]
+    fn correctly_parses_vdevs() {
+        let stdout = include_str!("fixtures/status_with_block_device_nested");
+        let zpools: Vec<Zpool> = StdoutParser::parse(Rule::zpools, stdout.as_ref())
+            .map_err(|_| ZpoolError::ParseError)
+            .map(|pairs| pairs.map(Zpool::from_pest_pair).collect()).unwrap();
+        let drives = &zpools[0].vdevs().iter().flat_map(|vdev| vdev.disks().iter()).map(|drive| drive.path().display().to_string()).collect::<Vec<String>>();
+
+        let expected: Vec<String> = [
+            "/dev/diskid/DISK-ZCT2K2R6",
+            "/dev/diskid/DISK-ZCT2QVET",
+            "/dev/diskid/DISK-WSD6B5L6",
+            "/dev/diskid/DISK-ZCT2QWL9",
+            "/dev/diskid/DISK-ZCT2QXEL",
+            "/dev/diskid/DISK-ZCT2RH0W",
+        ].iter().map(|d| d.to_string()).collect();
+        assert_eq!(&expected, drives);
+    }
+
 }
