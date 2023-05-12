@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2023-05-12
+
+### Bug Fixes
+
+- Accidently used Deref from reexport instead of std. ([#186](https://github.com/ZeroAssumptions/aide-de-camp/issues/186))
+- Include colon in valid path param ([#189](https://github.com/ZeroAssumptions/aide-de-camp/issues/189))
+
+### Features
+
+- **zpool:** Add `status_all(...)` fn to query zpool status with some parameters ([#190](https://github.com/ZeroAssumptions/aide-de-camp/issues/190))
+
 ## [0.4.2] - 2023-04-01
 
 ### Bug Fixes
