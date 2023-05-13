@@ -416,10 +416,7 @@ pub trait ZpoolEngine {
     fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
 
     /// Get the detailed status of the given pools.
-    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool>;
-
-    /// Get a status of each active (imported) pool in the system
-    fn all(&self) -> ZpoolResult<Vec<Zpool>>;
+    fn status<N: AsRef<str>>(&self, name: N, opts: StatusOptions) -> ZpoolResult<Zpool>;
 
     /// Query status with options
     fn status_all(&self, opts: StatusOptions) -> ZpoolResult<Vec<Zpool>>;

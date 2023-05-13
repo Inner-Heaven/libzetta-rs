@@ -17,6 +17,7 @@ use rand::Rng;
 use libzetta::{
     slog::*,
     zpool::{
+        open3::{StatusOptions, StatusOptionsBuilder},
         CreateMode, CreateVdevRequest, CreateZpoolRequestBuilder, DestroyMode, ExportMode,
         FailMode, Health, OfflineMode, OnlineMode, Zpool, ZpoolEngine, ZpoolError, ZpoolErrorKind,
         ZpoolOpen3, ZpoolPropertiesWriteBuilder,
@@ -436,7 +437,7 @@ fn test_status() {
             .unwrap();
         zpool.create(topo.clone()).unwrap();
 
-        let result = zpool.status(&name).unwrap();
+        let result = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&name, result.name());
         assert_eq!(&result, &topo);
     });
@@ -454,7 +455,7 @@ fn test_all() {
         zpool.create(topo.clone()).unwrap();
 
         let result: Vec<Zpool> = zpool
-            .all()
+            .status_all(StatusOptions::default())
             .unwrap()
             .iter()
             .cloned()
@@ -473,7 +474,7 @@ fn test_all_empty() {
         let zpool = ZpoolOpen3::default();
 
         let result: Vec<Zpool> = zpool
-            .all()
+            .status_all(StatusOptions::default())
             .unwrap()
             .iter()
             .cloned()
@@ -556,13 +557,13 @@ fn test_zpool_take_device_from_mirror_offline() {
         let result = zpool.take_offline(&name, &vdev0_path, OfflineMode::UntilReboot);
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&Health::Degraded, z.health());
 
         let result = zpool.bring_online(&name, &vdev0_path, OnlineMode::Simple);
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&Health::Online, z.health());
     });
 }
@@ -586,13 +587,13 @@ fn test_zpool_take_device_from_mirror_offline_expand() {
         let result = zpool.take_offline(&name, &vdev0_path, OfflineMode::UntilReboot);
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&Health::Degraded, z.health());
 
         let result = zpool.bring_online(&name, &vdev0_path, OnlineMode::Expand);
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&Health::Online, z.health());
     });
 }
@@ -613,7 +614,7 @@ fn test_zpool_attach_then_detach_single() {
 
         zpool.attach(&name, &vdev0_path, &vdev1_path).unwrap();
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         let topo_actual = CreateZpoolRequestBuilder::default()
             .name(name.clone())
             .create_mode(CreateMode::Force)
@@ -626,7 +627,7 @@ fn test_zpool_attach_then_detach_single() {
         assert_eq!(&z, &topo_actual);
 
         zpool.detach(&name, &vdev1_path).unwrap();
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
         assert_eq!(&z, &topo);
 
         let err = zpool.detach(&name, &vdev0_path).unwrap_err();
@@ -662,7 +663,7 @@ fn test_zpool_add_naked() {
 
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
 
         assert_eq!(topo_expected, z);
     });
@@ -695,7 +696,7 @@ fn test_zpool_add_naked_force() {
 
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
 
         assert_eq!(topo_expected, z);
     });
@@ -739,7 +740,7 @@ fn test_zpool_add_mirror() {
 
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let z = zpool.status(&name, StatusOptions::default()).unwrap();
 
         assert_eq!(topo_expected, z);
     });
@@ -806,7 +807,7 @@ fn test_zpool_remove_zil() {
             .build()
             .unwrap();
 
-        let result = zpool.status(&name).unwrap();
+        let result = zpool.status(&name, StatusOptions::default()).unwrap();
 
         assert_eq!(topo, result);
     });
@@ -838,7 +839,11 @@ fn test_zpool_add_cache() {
 
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let opts = StatusOptionsBuilder::default()
+            .full_paths(true)
+            .build()
+            .unwrap();
+        let z = zpool.status(&name, opts).unwrap();
         assert_eq!(topo_expected, z);
     });
 }
@@ -858,7 +863,12 @@ fn test_create_with_spare() {
             .build()
             .unwrap();
         zpool.create(topo.clone()).unwrap();
-        let z = zpool.status(&name).unwrap();
+
+        let opts = StatusOptionsBuilder::default()
+            .full_paths(true)
+            .build()
+            .unwrap();
+        let z = zpool.status(&name, opts).unwrap();
         assert_eq!(topo, z);
     });
 }
@@ -889,7 +899,11 @@ fn test_zpool_add_spare() {
 
         assert!(result.is_ok());
 
-        let z = zpool.status(&name).unwrap();
+        let opts = StatusOptionsBuilder::default()
+            .full_paths(true)
+            .build()
+            .unwrap();
+        let z = zpool.status(&name, opts).unwrap();
         assert_eq!(topo_expected, z);
     });
 }
@@ -931,7 +945,11 @@ fn test_zpool_replace_disk() {
         let wait_time = time::Duration::from_secs(13);
         thread::sleep(wait_time);
 
-        let z = zpool.status(&name).unwrap();
+        let opts = StatusOptionsBuilder::default()
+            .full_paths(true)
+            .build()
+            .unwrap();
+        let z = zpool.status(&name, opts).unwrap();
         assert_eq!(topo_expected, z);
     });
 }

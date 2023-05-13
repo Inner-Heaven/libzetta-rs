@@ -267,10 +267,15 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn status<N: AsRef<str>>(&self, name: N) -> ZpoolResult<Zpool> {
+    fn status<N: AsRef<str>>(&self, name: N, opts: StatusOptions) -> ZpoolResult<Zpool> {
         let mut z = self.zpool();
         z.arg("status");
-        z.arg("-P");
+        if opts.full_paths {
+            z.arg("-P");
+        }
+        if opts.resolve_links {
+            z.arg("-L");
+        }
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;
@@ -285,14 +290,6 @@ impl ZpoolEngine for ZpoolOpen3 {
             unreachable!();
         }
         Ok(zpool)
-    }
-
-    fn all(&self) -> ZpoolResult<Vec<Zpool>> {
-        let mut z = self.zpool();
-        z.arg("status");
-        debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
-        let out = z.output()?;
-        self.zpools_from_import(out)
     }
 
     fn status_all(&self, opts: StatusOptions) -> ZpoolResult<Vec<Zpool>> {
@@ -565,8 +562,14 @@ mod test {
         let stdout = include_str!("fixtures/status_with_block_device_nested");
         let zpools: Vec<Zpool> = StdoutParser::parse(Rule::zpools, stdout.as_ref())
             .map_err(|_| ZpoolError::ParseError)
-            .map(|pairs| pairs.map(Zpool::from_pest_pair).collect()).unwrap();
-        let drives = &zpools[0].vdevs().iter().flat_map(|vdev| vdev.disks().iter()).map(|drive| drive.path().display().to_string()).collect::<Vec<String>>();
+            .map(|pairs| pairs.map(Zpool::from_pest_pair).collect())
+            .unwrap();
+        let drives = &zpools[0]
+            .vdevs()
+            .iter()
+            .flat_map(|vdev| vdev.disks().iter())
+            .map(|drive| drive.path().display().to_string())
+            .collect::<Vec<String>>();
 
         let expected: Vec<String> = [
             "/dev/diskid/DISK-ZCT2K2R6",
@@ -575,8 +578,10 @@ mod test {
             "/dev/diskid/DISK-ZCT2QWL9",
             "/dev/diskid/DISK-ZCT2QXEL",
             "/dev/diskid/DISK-ZCT2RH0W",
-        ].iter().map(|d| d.to_string()).collect();
+        ]
+        .iter()
+        .map(|d| d.to_string())
+        .collect();
         assert_eq!(&expected, drives);
     }
-
 }
