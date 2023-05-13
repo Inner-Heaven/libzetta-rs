@@ -1,8 +1,8 @@
-use std::ops::Deref;
 use once_cell::sync::OnceCell;
 use slog::{Drain, Logger as SlogLogger};
 use slog_stdlog::StdLog;
 use std::borrow::Borrow;
+use std::ops::Deref;
 
 static GLOBAL_LOGGER: OnceCell<GlobalLogger> = OnceCell::new();
 
