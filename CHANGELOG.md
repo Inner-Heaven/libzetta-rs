@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2023-05-13
+
+### Features
+
+- **zpool:** [**breaking**] Change ZpoolEngine::{status,status_all,all} functions ([#196](https://github.com/ZeroAssumptions/aide-de-camp/issues/196))
+
 ## [0.4.3] - 2023-05-12
 
 ### Bug Fixes
 
 - Accidently used Deref from reexport instead of std. ([#186](https://github.com/ZeroAssumptions/aide-de-camp/issues/186))
 - Include colon in valid path param ([#189](https://github.com/ZeroAssumptions/aide-de-camp/issues/189))
+- **zpool:** Disk.path() does not return a full relative path
 
 ### Features
 
