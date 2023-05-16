@@ -270,6 +270,7 @@ impl ZpoolEngine for ZpoolOpen3 {
     fn status<N: AsRef<str>>(&self, name: N, opts: StatusOptions) -> ZpoolResult<Zpool> {
         let mut z = self.zpool();
         z.arg("status");
+        z.arg("-p");
         if opts.full_paths {
             z.arg("-P");
         }
