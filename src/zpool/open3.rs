@@ -557,14 +557,15 @@ mod test {
     use std::assert_eq;
 
     use super::*;
-
+    fn parse_zpools(stdout: &str) -> Result<Vec<Zpool>, ZpoolError> {
+        StdoutParser::parse(Rule::zpools, stdout.as_ref())
+            .map_err(|_| ZpoolError::ParseError)
+            .map(|pairs| pairs.map(Zpool::from_pest_pair).collect())
+    }
     #[test]
     fn correctly_parses_vdevs() {
         let stdout = include_str!("fixtures/status_with_block_device_nested");
-        let zpools: Vec<Zpool> = StdoutParser::parse(Rule::zpools, stdout.as_ref())
-            .map_err(|_| ZpoolError::ParseError)
-            .map(|pairs| pairs.map(Zpool::from_pest_pair).collect())
-            .unwrap();
+        let zpools: Vec<Zpool> = parse_zpools(stdout).unwrap();
         let drives = &zpools[0]
             .vdevs()
             .iter()
@@ -584,5 +585,13 @@ mod test {
         .map(|d| d.to_string())
         .collect();
         assert_eq!(&expected, drives);
+    }
+
+    #[test]
+    fn correctly_parse_import_with_empty_comment() {
+        let stdout = include_str!("fixtures/import_with_empty_comment");
+        let zpools = parse_zpools(stdout).unwrap();
+        assert_eq!("t2", zpools[0].name());
+        assert_eq!(5333885354421686613 as u64, zpools[0].id().unwrap());
     }
 }
