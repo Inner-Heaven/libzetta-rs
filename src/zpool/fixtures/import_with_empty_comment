@@ -1,0 +1,9 @@
+   pool: t2
+     id: 5333885354421686613
+  state: ONLINE
+ action: The pool can be imported using its name or numeric identifier.
+comment: 
+ config:
+
+        t2          ONLINE
+          sdc       ONLINE
