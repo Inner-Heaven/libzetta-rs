@@ -28,7 +28,7 @@ slog = "2"
 slog-stdlog = "4"
 zfs-core-sys = { version = "0.5.2", package = "libzetta-zfs-core-sys"}
 cstr-argument = "0.1.1"
-strum = "0.24.0"
+strum = "0.25.0"
 strum_macros = "0.25.0"
 chrono = "0.4.26"
 bitflags = "1.2.1"
