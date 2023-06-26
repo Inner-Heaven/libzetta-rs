@@ -485,7 +485,7 @@ checksum = "bd046ea56a90b92576587b16d7776040455b10e2fa587fb6c1fd7e666b86d638"
 dependencies = [
  "libc",
  "nvpair-sys",
- "quick-error 2.0.1",
+ "quick-error",
 ]
 
 [[package]]
@@ -506,7 +506,7 @@ dependencies = [
  "once_cell",
  "pest",
  "pest_derive",
- "quick-error 1.2.3",
+ "quick-error",
  "rand 0.8.5",
  "regex",
  "slog",
@@ -678,12 +678,6 @@ checksum = "e472a104799c74b514a57226160104aa483546de37e839ec50e3c2e41dd87534"
 dependencies = [
  "unicode-ident",
 ]
-
-[[package]]
-name = "quick-error"
-version = "1.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "quick-error"
