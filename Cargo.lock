@@ -479,9 +479,9 @@ checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "libnv"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd046ea56a90b92576587b16d7776040455b10e2fa587fb6c1fd7e666b86d638"
+checksum = "e4fecff624ba832137c82123e6fc332d8fa94018e84055c02d84ba09705df850"
 dependencies = [
  "libc",
  "nvpair-sys",
