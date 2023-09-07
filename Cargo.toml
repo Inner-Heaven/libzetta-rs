@@ -30,7 +30,7 @@ zfs-core-sys = { version = "0.5.2", package = "libzetta-zfs-core-sys"}
 cstr-argument = "0.1.1"
 strum = "0.25.0"
 strum_macros = "0.25.2"
-chrono = "0.4.28"
+chrono = "0.4.29"
 bitflags = "1.2.1"
 once_cell = "1.18.0"
 
