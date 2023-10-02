@@ -40,7 +40,7 @@ default-features = false
 features = ["nvpair"]
 
 [dependencies.regex]
-version = "1.9.4"
+version = "1.9.6"
 default-features = false
 features = ["std", "perf", "unicode-perl"]
 
