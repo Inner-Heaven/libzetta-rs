@@ -175,4 +175,52 @@ z/var/tmp
         let datasets_pairs = pairs.next().unwrap().into_inner();
         assert_eq!(38, datasets_pairs.clone().count());
     }
+
+    #[test]
+    fn test_issue_261() {
+        let lines = r#"z@2022-08-13T12:29-04
+z/data@2023-08-19T01:06-04
+z/data@2023-12-12T18:45-05
+z/data/home@2023-08-19T01:06-04
+z/data/home@2023-12-12T18:45-05
+z/data/home/username@2023-12-12T18:45-05
+z/data/home/username/image-2023-09-09T08:50-04@2023-08-19T01:06-04
+z/data/root@2023-08-19T01:06-04
+z/data/root@2023-12-12T18:45-05
+z/data/srv@2023-08-19T01:06-04
+z/data/srv@2023-12-12T18:45-05
+z/data/usr@2023-08-19T01:06-04
+z/data/usr@2023-12-12T18:45-05
+z/data/usr/local@2023-08-19T01:06-04
+z/data/usr/local@2023-12-12T18:45-05
+z/data/var@2023-08-19T01:06-04
+z/data/var@2023-12-12T18:45-05
+z/data/var/games@2023-08-19T01:06-04
+z/data/var/games@2023-12-12T18:45-05
+z/data/var/lib@2023-08-19T01:06-04
+z/data/var/lib@2023-12-12T18:45-05
+z/data/var/lib/AccountsService@2023-08-19T01:06-04
+z/data/var/lib/AccountsService@2023-12-12T18:45-05
+z/data/var/lib/docker@2023-08-19T01:06-04
+z/data/var/lib/docker@2023-12-12T18:45-05
+z/data/var/lib/libvirt@2023-08-19T01:06-04
+z/data/var/lib/libvirt@2023-12-12T18:45-05
+z/data/var/lib/lxc@2023-08-19T01:06-04
+z/data/var/lib/lxc@2023-12-12T18:45-05
+z/data/var/lib/nfs@2023-08-19T01:06-04
+z/data/var/lib/nfs@2023-12-12T18:45-05
+z/data/var/log@2023-08-19T01:06-04
+z/data/var/log@2023-12-12T18:45-05
+z/data/var/snap@2023-08-19T01:06-04
+z/data/var/snap@2023-12-12T18:45-05
+z/data/var/spool@2023-08-19T01:06-04
+z/data/var/spool@2023-12-12T18:45-05
+z/data/var/www@2023-08-19T01:06-04
+z/data/var/www@2023-12-12T18:45-05
+        "#;
+
+        let mut pairs = ZfsParser::parse(Rule::datasets, lines).unwrap();
+        let snapshot_pairs = pairs.next().unwrap().into_inner();
+        assert_eq!(39, snapshot_pairs.clone().count());
+    }
 }
