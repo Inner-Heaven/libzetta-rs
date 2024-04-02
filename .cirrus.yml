@@ -32,7 +32,7 @@ task:
   env:
     VERSION: stable
   freebsd_instance:
-    image: freebsd-13-1-release-amd64
+    image: freebsd-13-3-release-amd64
   << : *FREEBSD_SETUP
   << : *BUILD_TEST
   before_cache_script: rm -rf $HOME/.cargo/registry/index
