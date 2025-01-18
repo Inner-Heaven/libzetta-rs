@@ -522,7 +522,6 @@ errors: No known data errors
         let zpool = Zpool::from_pest_pair(pair);
 
         let drives = vec![
-            PathBuf::from("spare-0"),
             PathBuf::from("wwn-0x500000000000000a"),
             PathBuf::from("wwn-0x500000000000000d"),
             PathBuf::from("wwn-0x500000000000000b"),
