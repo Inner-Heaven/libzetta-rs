@@ -467,7 +467,7 @@ mod test {
 
         assert_eq!(disk_left, disk);
 
-        assert_eq!(disk_left, CreateVdevRequest::disk(name.clone()));
+        assert_eq!(disk_left, CreateVdevRequest::disk(name));
     }
 
     #[test]
