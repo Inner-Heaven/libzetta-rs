@@ -267,12 +267,17 @@ fn get_vdevs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
 
                 let health = get_health_from_health(raid_line.next());
 
+                let disks = inner
+                    .filter(|line| line.as_rule() != Rule::pseudo_vdev_line)
+                    .map(get_disk_from_disk_line)
+                    .collect();
+
                 let (error_statics, reason) = get_stats_and_reason_from_pairs(raid_line);
 
                 Vdev::builder()
                     .kind(get_vdev_type(raid_name))
                     .health(health)
-                    .disks(inner.map(get_disk_from_disk_line).collect())
+                    .disks(disks)
                     .error_statistics(error_statics)
                     .reason(reason)
                     .build()
