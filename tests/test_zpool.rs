@@ -201,7 +201,7 @@ fn reuse_vdev() {
             .build()
             .unwrap();
         let topo2 = CreateZpoolRequestBuilder::default()
-            .name(name_2.clone())
+            .name(name_2)
             .vdev(CreateVdevRequest::SingleDisk(vdev_file.into()))
             .build()
             .unwrap();

@@ -522,7 +522,6 @@ errors: No known data errors
         let zpool = Zpool::from_pest_pair(pair);
 
         let drives = vec![
-            PathBuf::from("spare-0"),
             PathBuf::from("wwn-0x500000000000000a"),
             PathBuf::from("wwn-0x500000000000000d"),
             PathBuf::from("wwn-0x500000000000000b"),
@@ -537,5 +536,39 @@ errors: No known data errors
             .build()
             .unwrap();
         assert_eq!(&topo, &zpool);
+    }
+
+    #[test]
+    fn test_replacing_pseudo_vdev_not_a_disk() {
+        let stdout = r#"  pool: P01
+ state: DEGRADED
+status: One or more devices is currently being resilvered.  The pool will
+	continue to function, possibly in a degraded state.
+action: Wait for the resilver to complete.
+  scan: resilver in progress since Tue Dec 10 10:00:00 2024
+	1.00P scanned at 200G/s, 1.00P issued at 200G/s, 1.00P total
+	100G resilvered, 95.00% done, 00:05:00 to go
+config:
+
+	NAME                          STATE     READ WRITE CKSUM
+	pool                          DEGRADED     0     0     0
+	  raidz1-0                    DEGRADED     0     0     0
+	    replacing-0               DEGRADED     0     0     0
+	      wwn-0x500000000000000a  UNAVAIL      0     0     0
+	      wwn-0x500000000000000b  ONLINE       0     0     0  (resilvering)
+        wwn-0x500000000000000c    ONLINE       0     0     0
+        wwn-0x500000000000000d    ONLINE       0     0     0
+
+errors: No known data errors
+        "#;
+
+        let mut pairs =
+            StdoutParser::parse(Rule::zpool, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+
+        for disk in zpool.vdevs()[0].disks() {
+            assert_ne!(disk.path(), &PathBuf::from("replacing-0"));
+        }
     }
 }
