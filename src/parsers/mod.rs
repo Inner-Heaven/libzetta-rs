@@ -571,4 +571,35 @@ errors: No known data errors
             assert_ne!(disk.path(), &PathBuf::from("replacing-0"));
         }
     }
+
+    #[test]
+    fn test_special_vdev() {
+        let stdout = r#"  pool: tank
+ state: ONLINE
+config:
+
+        NAME           STATE     READ WRITE CKSUM
+        tank           ONLINE       0     0     0
+          mirror-0     ONLINE       0     0     0
+            /dev/vdb1  ONLINE       0     0     0
+            /dev/vdc1  ONLINE       0     0     0
+        special
+          mirror-1     ONLINE       0     0     0
+            /dev/vdd1  ONLINE       0     0     0
+            /dev/vde1  ONLINE       0     0     0
+
+errors: No known data errors
+        "#;
+
+        let mut pairs =
+            StdoutParser::parse(Rule::zpool, stdout).unwrap_or_else(|e| panic!("{}", e));
+        let pair = pairs.next().unwrap();
+        let zpool = Zpool::from_pest_pair(pair);
+
+        assert_eq!(zpool.special().len(), 1);
+
+        let special_vdev_disks = zpool.special()[0].disks();
+        assert_eq!(special_vdev_disks[0].path(), &PathBuf::from("/dev/vdd1"));
+        assert_eq!(special_vdev_disks[1].path(), &PathBuf::from("/dev/vde1"));
+    }
 }

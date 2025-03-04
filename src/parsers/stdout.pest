@@ -44,8 +44,9 @@ vdevs = { vdev_line+ }
 logs = { whitespace* ~ "logs" ~ whitespace* ~ "\n" ~ whitespace* ~ vdevs ~ "\n"?}
 caches = { whitespace* ~ "cache" ~ whitespace* ~ "\n" ~ whitespace* ~ disk_line+ ~ "\n"?}
 spares = { whitespace* ~ "spares" ~ whitespace* ~ "\n" ~ whitespace* ~ disk_line+ ~ "\n"?}
+special = { whitespace* ~ "special" ~ whitespace* ~ "\n" ~ whitespace* ~ vdevs ~ "\n"?}
 
-zpool = { "\n"? ~ pool_name ~ pool_id? ~ state ~ status? ~ action? ~ comment? ~ see? ~ scan_line? ~ config ~ "\n" ~ pool_headers? ~ pool_line ~  vdevs ~ logs? ~  caches? ~ spares? ~ errors? ~ "\n"?}
+zpool = { "\n"? ~ pool_name ~ pool_id? ~ state ~ status? ~ action? ~ comment? ~ see? ~ scan_line? ~ config ~ "\n" ~ pool_headers? ~ pool_line ~  vdevs ~ logs? ~  caches? ~ spares? ~ special? ~ errors? ~ "\n"?}
 zpools = _{ zpool*  ~ whitespace* }
 
 text_line = _{ text ~ "\n" }

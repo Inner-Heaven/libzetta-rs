@@ -44,7 +44,10 @@ pub struct Zpool {
     /// Spare devices.
     #[builder(default)]
     spares: Vec<Disk>,
-    /// Value of action field what ever it is.
+    /// Special vdevs.
+    #[builder(default)]
+    special: Vec<Vdev>,
+    /// Value of action field whatever it is.
     #[builder(default)]
     action: Option<String>,
     /// Errors?
@@ -100,6 +103,9 @@ impl Zpool {
                 }
                 Rule::spares => {
                     zpool.spares(get_spares_from_pair(pair));
+                }
+                Rule::special => {
+                    zpool.special(get_special_from_pair(pair));
                 }
                 Rule::config | Rule::status | Rule::see | Rule::pool_headers | Rule::comment => {}
                 Rule::scan_line => {}
@@ -329,6 +335,16 @@ fn get_error_from_pair(pair: Pair<'_, Rule>) -> Option<String> {
 #[inline]
 fn get_logs_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
     debug_assert!(pair.as_rule() == Rule::logs);
+    if let Some(vdevs) = pair.into_inner().next() {
+        get_vdevs_from_pair(vdevs)
+    } else {
+        Vec::new()
+    }
+}
+
+#[inline]
+fn get_special_from_pair(pair: Pair<'_, Rule>) -> Vec<Vdev> {
+    debug_assert!(pair.as_rule() == Rule::special);
     if let Some(vdevs) = pair.into_inner().next() {
         get_vdevs_from_pair(vdevs)
     } else {

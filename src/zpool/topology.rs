@@ -85,6 +85,10 @@ pub struct CreateZpoolRequest {
     /// fails, the hot spare automatically replaces the failed device.
     #[builder(default)]
     spares: Vec<PathBuf>,
+    /// Special vdevs store internal ZFS metadata, deduplication tables, and optionally small blocks as defined by tunables.
+    /// See `zfsconcepts(7)` for more information.
+    #[builder(default)]
+    special: Vec<CreateVdevRequest>,
 }
 
 impl CreateZpoolRequest {
