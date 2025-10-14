@@ -36,10 +36,7 @@ use crate::{
 use pest::Parser;
 use slog::Logger;
 
-use super::{
-    CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode, OfflineMode,
-    OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult,
-};
+use super::{CreateMode, CreateVdevRequest, CreateZpoolRequest, DestroyMode, ExportMode, ImportMode, ImportOptions, OfflineMode, OnlineMode, PropPair, ZpoolEngine, ZpoolError, ZpoolProperties, ZpoolResult};
 
 lazy_static! {
     static ref ZPOOL_PROP_ARG: OsString = {
@@ -252,11 +249,35 @@ impl ZpoolEngine for ZpoolOpen3 {
         }
     }
 
-    fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
+    fn import_with_options<N: AsRef<str>>(&self, name: N, opts: ImportOptions) -> ZpoolResult<()> {
         let mut z = self.zpool();
         z.arg("import");
-        z.arg("-d");
-        z.arg(dir);
+
+        for dir in opts.dirs {
+            z.arg("-d");
+            z.arg(dir);
+        }
+
+        if let Some(root) = opts.root {
+            z.arg("-R");
+            z.arg(root);
+        }
+
+        if let ImportMode::Force = opts.force {
+            z.arg("-f");
+        }
+
+        if opts.skip_mount {
+            z.arg("-N");
+        }
+
+        if let Some(props) = opts.properties {
+            for setter in props.into_setter_args() {
+                z.arg("-o");
+                z.arg(setter);
+            }
+        }
+
         z.arg(name.as_ref());
         debug!(self.logger, "executing"; "cmd" => format_args!("{:?}", z));
         let out = z.output()?;

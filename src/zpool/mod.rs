@@ -19,7 +19,7 @@ use std::{
     num::{ParseFloatError, ParseIntError},
     path::PathBuf,
 };
-
+use std::collections::HashMap;
 use crate::zpool::open3::StatusOptions;
 use regex::Regex;
 
@@ -130,6 +130,39 @@ impl ZpoolError {
             ZpoolError::InvalidCacheDevice => ZpoolErrorKind::InvalidCacheDevice,
             ZpoolError::Other(_) => ZpoolErrorKind::Other,
         }
+    }
+}
+
+/// Options that can be configured for importing a ZFS pool.
+#[derive(Clone, Debug, Default, Getters, Builder, Eq, PartialEq)]
+pub struct ImportOptions {
+    /// Uses a device or searches for devices or files in a directory.
+    /// Multiple paths may be specified.
+    #[builder(default)]
+    dirs: Vec<PathBuf>,
+
+    /// Sets the `cachefile` property to none and the `altroot` property to
+    /// [`root`][ImportOptions::root].
+    #[builder(default)]
+    root: Option<PathBuf>,
+
+    /// Forces import, even if the pool appears to be potentially active.
+    #[builder(default)]
+    force: ImportMode,
+
+    /// Import the pool without mounting any file systems.
+    #[builder(default)]
+    skip_mount: bool,
+
+    /// Sets the specified property on the imported pool.
+    #[builder(default)]
+    properties: Option<ZpoolPropertiesWrite>,
+}
+
+impl ImportOptionsBuilder {
+    pub fn dir<D: Into<PathBuf>>(&mut self, dir: D) -> &mut Self {
+        self.dirs.get_or_insert_with(Vec::new).push(dir.into());
+        self
     }
 }
 
@@ -279,6 +312,7 @@ pub enum CreateMode {
     /// Do not use force mode.
     Gentle,
 }
+
 /// Strategy to use when destroying Zpool.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DestroyMode {
@@ -298,9 +332,24 @@ pub enum ExportMode {
     Gentle,
 }
 
+/// Strategy to use when importing Zpool.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ImportMode {
+    /// Forcefully import the pool, even if it is already imported.
+    Force,
+    /// Do not use force mode.
+    Gentle,
+}
+
 impl Default for CreateMode {
     fn default() -> CreateMode {
         CreateMode::Gentle
+    }
+}
+
+impl Default for ImportMode {
+    fn default() -> ImportMode {
+        ImportMode::Gentle
     }
 }
 
@@ -409,11 +458,16 @@ pub trait ZpoolEngine {
     /// Import pool from `/dev/`.
     fn import<N: AsRef<str>>(&self, name: N) -> ZpoolResult<()>;
 
+    /// Import pool with specified options.
+    fn import_with_options<N: AsRef<str>>(&self, name: N, opts: ImportOptions) -> ZpoolResult<()>;
+
     /// Import pool from `dir`.
     ///
     /// * `dir` - Directory to look for pools. Useful when you are looking for pool that created
     ///   from files.
-    fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()>;
+    fn import_from_dir<N: AsRef<str>>(&self, name: N, dir: PathBuf) -> ZpoolResult<()> {
+        self.import_with_options(name, ImportOptionsBuilder::default().dir(dir).build().unwrap())
+    }
 
     /// Get the detailed status of the given pools.
     fn status<N: AsRef<str>>(&self, name: N, opts: StatusOptions) -> ZpoolResult<Zpool>;
