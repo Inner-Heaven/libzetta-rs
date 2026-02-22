@@ -23,6 +23,7 @@ use libzetta::{
         ZpoolOpen3, ZpoolPropertiesWriteBuilder,
     },
 };
+use libzetta::zpool::{ImportOptions, ImportOptionsBuilder};
 
 static ZPOOL_NAME_PREFIX: &'static str = "tests-zpool-";
 lazy_static! {
@@ -390,6 +391,50 @@ fn test_export_import() {
         let result = zpool.available().unwrap();
         assert!(result.is_empty());
     });
+}
+
+#[test]
+fn text_export_import_opts() {
+    run_test(|name| {
+        let vdev_dir = Path::new("/vdevs/import");
+        setup_vdev(vdev_dir.join("vdev0"), &Bytes::MegaBytes(64 + 10));
+        let zpool = ZpoolOpen3::default();
+
+        let topo = CreateZpoolRequestBuilder::default()
+            .name(name.clone())
+            .vdev(CreateVdevRequest::SingleDisk("/vdevs/import/vdev0".into()))
+            .build()
+            .unwrap();
+        zpool
+            .create(topo)
+            .expect("Failed to create pool for export and import");
+
+        let result = zpool.export(&name, ExportMode::Gentle);
+        assert!(result.is_ok());
+
+        let moved_root = PathBuf::from("/mnt/new-root");
+        let moved_opts = ImportOptionsBuilder::default().root(Some(moved_root.clone())).dir(PathBuf::from(vdev_dir)).build().unwrap();
+        let result = zpool.import_with_options(&name, moved_opts);
+        assert!(result.is_ok());
+        assert!(moved_root.exists());
+
+        let result = zpool.export(&name, ExportMode::Gentle);
+        assert!(result.is_ok());
+
+        let skip_mount_root = PathBuf::from("/mnt/unmounted-root");
+        let skip_mount_opts = ImportOptionsBuilder::default().root(Some(skip_mount_root.clone())).dir(PathBuf::from(vdev_dir)).skip_mount(true).build().unwrap();
+        let result = zpool.import_with_options(&name, skip_mount_opts);
+        assert!(result.is_ok());
+        assert!(!skip_mount_root.exists());
+
+        let result = zpool.export(&name, ExportMode::Gentle);
+        assert!(result.is_ok());
+
+        zpool.destroy(&name, DestroyMode::Force).unwrap();
+
+        let result = zpool.available().unwrap();
+        assert!(result.is_empty());
+    })
 }
 
 #[test]

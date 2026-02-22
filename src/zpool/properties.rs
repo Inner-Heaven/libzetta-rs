@@ -228,6 +228,47 @@ impl ZpoolPropertiesWrite {
         }
         ret.iter().map(OsString::from).collect()
     }
+
+    /// Converts the current instance into a vector of `OsString` arguments from the
+    /// non-default properties.
+    #[doc(hidden)]
+    pub fn into_setter_args(self) -> Vec<OsString> {
+        let mut ret = Vec::with_capacity(7);
+
+        if self.read_only {
+            ret.push(PropPair::to_pair(&self.read_only, "readonly"));
+        }
+
+        if self.auto_expand {
+            ret.push(PropPair::to_pair(&self.auto_expand, "autoexpand"));
+        }
+
+        if self.auto_replace {
+            ret.push(PropPair::to_pair(&self.auto_replace, "autoreplace"));
+        }
+
+        if let Some(ref btfs) = self.boot_fs {
+            ret.push(PropPair::to_pair(btfs, "bootfs"));
+        }
+
+        if self.cache_file != CacheType::Default {
+            ret.push(PropPair::to_pair(&self.cache_file, "cachefile"));
+        }
+
+        if !self.comment.is_empty() {
+            ret.push(PropPair::to_pair(&self.comment, "comment"));
+        }
+
+        if self.delegation {
+            ret.push(PropPair::to_pair(&self.delegation, "delegation"));
+        }
+
+        if self.fail_mode != FailMode::Wait {
+            ret.push(PropPair::to_pair(&self.fail_mode, "failmode"));
+        }
+
+        ret.iter().map(OsString::from).collect()
+    }
 }
 
 impl ZpoolPropertiesWriteBuilder {
