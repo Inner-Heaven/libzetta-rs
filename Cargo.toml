@@ -46,7 +46,7 @@ features = ["std", "perf", "unicode-perl"]
 
 [dev-dependencies]
 cavity = "1.1"
-rand = "0.8"
+rand = "0.10"
 slog-term = "2"
 tempdir = "0.3"
 tempfile = "3"
