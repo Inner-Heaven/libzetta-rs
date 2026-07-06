@@ -68,7 +68,7 @@ Project is [nix-flake](https://nixos.wiki/wiki/Flakes) enabled, but it flake its
 
 |         | Create    | Destroy     | List     | Get Properties    | Update Properties     |
 | ------- | --------- | ----------- | -------- | ----------------- | --------------------- |
-| open3   | ❌        | ❌          | ✔        | ✔                 | ❌                    |
+| open3   | ❌        | ✔           | ✔        | ✔                 | ❌                    |
 | lzc     | ✔¹        | ✔           | ❌       | ❌                | ❌                    |
 
 1. Might not have all properties available.

@@ -284,6 +284,20 @@ impl ZfsEngine for ZfsLzc {
         }
     }
 
+    fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
+        let name = name.into();
+        name.validate()?;
+
+        let n = CString::new(name.to_str().expect("Non-UTF8 name")).expect("NULL in name");
+        let errno = unsafe { zfs_core_sys::lzc_destroy(n.as_ptr()) };
+        if errno != 0 {
+            let io_error = std::io::Error::from_raw_os_error(errno);
+            Err(Error::Io(io_error))
+        } else {
+            Ok(())
+        }
+    }
+
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
         let validation_errors: Vec<ValidationError> = snapshots
             .iter()
