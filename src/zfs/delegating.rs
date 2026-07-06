@@ -40,7 +40,7 @@ impl ZfsEngine for DelegatingZfsEngine {
     }
 
     fn destroy<N: Into<PathBuf>>(&self, name: N) -> Result<()> {
-        self.open3.destroy(name)
+        self.lzc.destroy(name)
     }
 
     fn destroy_snapshots(&self, snapshots: &[PathBuf], timing: DestroyTiming) -> Result<()> {
